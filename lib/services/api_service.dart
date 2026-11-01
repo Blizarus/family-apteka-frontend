@@ -387,6 +387,7 @@ class ApiService {
       location: 'Шкаф в коридоре (полка 2)',
       count: 14,
       icon: '🏠',
+      boxType: 'home',
     ),
     const MedicineBox(
       id: 2,
@@ -394,6 +395,7 @@ class ApiService {
       location: 'Бардачок автомобиля',
       count: 6,
       icon: '🚗',
+      boxType: 'car',
     ),
   ];
 
@@ -779,6 +781,55 @@ class ApiService {
     final response = await dio.get('/medicine-boxes');
     final data = response.data['data'] as List;
     return data.map((json) => MedicineBox.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  Future<MedicineBox> createMedicineBox({
+    required String name,
+    required String boxType,
+    String? description,
+  }) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      final maxId = _mockBoxes.fold<int>(0, (prev, b) => b.id > prev ? b.id : prev);
+      final newId = maxId + 1;
+      final icon = MedicineBox.getIconForBoxType(boxType);
+      final newBox = MedicineBox(
+        id: newId,
+        name: name,
+        location: description ?? '',
+        count: 0,
+        icon: icon,
+        boxType: boxType,
+      );
+      _mockBoxes.add(newBox);
+      return newBox;
+    }
+
+    final response = await dio.post('/medicine-boxes', data: {
+      'name': name,
+      'box_type': boxType,
+      'description': description,
+    });
+    final dynamic data = response.data['data'] ?? response.data;
+    return MedicineBox.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<bool> deleteMedicineBox(int boxId) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      _mockBoxes.removeWhere((b) => b.id == boxId);
+      return true;
+    }
+
+    try {
+      final response = await dio.delete('/medicine-boxes/$boxId');
+      _mockBoxes.removeWhere((b) => b.id == boxId);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      debugPrint('Error deleting medicine box: $e');
+      _mockBoxes.removeWhere((b) => b.id == boxId);
+      return true;
+    }
   }
 
   Future<List<Medicine>> getMedicines({int? boxId}) async {

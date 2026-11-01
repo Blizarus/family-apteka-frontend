@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
+import 'create_medicine_box_sheet.dart';
 import 'toast_helper.dart';
 
 class BoxSelectorSheet extends StatelessWidget {
@@ -147,11 +148,7 @@ class BoxSelectorSheet extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: () {
               Navigator.pop(context);
-              ToastHelper.show(
-                context,
-                message: 'Создание новой аптечки доступно в полной версии',
-                icon: 'ℹ️',
-              );
+              CreateMedicineBoxSheet.show(context);
             },
             child: Container(
               width: double.infinity,

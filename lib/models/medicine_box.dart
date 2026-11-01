@@ -4,6 +4,7 @@ class MedicineBox {
   final String location;
   final int count;
   final String icon;
+  final String boxType;
 
   const MedicineBox({
     required this.id,
@@ -11,18 +12,28 @@ class MedicineBox {
     required this.location,
     required this.count,
     required this.icon,
+    this.boxType = 'home',
   });
 
-  factory MedicineBox.fromJson(Map<String, dynamic> json) {
-    String icon = json['icon'] as String? ?? '📦';
-    final boxType = json['box_type']?.toString().toLowerCase();
-    if (boxType == 'home') {
-      icon = '🏠';
-    } else if (boxType == 'car') {
-      icon = '🚗';
-    } else if (boxType == 'child') {
-      icon = '🧸';
+  static String getIconForBoxType(String boxType) {
+    switch (boxType.toLowerCase()) {
+      case 'home':
+        return '🏠';
+      case 'car':
+        return '🚗';
+      case 'child':
+        return '👶';
+      case 'travel':
+        return '✈️';
+      case 'custom':
+      default:
+        return '📦';
     }
+  }
+
+  factory MedicineBox.fromJson(Map<String, dynamic> json) {
+    final boxType = json['box_type']?.toString().toLowerCase() ?? 'home';
+    String icon = json['icon'] as String? ?? getIconForBoxType(boxType);
 
     final location = json['location'] as String? ??
         json['description'] as String? ??
@@ -30,7 +41,7 @@ class MedicineBox {
 
     final count = (json['count'] as num?)?.toInt() ??
         (json['medicines_count'] as num?)?.toInt() ??
-        (boxType == 'car' ? 6 : (boxType == 'child' ? 4 : 14));
+        (boxType == 'car' ? 6 : (boxType == 'child' ? 4 : (boxType == 'home' ? 14 : 0)));
 
     return MedicineBox(
       id: json['id'] as int,
@@ -38,6 +49,7 @@ class MedicineBox {
       location: location,
       count: count,
       icon: icon,
+      boxType: boxType,
     );
   }
 
@@ -48,6 +60,7 @@ class MedicineBox {
       'location': location,
       'count': count,
       'icon': icon,
+      'box_type': boxType,
     };
   }
 
@@ -57,6 +70,7 @@ class MedicineBox {
     String? location,
     int? count,
     String? icon,
+    String? boxType,
   }) {
     return MedicineBox(
       id: id ?? this.id,
@@ -64,6 +78,7 @@ class MedicineBox {
       location: location ?? this.location,
       count: count ?? this.count,
       icon: icon ?? this.icon,
+      boxType: boxType ?? this.boxType,
     );
   }
 }

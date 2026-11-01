@@ -364,6 +364,42 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<MedicineBox?> createMedicineBox({
+    required String name,
+    required String boxType,
+    String? description,
+  }) async {
+    try {
+      final newBox = await apiService.createMedicineBox(
+        name: name,
+        boxType: boxType,
+        description: description,
+      );
+      _boxes.add(newBox);
+      _selectedBoxId = newBox.id;
+      notifyListeners();
+      return newBox;
+    } catch (e) {
+      debugPrint('Error creating medicine box: $e');
+      return null;
+    }
+  }
+
+  Future<void> deleteMedicineBox(int boxId) async {
+    try {
+      final success = await apiService.deleteMedicineBox(boxId);
+      if (success) {
+        _boxes.removeWhere((b) => b.id == boxId);
+        if (_selectedBoxId == boxId) {
+          _selectedBoxId = _boxes.isNotEmpty ? _boxes.first.id : 1;
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error deleting medicine box: $e');
+    }
+  }
+
   void setMedicineFilter(String filter) {
     _medicineFilter = filter;
     notifyListeners();
