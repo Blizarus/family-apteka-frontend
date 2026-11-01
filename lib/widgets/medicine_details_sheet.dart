@@ -4,6 +4,7 @@ import '../models/medicine.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import 'intake_course_wizard.dart';
+import 'move_medicine_sheet.dart';
 import 'quick_intake_sheet.dart';
 import 'safety_alert_banner.dart';
 import 'toast_helper.dart';
@@ -242,6 +243,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                   ),
                 ),
                 _buildShelfLifeBlock(context, m),
+                _buildLowStockBlock(context, m),
                 const SizedBox(height: 12),
 
                 // Main Actions: Quick Intake ("Выпить сейчас") & Assign Course ("Назначить курс")
@@ -293,6 +295,34 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+
+                // Move medicine to another box action
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.textPrimary,
+                      side: const BorderSide(color: AppColors.border),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      MoveMedicineSheet.show(context, medicine: m);
+                    },
+                    icon: const Icon(Icons.drive_file_move_outlined, color: AppColors.textPrimary, size: 20),
+                    label: const Text(
+                      'Переместить в другую аптечку',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 14),
 
@@ -542,6 +572,101 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     final m = dt.month.toString().padLeft(2, '0');
     final y = dt.year.toString();
     return '$d.$m.$y';
+  }
+
+  String _getUnitDisplay(Medicine m) {
+    if (m.quantityUnit.isNotEmpty && m.quantityUnit != 'pill') {
+      return m.quantityUnit;
+    }
+    final formLower = m.form.toLowerCase();
+    if (formLower.contains('спрей')) return 'впрыск.';
+    if (formLower.contains('капсул')) return 'капс.';
+    if (formLower.contains('капл')) return 'кап.';
+    if (formLower.contains('мл') || formLower.contains('сироп')) return 'мл';
+    return 'табл.';
+  }
+
+  Widget _buildLowStockBlock(BuildContext context, Medicine m) {
+    if (!m.isLowStock) return const SizedBox.shrink();
+
+    final unit = _getUnitDisplay(m);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFD97706),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '⚠️ Заканчивается: осталось ${m.remaining} $unit',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Рекомендуется пополнить запас в аптечке',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  final state = context.read<AppState>();
+                  state.addToShoppingList(
+                    m.name,
+                    quantity: m.total > 0 ? m.total : 1,
+                    dosage: m.form,
+                  );
+                  ToastHelper.show(
+                    context,
+                    message: '${m.name} добавлен в список покупок',
+                  );
+                },
+                icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
+                label: const Text(
+                  '+ В список покупок',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildShelfLifeBlock(BuildContext context, Medicine m) {

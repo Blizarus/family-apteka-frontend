@@ -24,6 +24,7 @@ class Medicine {
   final DateTime? openedAt;
   final int? daysAfterOpening;
   final DateTime? effectiveExpirationDate;
+  final int lowStockThreshold;
 
   const Medicine({
     required this.id,
@@ -49,6 +50,7 @@ class Medicine {
     this.openedAt,
     this.daysAfterOpening,
     this.effectiveExpirationDate,
+    this.lowStockThreshold = 3,
   });
 
   bool get isOk => status == 'ok';
@@ -56,6 +58,7 @@ class Medicine {
   bool get isExpired => status == 'expired';
   bool get isOpened => openedAt != null;
   int? get daysUntilExpiration => effectiveExpirationDate?.difference(DateTime.now()).inDays;
+  bool get isLowStock => remaining <= lowStockThreshold && remaining > 0;
 
   factory Medicine.fromJson(Map<String, dynamic> json) {
     ReferenceMedicine? refMed;
@@ -186,6 +189,10 @@ class Medicine {
             ? Map<String, dynamic>.from(json['instructions'] as Map)
             : <String, dynamic>{});
 
+    final lowStockThreshold = (json['low_stock_threshold'] as num?)?.toInt() ??
+        (json['lowStockThreshold'] as num?)?.toInt() ??
+        3;
+
     return Medicine(
       id: (json['id'] as num?)?.toInt() ?? 0,
       boxId: (json['boxId'] ?? json['medicine_box_id'] as num?)?.toInt() ?? 1,
@@ -210,6 +217,7 @@ class Medicine {
       openedAt: openedAt,
       daysAfterOpening: daysAfterOpening,
       effectiveExpirationDate: effectiveExpirationDate,
+      lowStockThreshold: lowStockThreshold,
     );
   }
 
@@ -237,6 +245,7 @@ class Medicine {
       'opened_at': openedAt?.toIso8601String(),
       'days_after_opening': daysAfterOpening,
       'effective_expiration_date': effectiveExpirationDate?.toIso8601String(),
+      'low_stock_threshold': lowStockThreshold,
     };
   }
 
@@ -264,6 +273,7 @@ class Medicine {
     DateTime? openedAt,
     int? daysAfterOpening,
     DateTime? effectiveExpirationDate,
+    int? lowStockThreshold,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -289,6 +299,7 @@ class Medicine {
       openedAt: openedAt ?? this.openedAt,
       daysAfterOpening: daysAfterOpening ?? this.daysAfterOpening,
       effectiveExpirationDate: effectiveExpirationDate ?? this.effectiveExpirationDate,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
     );
   }
 }

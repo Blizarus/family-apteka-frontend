@@ -996,6 +996,33 @@ class ApiService {
   }
 
   // ==========================================
+  // MOVE MEDICINE BETWEEN BOXES
+  // ==========================================
+
+  Future<Medicine> moveMedicine(int medicineId, int targetBoxId) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      final index = _mockMedicines.indexWhere((m) => m.id == medicineId);
+      if (index != -1) {
+        final current = _mockMedicines[index];
+        final updated = current.copyWith(boxId: targetBoxId);
+        _mockMedicines[index] = updated;
+        return updated;
+      }
+      throw Exception('Medicine not found in mock list');
+    }
+
+    final response = await dio.post(
+      '/medicines/$medicineId/move',
+      data: {'target_box_id': targetBoxId},
+    );
+    final data = response.data['data'] is Map<String, dynamic>
+        ? response.data['data'] as Map<String, dynamic>
+        : response.data as Map<String, dynamic>;
+    return Medicine.fromJson(data);
+  }
+
+  // ==========================================
   // NOTIFICATIONS
   // ==========================================
 

@@ -273,6 +273,7 @@ class AppState extends ChangeNotifier {
         _currentUser = results[4] as User;
       }
       _notifications = results[5] as List<NotificationItem>;
+      _generateLowStockNotifications();
 
       final savedBoxId = await apiService.storageService.getSelectedBoxId();
       if (savedBoxId != null && _boxes.any((b) => b.id == savedBoxId)) {
@@ -355,6 +356,7 @@ class AppState extends ChangeNotifier {
       _intakes = results[0] as List<IntakeLog>;
       _medicines = results[1] as List<Medicine>;
       _notifications = results[2] as List<NotificationItem>;
+      _generateLowStockNotifications();
 
       // Обновляем сопоставления в существующих заметках
       _notes = _notes.map((note) {
@@ -550,6 +552,67 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
     return updated;
+  }
+
+  Future<bool> moveMedicine(int medicineId, int targetBoxId) async {
+    try {
+      final updated = await apiService.moveMedicine(medicineId, targetBoxId);
+      final index = _medicines.indexWhere((m) => m.id == medicineId);
+      if (index != -1) {
+        _medicines[index] = updated;
+      }
+
+      final targetBox = _boxes.cast<MedicineBox?>().firstWhere(
+            (b) => b?.id == targetBoxId,
+            orElse: () => null,
+          );
+      final targetBoxName = targetBox?.name ?? 'аптечку #$targetBoxId';
+
+      final notification = NotificationItem(
+        id: DateTime.now().millisecondsSinceEpoch,
+        title: 'Перемещение препарата',
+        message: 'Препарат ${updated.name} перемещён в аптечку $targetBoxName',
+        type: 'general',
+        isRead: false,
+        createdAt: DateTime.now(),
+      );
+      _notifications.insert(0, notification);
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error moving medicine: $e');
+      return false;
+    }
+  }
+
+  void _generateLowStockNotifications() {
+    int counter = 0;
+    for (final medicine in _medicines) {
+      if (medicine.isLowStock) {
+        final alreadyExists = _notifications.any(
+          (n) =>
+              n.type == 'low_stock' &&
+              (n.title.contains(medicine.name) || n.message.contains(medicine.name)),
+        );
+        if (!alreadyExists) {
+          final unit = (medicine.quantityUnit == 'pill' || medicine.quantityUnit.isEmpty)
+              ? 'таблеток'
+              : medicine.quantityUnit;
+          counter++;
+          _notifications.add(
+            NotificationItem(
+              id: DateTime.now().millisecondsSinceEpoch + medicine.id + counter,
+              title: 'Заканчивается запас: ${medicine.name}',
+              message: 'Осталось всего ${medicine.remaining} $unit',
+              type: 'low_stock',
+              isRead: false,
+              createdAt: DateTime.now(),
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> fetchNotifications() async {
