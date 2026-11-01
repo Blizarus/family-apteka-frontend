@@ -8,6 +8,7 @@ import '../widgets/expandable_calendar.dart';
 import '../widgets/intake_course_wizard.dart';
 import '../widgets/skip_reason_dialog.dart';
 import '../widgets/toast_helper.dart';
+import '../widgets/notification_center_sheet.dart';
 
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
@@ -147,6 +148,17 @@ class TodayScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          icon: Badge(
+            isLabelVisible: state.unreadNotificationsCount > 0,
+            label: Text('${state.unreadNotificationsCount}'),
+            backgroundColor: const Color(0xFFEF4444),
+            child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 22),
+          ),
+          tooltip: 'Центр уведомлений',
+          onPressed: () => NotificationCenterSheet.show(context),
         ),
       ],
     );

@@ -241,6 +241,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                     ],
                   ),
                 ),
+                _buildShelfLifeBlock(context, m),
                 const SizedBox(height: 12),
 
                 // Main Actions: Quick Intake ("Выпить сейчас") & Assign Course ("Назначить курс")
@@ -534,5 +535,218 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
         }),
       ],
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    final d = dt.day.toString().padLeft(2, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final y = dt.year.toString();
+    return '$d.$m.$y';
+  }
+
+  Widget _buildShelfLifeBlock(BuildContext context, Medicine m) {
+    if (m.openedAt == null) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 8),
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            backgroundColor: const Color(0xFFF0FDFA),
+            foregroundColor: const Color(0xFF0D9488),
+            side: const BorderSide(color: Color(0xFF99F6E4), width: 1.2),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+          ),
+          onPressed: () => _showOpenBottleDialog(m),
+          icon: const Icon(Icons.lock_open_rounded, size: 18, color: Color(0xFF0D9488)),
+          label: const Text(
+            'Вскрыть упаковку',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0D9488),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final openedDateStr = _formatDate(m.openedAt!);
+    final expDate = m.effectiveExpirationDate ??
+        m.openedAt!.add(Duration(days: m.daysAfterOpening ?? 30));
+    final expDateStr = _formatDate(expDate);
+    final daysLeft = expDate.difference(DateTime.now()).inDays;
+    final isExpired = daysLeft < 0;
+
+    final infoText =
+        'Вскрыто: $openedDateStr • Годен до $expDateStr (осталось $daysLeft дн.)';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isExpired ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isExpired ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isExpired ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
+                size: 16,
+                color: isExpired ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isExpired ? 'СРОК ПОСЛЕ ВСКРЫТИЯ ИСТЁК' : 'СРОК ГОДНОСТИ ПОСЛЕ ВСКРЫТИЯ',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  color: isExpired ? const Color(0xFFB91C1C) : const Color(0xFF15803D),
+                ),
+              ),
+              if (isExpired) ...[
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDC2626),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'ИСТЁК',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            infoText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isExpired ? const Color(0xFF991B1B) : const Color(0xFF166534),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showOpenBottleDialog(Medicine medicine) async {
+    final controller = TextEditingController(text: '30');
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.inventory_2_outlined, color: Color(0xFF0D9488), size: 22),
+              SizedBox(width: 8),
+              Text(
+                'Вскрыть упаковку',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Препарат: ${medicine.name}',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Сколько дней годен после вскрытия?',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  autofocus: false,
+                  decoration: InputDecoration(
+                    suffixText: 'дн.',
+                    hintText: '30',
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF0D9488), width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  validator: (val) {
+                    final numVal = int.tryParse(val?.trim() ?? '');
+                    if (numVal == null || numVal <= 0) {
+                      return 'Введите положительное число дней';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D9488),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.of(dialogCtx).pop(true);
+                }
+              },
+              child: const Text('Вскрыть'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      final days = int.tryParse(controller.text.trim()) ?? 30;
+      try {
+        await context.read<AppState>().openMedicine(medicine.id, daysAfterOpening: days);
+        if (mounted) {
+          ToastHelper.show(context, message: 'Упаковка успешно вскрыта');
+        }
+      } catch (e) {
+        if (mounted) {
+          ToastHelper.show(context, message: 'Ошибка при вскрытии: $e', isError: true);
+        }
+      }
+    }
   }
 }

@@ -7,6 +7,7 @@ import '../models/medicine.dart';
 import '../models/reference_medicine.dart';
 import '../models/intake_log.dart';
 import '../models/user.dart';
+import '../models/notification_item.dart';
 
 class ApiService {
   final Dio dio;
@@ -539,6 +540,33 @@ class ApiService {
     ),
   ];
 
+  final List<NotificationItem> _mockNotifications = [
+    NotificationItem(
+      id: 1,
+      title: 'Срок годности (7 дней)',
+      message: 'Срок годности препарата «Аспирин Кардио» истекает через 5 дней.',
+      type: 'expiry_warning_7d',
+      isRead: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+    ),
+    NotificationItem(
+      id: 2,
+      title: 'Заканчивается запас',
+      message: 'В аптечке «Домашняя» осталось всего 2 таблетки Парацетамола.',
+      type: 'low_stock',
+      isRead: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
+    ),
+    NotificationItem(
+      id: 3,
+      title: 'Напоминание о приёме',
+      message: 'Пора принять Ибупрофен 400 мг (курс «ОРВИ Терапия»).',
+      type: 'intake_reminder',
+      isRead: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+  ];
+
   final List<Medicine> _mockMedicines = [
     Medicine(
       id: 1,
@@ -912,6 +940,75 @@ class ApiService {
     final response = await dio.post('/medicines', data: medicineData);
     final data = response.data['data'] as Map<String, dynamic>;
     return Medicine.fromJson(data);
+  }
+
+  // ==========================================
+  // OPEN MEDICINE (SHELF LIFE)
+  // ==========================================
+
+  Future<Medicine> openMedicine(int medicineId, {int? daysAfterOpening}) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      final index = _mockMedicines.indexWhere((m) => m.id == medicineId);
+      if (index != -1) {
+        final current = _mockMedicines[index];
+        final openedAt = DateTime.now();
+        final days = daysAfterOpening ?? current.daysAfterOpening ?? 30;
+        final effectiveExp = openedAt.add(Duration(days: days));
+        final diff = effectiveExp.difference(DateTime.now()).inDays;
+        final updated = current.copyWith(
+          openedAt: openedAt,
+          daysAfterOpening: days,
+          effectiveExpirationDate: effectiveExp,
+          status: diff < 0 ? 'expired' : (diff <= 30 ? 'expiring' : 'ok'),
+        );
+        _mockMedicines[index] = updated;
+        return updated;
+      }
+      throw Exception('Medicine not found in mock list');
+    }
+
+    final payload = <String, dynamic>{};
+    if (daysAfterOpening != null) {
+      payload['days_after_opening'] = daysAfterOpening;
+    }
+
+    final response = await dio.post(
+      '/medicines/$medicineId/open',
+      data: payload,
+    );
+    final data = response.data['data'] is Map<String, dynamic>
+        ? response.data['data'] as Map<String, dynamic>
+        : response.data as Map<String, dynamic>;
+    return Medicine.fromJson(data);
+  }
+
+  // ==========================================
+  // NOTIFICATIONS
+  // ==========================================
+
+  Future<List<NotificationItem>> getNotifications() async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      return List.from(_mockNotifications);
+    }
+
+    final response = await dio.get('/notifications');
+    final rawData = response.data;
+    final List items = rawData is Map<String, dynamic> && rawData['data'] is List
+        ? rawData['data'] as List
+        : (rawData is List ? rawData : []);
+    return items.map((json) => NotificationItem.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> deleteNotification(int id) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      _mockNotifications.removeWhere((n) => n.id == id);
+      return;
+    }
+
+    await dio.delete('/notifications/$id');
   }
 
   // ==========================================

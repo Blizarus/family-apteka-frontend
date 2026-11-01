@@ -21,7 +21,9 @@ class Medicine {
   final String barcode;
   final bool isPrescription;
   final String quantityUnit;
-  final String? openedAt;
+  final DateTime? openedAt;
+  final int? daysAfterOpening;
+  final DateTime? effectiveExpirationDate;
 
   const Medicine({
     required this.id,
@@ -45,11 +47,15 @@ class Medicine {
     this.isPrescription = false,
     this.quantityUnit = 'pill',
     this.openedAt,
+    this.daysAfterOpening,
+    this.effectiveExpirationDate,
   });
 
   bool get isOk => status == 'ok';
   bool get isExpiring => status == 'expiring';
   bool get isExpired => status == 'expired';
+  bool get isOpened => openedAt != null;
+  int? get daysUntilExpiration => effectiveExpirationDate?.difference(DateTime.now()).inDays;
 
   factory Medicine.fromJson(Map<String, dynamic> json) {
     ReferenceMedicine? refMed;
@@ -82,47 +88,89 @@ class Medicine {
         ? rawTotal.toInt()
         : (double.tryParse(rawTotal?.toString() ?? '') ?? remaining).toInt();
 
-    // Expiry date formatting
+    // Dates parsing
     String expiry = json['expiry'] as String? ?? '';
     final rawExpDate = json['expiration_date']?.toString();
-    final openedAt = json['opened_at']?.toString();
+    DateTime? baseExpDate;
+    if (rawExpDate != null && rawExpDate.isNotEmpty) {
+      baseExpDate = DateTime.tryParse(rawExpDate);
+    }
 
-    if (expiry.isEmpty && rawExpDate != null) {
-      try {
-        final parsed = DateTime.parse(rawExpDate);
-        final month = parsed.month.toString().padLeft(2, '0');
-        final year = parsed.year.toString();
-        expiry = '$month.$year';
-      } catch (_) {
-        expiry = rawExpDate;
+    DateTime? openedAt;
+    if (json['opened_at'] != null) {
+      if (json['opened_at'] is DateTime) {
+        openedAt = json['opened_at'] as DateTime;
+      } else {
+        openedAt = DateTime.tryParse(json['opened_at'].toString());
+      }
+    } else if (json['openedAt'] != null) {
+      if (json['openedAt'] is DateTime) {
+        openedAt = json['openedAt'] as DateTime;
+      } else {
+        openedAt = DateTime.tryParse(json['openedAt'].toString());
       }
     }
 
-    if (openedAt != null && openedAt.isNotEmpty && !expiry.startsWith('Вскрыт')) {
+    final daysAfterOpening = (json['days_after_opening'] as num?)?.toInt() ??
+        (json['daysAfterOpening'] as num?)?.toInt();
+
+    DateTime? effectiveExpirationDate;
+    if (json['effective_expiration_date'] != null) {
+      if (json['effective_expiration_date'] is DateTime) {
+        effectiveExpirationDate = json['effective_expiration_date'] as DateTime;
+      } else {
+        effectiveExpirationDate = DateTime.tryParse(json['effective_expiration_date'].toString());
+      }
+    } else if (json['effectiveExpirationDate'] != null) {
+      if (json['effectiveExpirationDate'] is DateTime) {
+        effectiveExpirationDate = json['effectiveExpirationDate'] as DateTime;
+      } else {
+        effectiveExpirationDate = DateTime.tryParse(json['effectiveExpirationDate'].toString());
+      }
+    }
+
+    if (effectiveExpirationDate == null) {
+      if (openedAt != null && daysAfterOpening != null && daysAfterOpening > 0) {
+        final openedExp = openedAt.add(Duration(days: daysAfterOpening));
+        if (baseExpDate != null) {
+          effectiveExpirationDate = openedExp.isBefore(baseExpDate) ? openedExp : baseExpDate;
+        } else {
+          effectiveExpirationDate = openedExp;
+        }
+      } else if (baseExpDate != null) {
+        effectiveExpirationDate = baseExpDate;
+      }
+    }
+
+    if (expiry.isEmpty && effectiveExpirationDate != null) {
+      final month = effectiveExpirationDate.month.toString().padLeft(2, '0');
+      final year = effectiveExpirationDate.year.toString();
+      expiry = '$month.$year';
+    } else if (expiry.isEmpty && baseExpDate != null) {
+      final month = baseExpDate.month.toString().padLeft(2, '0');
+      final year = baseExpDate.year.toString();
+      expiry = '$month.$year';
+    }
+
+    if (openedAt != null && !expiry.startsWith('Вскрыт')) {
       expiry = 'Вскрыт ($expiry)';
     }
 
     // Determine status
     String status = json['status'] as String? ?? 'ok';
-    if (status == 'active') {
-      if (openedAt != null && openedAt.isNotEmpty) {
-        status = 'expiring';
-      } else if (rawExpDate != null) {
-        try {
-          final parsed = DateTime.parse(rawExpDate);
-          final diff = parsed.difference(DateTime.now()).inDays;
-          if (diff < 0) {
-            status = 'expired';
-          } else if (diff <= 30) {
-            status = 'expiring';
-          } else {
-            status = 'ok';
-          }
-        } catch (_) {
+    if (status == 'active' || status == 'ok') {
+      final evalDate = effectiveExpirationDate ?? baseExpDate;
+      if (evalDate != null) {
+        final diff = evalDate.difference(DateTime.now()).inDays;
+        if (diff < 0) {
+          status = 'expired';
+        } else if (diff <= 30) {
+          status = 'expiring';
+        } else {
           status = 'ok';
         }
-      } else {
-        status = 'ok';
+      } else if (openedAt != null) {
+        status = 'expiring';
       }
     } else if (status != 'expired' && status != 'expiring') {
       status = 'ok';
@@ -160,6 +208,8 @@ class Medicine {
       isPrescription: refMed?.isPrescription ?? (json['is_prescription'] as bool? ?? false),
       quantityUnit: json['quantity_unit'] as String? ?? 'pill',
       openedAt: openedAt,
+      daysAfterOpening: daysAfterOpening,
+      effectiveExpirationDate: effectiveExpirationDate,
     );
   }
 
@@ -184,7 +234,9 @@ class Medicine {
       'barcode': barcode,
       'is_prescription': isPrescription,
       'quantity_unit': quantityUnit,
-      'opened_at': openedAt,
+      'opened_at': openedAt?.toIso8601String(),
+      'days_after_opening': daysAfterOpening,
+      'effective_expiration_date': effectiveExpirationDate?.toIso8601String(),
     };
   }
 
@@ -209,7 +261,9 @@ class Medicine {
     String? barcode,
     bool? isPrescription,
     String? quantityUnit,
-    String? openedAt,
+    DateTime? openedAt,
+    int? daysAfterOpening,
+    DateTime? effectiveExpirationDate,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -233,6 +287,8 @@ class Medicine {
       isPrescription: isPrescription ?? this.isPrescription,
       quantityUnit: quantityUnit ?? this.quantityUnit,
       openedAt: openedAt ?? this.openedAt,
+      daysAfterOpening: daysAfterOpening ?? this.daysAfterOpening,
+      effectiveExpirationDate: effectiveExpirationDate ?? this.effectiveExpirationDate,
     );
   }
 }

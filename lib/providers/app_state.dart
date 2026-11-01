@@ -7,6 +7,7 @@ import '../models/medical_note.dart';
 import '../models/shopping_item.dart';
 import '../models/user.dart';
 import '../models/reference_medicine.dart';
+import '../models/notification_item.dart';
 import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
@@ -26,6 +27,7 @@ class AppState extends ChangeNotifier {
   List<MedicineBox> _boxes = [];
   List<IntakeLog> _intakes = [];
   List<Medicine> _medicines = [];
+  List<NotificationItem> _notifications = [];
   List<MedicalNote> _notes = [];
   final List<ShoppingItem> _shoppingItems = [
     const ShoppingItem(
@@ -87,6 +89,8 @@ class AppState extends ChangeNotifier {
   List<MedicineBox> get boxes => _boxes;
   List<IntakeLog> get intakes => _intakes;
   List<Medicine> get medicines => _medicines;
+  List<NotificationItem> get notifications => _notifications;
+  int get unreadNotificationsCount => _notifications.where((n) => !n.isRead).length;
   List<MedicalNote> get notes => _notes;
   List<ShoppingItem> get shoppingItems => _shoppingItems;
   List<ShoppingItem> get purchasedItems => _purchasedItems;
@@ -251,6 +255,7 @@ class AppState extends ChangeNotifier {
         apiService.getIntakes(),
         apiService.getMedicines(),
         apiService.getMe(),
+        apiService.getNotifications(),
       ]);
       _profiles = results[0] as List<Profile>;
       _boxes = results[1] as List<MedicineBox>;
@@ -259,6 +264,7 @@ class AppState extends ChangeNotifier {
       if (results[4] != null) {
         _currentUser = results[4] as User;
       }
+      _notifications = results[5] as List<NotificationItem>;
 
       if (_boxes.isNotEmpty && !_boxes.any((b) => b.id == _selectedBoxId)) {
         _selectedBoxId = _boxes.first.id;
@@ -329,9 +335,11 @@ class AppState extends ChangeNotifier {
       final results = await Future.wait([
         apiService.getIntakes(),
         apiService.getMedicines(),
+        apiService.getNotifications(),
       ]);
       _intakes = results[0] as List<IntakeLog>;
       _medicines = results[1] as List<Medicine>;
+      _notifications = results[2] as List<NotificationItem>;
 
       // Обновляем сопоставления в существующих заметках
       _notes = _notes.map((note) {
@@ -481,6 +489,40 @@ class AppState extends ChangeNotifier {
     _medicines = await apiService.getMedicines();
     notifyListeners();
     return created;
+  }
+
+  Future<Medicine> openMedicine(int medicineId, {int? daysAfterOpening}) async {
+    final updated = await apiService.openMedicine(
+      medicineId,
+      daysAfterOpening: daysAfterOpening,
+    );
+    final idx = _medicines.indexWhere((m) => m.id == medicineId);
+    if (idx != -1) {
+      _medicines[idx] = updated;
+    } else {
+      _medicines.add(updated);
+    }
+    notifyListeners();
+    return updated;
+  }
+
+  Future<void> fetchNotifications() async {
+    try {
+      _notifications = await apiService.getNotifications();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching notifications: $e');
+    }
+  }
+
+  Future<void> deleteNotification(int id) async {
+    try {
+      await apiService.deleteNotification(id);
+      _notifications.removeWhere((n) => n.id == id);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting notification: $e');
+    }
   }
 
   // Notes & Prescriptions actions
