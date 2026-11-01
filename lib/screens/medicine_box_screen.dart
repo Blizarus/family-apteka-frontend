@@ -400,7 +400,7 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${m.remaining} / ${m.total} шт.',
+                          '${m.remainingDisplay} / ${m.totalDisplay} шт.',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,

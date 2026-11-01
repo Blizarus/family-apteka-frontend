@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class NotificationItem {
   final int id;
   final String title;
@@ -68,7 +70,7 @@ class NotificationItem {
     DateTime createdAt = DateTime.tryParse(dateStr) ?? DateTime.now();
 
     return NotificationItem(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: ParseHelper.parseInt(json['id']),
       title: title,
       message: message,
       type: rawType,
@@ -86,23 +88,5 @@ class NotificationItem {
       'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
     };
-  }
-
-  NotificationItem copyWith({
-    int? id,
-    String? title,
-    String? message,
-    String? type,
-    bool? isRead,
-    DateTime? createdAt,
-  }) {
-    return NotificationItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      message: message ?? this.message,
-      type: type ?? this.type,
-      isRead: isRead ?? this.isRead,
-      createdAt: createdAt ?? this.createdAt,
-    );
   }
 }

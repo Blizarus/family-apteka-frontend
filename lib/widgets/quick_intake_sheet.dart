@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
+import '../utils/parse_helper.dart';
 
 class QuickIntakeSheet extends StatefulWidget {
   final Medicine medicine;
@@ -107,9 +108,9 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
         symptom: symptom,
       );
 
-      final newRemaining = res['remaining'] is num
-          ? (res['remaining'] as num).toInt()
-          : (widget.medicine.remaining - _quantity).clamp(0, 99999).toInt();
+      final newRemaining = res['remaining'] != null
+          ? ParseHelper.formatAny(res['remaining'])
+          : ParseHelper.formatQuantity((widget.medicine.remaining - _quantity).clamp(0.0, 99999.0));
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -222,7 +223,7 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '💊 ${widget.medicine.name} • Остаток: ${widget.medicine.remaining} $_unitLabel',
+                        '💊 ${widget.medicine.name} • Остаток: ${widget.medicine.remainingDisplay} $_unitLabel',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -413,7 +414,7 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Внимание: доза (${_formatQuantity(_quantity)} $_unitLabel) превышает остаток в аптечке (${widget.medicine.remaining} $_unitLabel)',
+                        'Внимание: доза (${_formatQuantity(_quantity)} $_unitLabel) превышает остаток в аптечке (${widget.medicine.remainingDisplay} $_unitLabel)',
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

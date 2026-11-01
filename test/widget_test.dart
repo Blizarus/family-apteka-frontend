@@ -389,7 +389,7 @@ void main() {
     expect(find.text('Настройки подключения для тестеров'), findsOneWidget);
 
     // Tap emulator preset
-    await tester.tap(find.text('10.0.2.2 (Android Эмулятор)'));
+    await tester.tap(find.textContaining('10.0.2.2'));
     await tester.pump();
 
     // Tap Save and Test

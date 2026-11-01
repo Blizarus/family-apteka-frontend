@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class ReferenceMedicine {
   final int id;
   final String tradeName;
@@ -45,12 +47,12 @@ class ReferenceMedicine {
     }
 
     return ReferenceMedicine(
-      id: json['id'] as int,
+      id: ParseHelper.parseInt(json['id']),
       tradeName: json['trade_name'] as String? ?? '',
       inn: json['inn'] as String? ?? '',
       dosageForm: json['dosage_form'] as String? ?? 'Таблетки',
       dosage: json['dosage'] as String? ?? '',
-      packSize: (json['pack_size'] as num?)?.toInt() ?? 1,
+      packSize: ParseHelper.parseInt(json['pack_size'], 1),
       manufacturer: json['manufacturer'] as String? ?? 'Фармпроизводитель',
       country: json['country'] as String? ?? 'Россия',
       atcCode: json['atc_code'] as String? ?? '',

@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class Profile {
   final int id;
   final String name;
@@ -23,10 +25,11 @@ class Profile {
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     final rawNotes = json['notes']?.toString() ?? '';
+    final id = ParseHelper.parseInt(json['id']);
     final isOwner = json['isOwner'] as bool? ??
-        (rawNotes.toLowerCase().contains('владелец') || (json['id'] == 1));
+        (rawNotes.toLowerCase().contains('владелец') || (id == 1));
 
-    final activeCount = (json['active_courses_count'] as num?)?.toInt() ?? 1;
+    final activeCount = ParseHelper.parseInt(json['active_courses_count'], 1);
     String countText = '$activeCount курс сегодня';
     if (activeCount == 2 || activeCount == 3 || activeCount == 4) {
       countText = '$activeCount курса сегодня';
@@ -56,7 +59,7 @@ class Profile {
     final birthDate = json['birth_date']?.toString();
 
     return Profile(
-      id: json['id'] as int,
+      id: id,
       name: name,
       role: role,
       avatar: avatar,

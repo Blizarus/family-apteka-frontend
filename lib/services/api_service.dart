@@ -1559,12 +1559,12 @@ class ApiService {
 
       // 1. Уменьшаем остаток в _mockMedicines
       final medIdx = _mockMedicines.indexWhere((m) => m.id == medicineId);
-      int newRemaining = 0;
+      double newRemaining = 0.0;
       String medName = 'Лекарство';
       String medForm = 'Таблетки';
       if (medIdx != -1) {
         final current = _mockMedicines[medIdx];
-        newRemaining = (current.remaining - quantity).clamp(0, 99999).toInt();
+        newRemaining = (current.remaining - quantity).clamp(0.0, 99999.0);
         _mockMedicines[medIdx] = current.copyWith(
           remaining: newRemaining,
           status: newRemaining == 0 ? 'expired' : (newRemaining < 5 ? 'expiring' : current.status),

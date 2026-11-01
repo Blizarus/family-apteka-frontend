@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class PeriodInfo {
   final String type; // '7_days' | '30_days' | 'all'
   final DateTime startDate;
@@ -46,9 +48,9 @@ class DailyStat {
   factory DailyStat.fromJson(Map<String, dynamic> json) {
     return DailyStat(
       date: json['date'] as String? ?? '',
-      scheduled: (json['scheduled'] as num?)?.toInt() ?? 0,
-      taken: (json['taken'] as num?)?.toInt() ?? 0,
-      missed: (json['missed'] as num?)?.toInt() ?? 0,
+      scheduled: ParseHelper.parseInt(json['scheduled']),
+      taken: ParseHelper.parseInt(json['taken']),
+      missed: ParseHelper.parseInt(json['missed']),
     );
   }
 
@@ -81,12 +83,12 @@ class MedicineAdherence {
 
   factory MedicineAdherence.fromJson(Map<String, dynamic> json) {
     return MedicineAdherence(
-      medicineId: (json['medicine_id'] as num?)?.toInt() ?? 0,
+      medicineId: ParseHelper.parseInt(json['medicine_id'] ?? json['medicineId']),
       name: json['name'] as String? ?? 'Неизвестный препарат',
-      scheduledCount: (json['scheduled_count'] as num?)?.toInt() ?? 0,
-      takenCount: (json['taken_count'] as num?)?.toInt() ?? 0,
-      missedCount: (json['missed_count'] as num?)?.toInt() ?? 0,
-      adherenceRate: (json['adherence_rate'] as num?)?.toDouble() ?? 100.0,
+      scheduledCount: ParseHelper.parseInt(json['scheduled_count'] ?? json['scheduledCount']),
+      takenCount: ParseHelper.parseInt(json['taken_count'] ?? json['takenCount']),
+      missedCount: ParseHelper.parseInt(json['missed_count'] ?? json['missedCount']),
+      adherenceRate: ParseHelper.parseDouble(json['adherence_rate'] ?? json['adherenceRate'], 100.0),
     );
   }
 
@@ -136,11 +138,11 @@ class AdherenceReport {
   factory AdherenceReport.fromJson(Map<String, dynamic> json) {
     return AdherenceReport(
       period: PeriodInfo.fromJson(json['period'] as Map<String, dynamic>? ?? {}),
-      scheduledCount: (json['scheduled_count'] as num?)?.toInt() ?? 0,
-      takenCount: (json['taken_count'] as num?)?.toInt() ?? 0,
-      missedCount: (json['missed_count'] as num?)?.toInt() ?? 0,
-      adherenceRate: (json['adherence_rate'] as num?)?.toDouble() ?? 100.0,
-      streakDays: (json['streak_days'] as num?)?.toInt() ?? 0,
+      scheduledCount: ParseHelper.parseInt(json['scheduled_count'] ?? json['scheduledCount']),
+      takenCount: ParseHelper.parseInt(json['taken_count'] ?? json['takenCount']),
+      missedCount: ParseHelper.parseInt(json['missed_count'] ?? json['missedCount']),
+      adherenceRate: ParseHelper.parseDouble(json['adherence_rate'] ?? json['adherenceRate'], 100.0),
+      streakDays: ParseHelper.parseInt(json['streak_days'] ?? json['streakDays']),
       dailyStats: (json['daily_stats'] as List<dynamic>?)
               ?.map((e) => DailyStat.fromJson(e as Map<String, dynamic>))
               .toList() ??

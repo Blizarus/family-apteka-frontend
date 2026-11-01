@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class ShoppingItem {
   final String id;
   final String name;
@@ -64,16 +66,16 @@ class ShoppingItem {
 
   factory ShoppingItem.fromJson(Map<String, dynamic> json) {
     return ShoppingItem(
-      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'] as String? ?? '',
-      count: (json['count'] as num?)?.toInt() ?? 1,
+      count: ParseHelper.parseInt(json['count'], 1),
       dosage: json['dosage'] as String? ?? '',
-      isPurchased: json['isPurchased'] as bool? ?? false,
-      profileId: (json['profile_id'] as num?)?.toInt(),
-      patientName: json['patient_name'] as String?,
+      isPurchased: json['isPurchased'] as bool? ?? json['is_purchased'] as bool? ?? false,
+      profileId: ParseHelper.parseNullableInt(json['profile_id'] ?? json['profileId']),
+      patientName: json['patient_name'] as String? ?? json['patientName'] as String?,
       category: json['category'] as String?,
-      sourceDescription: json['source_description'] as String?,
-      sourceNoteId: (json['source_note_id'] as num?)?.toInt(),
+      sourceDescription: json['source_description'] as String? ?? json['sourceDescription'] as String?,
+      sourceNoteId: ParseHelper.parseNullableInt(json['source_note_id'] ?? json['sourceNoteId']),
     );
   }
 }

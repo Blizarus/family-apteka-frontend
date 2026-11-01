@@ -1,3 +1,4 @@
+import '../utils/parse_helper.dart';
 import 'reference_medicine.dart';
 
 class Medicine {
@@ -6,8 +7,8 @@ class Medicine {
   final String name;
   final String substance;
   final String form;
-  final int remaining;
-  final int total;
+  final double remaining;
+  final double total;
   final String expiry;
   final String status; // 'ok' | 'expiring' | 'expired'
   final int? referenceMedicineId;
@@ -24,7 +25,7 @@ class Medicine {
   final DateTime? openedAt;
   final int? daysAfterOpening;
   final DateTime? effectiveExpirationDate;
-  final int lowStockThreshold;
+  final double lowStockThreshold;
 
   const Medicine({
     required this.id,
@@ -60,23 +61,9 @@ class Medicine {
   int? get daysUntilExpiration => effectiveExpirationDate?.difference(DateTime.now()).inDays;
   bool get isLowStock => remaining <= lowStockThreshold && remaining > 0;
 
-  static int _parseIntSafe(dynamic val, [int fallback = 0]) {
-    if (val == null) return fallback;
-    if (val is num) return val.toInt();
-    final s = val.toString().trim();
-    final d = double.tryParse(s);
-    if (d != null) return d.toInt();
-    return int.tryParse(s) ?? fallback;
-  }
-
-  static int? _parseNullableIntSafe(dynamic val) {
-    if (val == null) return null;
-    if (val is num) return val.toInt();
-    final s = val.toString().trim();
-    final d = double.tryParse(s);
-    if (d != null) return d.toInt();
-    return int.tryParse(s);
-  }
+  String get remainingDisplay => ParseHelper.formatQuantity(remaining);
+  String get totalDisplay => ParseHelper.formatQuantity(total);
+  String get lowStockThresholdDisplay => ParseHelper.formatQuantity(lowStockThreshold);
 
   factory Medicine.fromJson(Map<String, dynamic> json) {
     ReferenceMedicine? refMed;
@@ -100,14 +87,11 @@ class Medicine {
         'Таблетки';
 
     final rawRemaining = json['remaining'] ?? json['quantity'];
-    final remaining = rawRemaining is num
-        ? rawRemaining.toInt()
-        : (double.tryParse(rawRemaining?.toString() ?? '') ?? 0).toInt();
+    final remaining = ParseHelper.parseDouble(rawRemaining);
 
     final rawTotal = json['total'] ?? refMed?.packSize ?? remaining;
-    final total = rawTotal is num
-        ? rawTotal.toInt()
-        : (double.tryParse(rawTotal?.toString() ?? '') ?? remaining).toInt();
+    final parsedTotal = ParseHelper.parseDouble(rawTotal, remaining);
+    final total = parsedTotal > 0 ? parsedTotal : remaining;
 
     // Dates parsing
     String expiry = json['expiry'] as String? ?? '';
@@ -132,7 +116,7 @@ class Medicine {
       }
     }
 
-    final daysAfterOpening = _parseNullableIntSafe(json['days_after_opening'] ?? json['daysAfterOpening']);
+    final daysAfterOpening = ParseHelper.parseNullableInt(json['days_after_opening'] ?? json['daysAfterOpening']);
 
     DateTime? effectiveExpirationDate;
     if (json['effective_expiration_date'] != null) {
@@ -206,19 +190,22 @@ class Medicine {
             ? Map<String, dynamic>.from(json['instructions'] as Map)
             : <String, dynamic>{});
 
-    final lowStockThreshold = _parseIntSafe(json['low_stock_threshold'] ?? json['lowStockThreshold'], 3);
+    final lowStockThreshold = ParseHelper.parseDouble(
+      json['low_stock_threshold'] ?? json['lowStockThreshold'],
+      3.0,
+    );
 
     return Medicine(
-      id: _parseIntSafe(json['id']),
-      boxId: _parseIntSafe(json['boxId'] ?? json['medicine_box_id'], 1),
+      id: ParseHelper.parseInt(json['id']),
+      boxId: ParseHelper.parseInt(json['boxId'] ?? json['medicine_box_id'], 1),
       name: name,
       substance: substance,
       form: form,
       remaining: remaining,
-      total: total > 0 ? total : remaining,
+      total: total,
       expiry: expiry,
       status: status,
-      referenceMedicineId: _parseNullableIntSafe(json['reference_medicine_id']) ?? refMed?.id,
+      referenceMedicineId: ParseHelper.parseNullableInt(json['reference_medicine_id']) ?? refMed?.id,
       referenceMedicine: refMed,
       composition: refMed?.composition ?? (json['composition'] as String? ?? ''),
       allergenTags: allergenTags,
@@ -270,8 +257,8 @@ class Medicine {
     String? name,
     String? substance,
     String? form,
-    int? remaining,
-    int? total,
+    double? remaining,
+    double? total,
     String? expiry,
     String? status,
     int? referenceMedicineId,
@@ -288,7 +275,7 @@ class Medicine {
     DateTime? openedAt,
     int? daysAfterOpening,
     DateTime? effectiveExpirationDate,
-    int? lowStockThreshold,
+    double? lowStockThreshold,
   }) {
     return Medicine(
       id: id ?? this.id,

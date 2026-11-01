@@ -544,7 +544,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   substance: ref.inn,
                   form: ref.dosageForm,
                   remaining: 0,
-                  total: ref.packSize,
+                  total: ref.packSize.toDouble(),
                   expiry: 'По назначению',
                   status: 'ok',
                   referenceMedicineId: ref.id,
@@ -653,7 +653,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${med.form} • В аптечке: ${med.remaining} шт.',
+                        '${med.form} • В аптечке: ${med.remainingDisplay} шт.',
                         style: TextStyle(
                           fontSize: 11,
                           color: isSelected ? AppColors.primaryHover : AppColors.textSecondary,
@@ -847,8 +847,8 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   Expanded(
                     child: Text(
                       isLowStock
-                          ? 'Остаток в аптечке мал (${med.remaining} шт.)'
-                          : 'В аптечке достаточно запаса (${med.remaining} шт.)',
+                          ? 'Остаток в аптечке мал (${med.remainingDisplay} шт.)'
+                          : 'В аптечке достаточно запаса (${med.remainingDisplay} шт.)',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1278,8 +1278,8 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                 ),
                 child: Text(
                   isEnough
-                      ? '✓ Требуется ~$needed шт. В наличии: ${med.remaining} шт. (Запаса хватает)'
-                      : '⚠️ Требуется ~$needed шт. В наличии: ${med.remaining} шт. (Потребуется докупить)',
+                      ? '✓ Требуется ~$needed шт. В наличии: ${med.remainingDisplay} шт. (Запаса хватает)'
+                      : '⚠️ Требуется ~$needed шт. В наличии: ${med.remainingDisplay} шт. (Потребуется докупить)',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,

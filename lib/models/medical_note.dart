@@ -1,3 +1,4 @@
+import '../utils/parse_helper.dart';
 import 'medicine.dart';
 
 enum MedicineStockStatus {
@@ -11,8 +12,8 @@ class PrescribedMedicineItem {
   final String dosage;
   final MedicineStockStatus status;
   final String locationInfo;
-  final int remainingCount;
-  final int neededCount;
+  final double remainingCount;
+  final double neededCount;
 
   const PrescribedMedicineItem({
     required this.name,
@@ -26,6 +27,9 @@ class PrescribedMedicineItem {
   bool get isInStock => status == MedicineStockStatus.inStock;
   bool get isLowStock => status == MedicineStockStatus.lowStock;
   bool get isMissing => status == MedicineStockStatus.missing;
+
+  String get remainingCountDisplay => ParseHelper.formatQuantity(remainingCount);
+  String get neededCountDisplay => ParseHelper.formatQuantity(neededCount);
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -45,8 +49,8 @@ class PrescribedMedicineItem {
         orElse: () => MedicineStockStatus.missing,
       ),
       locationInfo: json['locationInfo'] as String? ?? '',
-      remainingCount: (json['remainingCount'] as num?)?.toInt() ?? 0,
-      neededCount: (json['neededCount'] as num?)?.toInt() ?? 0,
+      remainingCount: ParseHelper.parseDouble(json['remainingCount'] ?? json['remaining_count']),
+      neededCount: ParseHelper.parseDouble(json['neededCount'] ?? json['needed_count']),
     );
   }
 }
@@ -94,8 +98,8 @@ class MedicalNote {
 
   factory MedicalNote.fromJson(Map<String, dynamic> json) {
     return MedicalNote(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      profileId: (json['profileId'] as num?)?.toInt() ?? 1,
+      id: ParseHelper.parseInt(json['id']),
+      profileId: ParseHelper.parseInt(json['profileId'] ?? json['profile_id'], 1),
       doctorName: json['doctorName'] as String? ?? 'Лечащий врач',
       specialty: json['specialty'] as String? ?? 'Терапевт',
       clinic: json['clinic'] as String? ?? 'Городская поликлиника',
@@ -141,102 +145,107 @@ class MedicalNote {
     );
   }
 
-  /// Умный парсер назначений: анализирует текст рецепта/заметки
-  /// и сопоставляет упомянутые препараты с реальным инвентарем аптечки пользователя.
+  /// Парсит свободный текст протокола/заметки, выявляет упоминания лекарств
+  /// и сопоставляет их с реальным инвентарем домашней аптечки
   static List<PrescribedMedicineItem> parseAndMatch(
     String text,
     List<Medicine> inventory,
   ) {
-    if (text.trim().isEmpty) return [];
-
+    final List<PrescribedMedicineItem> items = [];
     final lowerText = text.toLowerCase();
-    final items = <PrescribedMedicineItem>[];
 
-    // База известных медикаментов для интеллектуального парсинга
-    final knownKeywords = <Map<String, dynamic>>[
+    // Предустановленный словарь частых назначений и действующих веществ
+    final knownKeywords = [
       {
-        'keyword': 'нурофен',
-        'substance': 'ибупрофен',
-        'display': 'Нурофен / Ибупрофен',
-        'defaultDosage': '400 мг при t > 38.5°',
-        'needed': 10,
-      },
-      {
-        'keyword': 'ибупрофен',
-        'substance': 'ибупрофен',
-        'display': 'Ибупрофен',
-        'defaultDosage': '400 мг 2-3 раза в день',
-        'needed': 10,
-      },
-      {
-        'keyword': 'амоксиклав',
+        'key': 'амоксиклав',
         'substance': 'амоксициллин',
-        'display': 'Амоксиклав',
-        'defaultDosage': '500 мг 2 раза в день 7 дней',
+        'display': 'Амоксиклав 500+125мг',
+        'defaultDosage': '1 таб. 2 раза в день (7 дней)',
         'needed': 14,
       },
       {
-        'keyword': 'амоксициллин',
+        'key': 'амоксициллин',
         'substance': 'амоксициллин',
-        'display': 'Амоксициллин',
-        'defaultDosage': '500 мг 3 раза в день',
-        'needed': 14,
+        'display': 'Амоксициллин 500 мг',
+        'defaultDosage': '1 таб. 3 раза в день (7 дней)',
+        'needed': 21,
       },
       {
-        'keyword': 'омепразол',
+        'key': 'ибупрофен',
+        'substance': 'ибупрофен',
+        'display': 'Ибупрофен 400 мг',
+        'defaultDosage': '1 таб. при боли или t > 38.5 (до 3 р/д)',
+        'needed': 10,
+      },
+      {
+        'key': 'нурофен',
+        'substance': 'ибупрофен',
+        'display': 'Нурофен Форте',
+        'defaultDosage': '1 таб. при температуре или боли',
+        'needed': 12,
+      },
+      {
+        'key': 'парацетамол',
+        'substance': 'парацетамол',
+        'display': 'Парацетамол 500 мг',
+        'defaultDosage': '1 таб. при температуре (до 4 р/д)',
+        'needed': 10,
+      },
+      {
+        'key': 'омепразол',
         'substance': 'омепразол',
-        'display': 'Омепразол',
-        'defaultDosage': '20 мг утром до еды',
+        'display': 'Омепразол 20 мг',
+        'defaultDosage': '1 капс. утром за 30 мин до еды',
         'needed': 14,
       },
       {
-        'keyword': 'гексорал',
-        'substance': 'гексэтидин',
-        'display': 'Гексорал спрей',
-        'defaultDosage': 'Спрей 2 раза в день',
-        'needed': 1,
-      },
-      {
-        'keyword': 'називин',
+        'key': 'називин',
         'substance': 'оксиметазолин',
-        'display': 'Називин 0.05%',
-        'defaultDosage': '1 впрыск 2-3 р/день (до 5 дней)',
+        'display': 'Спрей Називин',
+        'defaultDosage': '1-2 впрыскивания 2-3 раза в день (до 5 дней)',
         'needed': 1,
       },
       {
-        'keyword': 'супрастин',
+        'key': 'витамин c',
+        'substance': 'аскорбиновая кислота',
+        'display': 'Витамин C 1000 мг',
+        'defaultDosage': '1 шипучая таб. растворить в воде 1 раз в день',
+        'needed': 10,
+      },
+      {
+        'key': 'супрастин',
         'substance': 'хлоропирамин',
-        'display': 'Супрастин',
-        'defaultDosage': '25 мг на ночь',
-        'needed': 5,
+        'display': 'Супрастин 25 мг',
+        'defaultDosage': '1 таб. на ночь при аллергии',
+        'needed': 10,
       },
       {
-        'keyword': 'кардиомагнил',
-        'substance': 'ацетилсалициловая кислота',
-        'display': 'Кардиомагнил',
-        'defaultDosage': '75 мг вечером',
-        'needed': 30,
+        'key': 'цетиризин',
+        'substance': 'цетиризин',
+        'display': 'Цетиризин 10 мг',
+        'defaultDosage': '1 таб. 1 раз в день вечером',
+        'needed': 10,
       },
       {
-        'keyword': 'лоперамид',
-        'substance': 'лоперамид',
-        'display': 'Лоперамид',
-        'defaultDosage': '2 мг после жидкого стула',
-        'needed': 6,
+        'key': 'азитромицин',
+        'substance': 'азитромицин',
+        'display': 'Азитромицин 500 мг',
+        'defaultDosage': '1 капс. 1 раз в день за 1 час до еды (3 дня)',
+        'needed': 3,
       },
       {
-        'keyword': 'мирамистин',
-        'substance': 'бензилдиметил',
-        'display': 'Мирамистин',
-        'defaultDosage': 'Полоскание 3 р/день',
-        'needed': 1,
+        'key': 'панкреатин',
+        'substance': 'панкреатин',
+        'display': 'Мезим / Панкреатин',
+        'defaultDosage': '1-2 таб. во время каждого приёма пищи',
+        'needed': 20,
       },
     ];
 
-    final matchedKeys = <String>{};
+    final Set<String> matchedKeys = {};
 
     for (final kw in knownKeywords) {
-      final key = kw['keyword'] as String;
+      final key = kw['key'] as String;
       final substance = kw['substance'] as String;
       final display = kw['display'] as String;
       final defaultDosage = kw['defaultDosage'] as String;
@@ -259,6 +268,7 @@ class MedicalNote {
 
         if (inventoryMatch != null) {
           final remaining = inventoryMatch.remaining;
+          final remainingDisp = inventoryMatch.remainingDisplay;
           final boxName = inventoryMatch.boxId == 1 ? 'Домашняя аптечка' : 'Автомобильная';
 
           if (remaining >= needed) {
@@ -267,21 +277,21 @@ class MedicalNote {
                 name: display,
                 dosage: defaultDosage,
                 status: MedicineStockStatus.inStock,
-                locationInfo: '$boxName, $remaining шт.',
+                locationInfo: '$boxName, $remainingDisp шт.',
                 remainingCount: remaining,
-                neededCount: needed,
+                neededCount: needed.toDouble(),
               ),
             );
           } else {
-            final deficit = needed - remaining;
+            final deficit = ParseHelper.formatQuantity(needed - remaining);
             items.add(
               PrescribedMedicineItem(
                 name: display,
                 dosage: defaultDosage,
                 status: MedicineStockStatus.lowStock,
-                locationInfo: '$boxName, $remaining шт. (нужно еще $deficit)',
+                locationInfo: '$boxName, $remainingDisp шт. (нужно еще $deficit)',
                 remainingCount: remaining,
-                neededCount: needed,
+                neededCount: needed.toDouble(),
               ),
             );
           }
@@ -294,7 +304,7 @@ class MedicalNote {
               status: MedicineStockStatus.missing,
               locationInfo: 'Отсутствует в аптечке',
               remainingCount: 0,
-              neededCount: needed,
+              neededCount: needed.toDouble(),
             ),
           );
         }
@@ -309,6 +319,7 @@ class MedicalNote {
         matchedKeys.add(medNameLower);
 
         final remaining = med.remaining;
+        final remainingDisp = med.remainingDisplay;
         final boxName = med.boxId == 1 ? 'Домашняя аптечка' : 'Автомобильная';
 
         if (remaining > 0) {
@@ -317,7 +328,7 @@ class MedicalNote {
               name: med.name,
               dosage: 'По назначению врача',
               status: MedicineStockStatus.inStock,
-              locationInfo: '$boxName, $remaining шт.',
+              locationInfo: '$boxName, $remainingDisp шт.',
               remainingCount: remaining,
               neededCount: 1,
             ),

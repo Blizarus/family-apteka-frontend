@@ -676,7 +676,7 @@ class AppState extends ChangeNotifier {
             NotificationItem(
               id: DateTime.now().millisecondsSinceEpoch + medicine.id + counter,
               title: 'Заканчивается запас: ${medicine.name}',
-              message: 'Осталось всего ${medicine.remaining} $unit',
+              message: 'Осталось всего ${medicine.remainingDisplay} $unit',
               type: 'low_stock',
               isRead: false,
               createdAt: DateTime.now(),
@@ -845,7 +845,7 @@ class AppState extends ChangeNotifier {
       final form = cleanLower.contains('спрей')
           ? 'Спрей'
           : (cleanLower.contains('капсул') ? 'Капсулы' : 'Таблетки');
-      final quantity = form == 'Спрей' ? (count > 1 ? count : 1) : (count > 1 ? count * 10 : 20);
+      final quantity = (form == 'Спрей' ? (count > 1 ? count : 1) : (count > 1 ? count * 10 : 20)).toDouble();
 
       final newId =
           (_medicines.map((m) => m.id).fold<int>(0, (a, b) => a > b ? a : b)) + 1;
@@ -895,7 +895,7 @@ class AppState extends ChangeNotifier {
     if (existingMed != null) {
       final medIdx = _medicines.indexOf(existingMed);
       final dec = item.count > 1 ? item.count * 10 : 20;
-      final newRemaining = (existingMed.remaining - dec).clamp(0, 9999);
+      final newRemaining = (existingMed.remaining - dec).clamp(0.0, 9999.0);
       if (newRemaining <= 0) {
         _medicines.removeAt(medIdx);
       } else {

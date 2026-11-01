@@ -203,7 +203,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${m.remaining} из ${m.total} шт.',
+                              '${m.remainingDisplay} из ${m.totalDisplay} шт.',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
@@ -613,7 +613,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '⚠️ Заканчивается: осталось ${m.remaining} $unit',
+                  '⚠️ Заканчивается: осталось ${m.remainingDisplay} $unit',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -648,7 +648,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                   final state = context.read<AppState>();
                   state.addToShoppingList(
                     m.name,
-                    quantity: m.total > 0 ? m.total : 1,
+                    quantity: (m.total > 0 ? m.total : 1).round(),
                     dosage: m.form,
                   );
                   ToastHelper.show(

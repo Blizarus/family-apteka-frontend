@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class MedicineBox {
   final int id;
   final String name;
@@ -39,13 +41,15 @@ class MedicineBox {
         json['description'] as String? ??
         '';
 
-    final count = (json['count'] as num?)?.toInt() ??
-        (json['medicines_count'] as num?)?.toInt() ??
-        (boxType == 'car' ? 6 : (boxType == 'child' ? 4 : (boxType == 'home' ? 14 : 0)));
+    final defaultFallback = boxType == 'car' ? 6 : (boxType == 'child' ? 4 : (boxType == 'home' ? 14 : 0));
+    final count = ParseHelper.parseInt(
+      json['count'] ?? json['medicines_count'],
+      defaultFallback,
+    );
 
     return MedicineBox(
-      id: json['id'] as int,
-      name: json['name'] as String,
+      id: ParseHelper.parseInt(json['id']),
+      name: json['name'] as String? ?? '',
       location: location,
       count: count,
       icon: icon,

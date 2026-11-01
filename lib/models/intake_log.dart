@@ -1,3 +1,5 @@
+import '../utils/parse_helper.dart';
+
 class IntakeLog {
   final int id;
   final int profileId;
@@ -10,9 +12,11 @@ class IntakeLog {
   final String? skippedReason;
   final String course;
   final bool isCurrent;
-  final int? remaining;
+  final double? remaining;
   final int? medicineId;
   final DateTime? scheduledTime;
+  final double? quantityTaken;
+  final double dosageQuantity;
 
   const IntakeLog({
     required this.id,
@@ -29,6 +33,8 @@ class IntakeLog {
     this.remaining,
     this.medicineId,
     this.scheduledTime,
+    this.quantityTaken,
+    this.dosageQuantity = 1.0,
   });
 
   bool get isTaken => status == 'taken' || taken;
@@ -42,16 +48,17 @@ class IntakeLog {
     return d.year == date.year && d.month == date.month && d.day == date.day;
   }
 
-  int get dosageQuantity {
-    final match = RegExp(r'(\d+)\s*(таб|капс|доз|мл|кап)').firstMatch(rule);
+  static double parseDosageFromRule(String rule) {
+    final match = RegExp(r'(\d+(?:[.,]\d+)?)\s*(таб|капс|доз|мл|кап)').firstMatch(rule);
     if (match != null) {
-      return int.tryParse(match.group(1)!) ?? 1;
+      final s = match.group(1)!.replaceAll(',', '.');
+      return double.tryParse(s) ?? 1.0;
     }
-    return 1;
+    return 1.0;
   }
 
   String get unit {
-    final match = RegExp(r'\d+\s*(таб[а-я]*|капс[а-я]*|доз[а-я]*|мл|кап[а-я]*)').firstMatch(rule);
+    final match = RegExp(r'\d+(?:[.,]\d+)?\s*(таб[а-я]*|капс[а-я]*|доз[а-я]*|мл|кап[а-я]*)').firstMatch(rule);
     if (match != null) {
       return match.group(1)!;
     }
@@ -62,11 +69,10 @@ class IntakeLog {
     final intakeCourse = json['intake_course'] as Map<String, dynamic>?;
     final medicine = json['medicine'] as Map<String, dynamic>?;
 
-    final profileId = (json['profileId'] ??
-            json['profile_id'] ??
-            intakeCourse?['profile_id'] as num?)
-        ?.toInt() ??
-        1;
+    final profileId = ParseHelper.parseInt(
+      json['profileId'] ?? json['profile_id'] ?? intakeCourse?['profile_id'],
+      1,
+    );
 
     final medicineName = json['medicineName'] as String? ??
         medicine?['custom_trade_name'] as String? ??
@@ -111,17 +117,23 @@ class IntakeLog {
         (!taken && rawStatus != 'skipped' && (time == '13:00' || time == '14:00'));
 
     final rawRemaining = json['remaining'] ?? medicine?['quantity'];
-    final remaining = rawRemaining is num
-        ? rawRemaining.toInt()
-        : (double.tryParse(rawRemaining?.toString() ?? '') ?? 0).toInt();
+    final remaining = ParseHelper.parseNullableDouble(rawRemaining);
 
-    final medicineId = (json['medicine_id'] ??
-            medicine?['id'] ??
-            intakeCourse?['medicine_id'] as num?)
-        ?.toInt();
+    final medicineId = ParseHelper.parseNullableInt(
+      json['medicine_id'] ?? medicine?['id'] ?? intakeCourse?['medicine_id'],
+    );
+
+    final quantityTaken = ParseHelper.parseNullableDouble(
+      json['quantity_taken'] ?? json['quantityTaken'],
+    );
+
+    final dosageQuantity = ParseHelper.parseDouble(
+      json['dosage_quantity'] ?? json['dosageQuantity'] ?? intakeCourse?['dosage_quantity'],
+      parseDosageFromRule(rule),
+    );
 
     return IntakeLog(
-      id: json['id'] as int,
+      id: ParseHelper.parseInt(json['id']),
       profileId: profileId,
       medicineName: medicineName,
       form: form,
@@ -135,6 +147,8 @@ class IntakeLog {
       remaining: remaining,
       medicineId: medicineId,
       scheduledTime: parsedDate,
+      quantityTaken: quantityTaken,
+      dosageQuantity: dosageQuantity,
     );
   }
 
@@ -154,6 +168,8 @@ class IntakeLog {
       'remaining': remaining,
       'medicine_id': medicineId,
       'scheduled_time': scheduledTime?.toIso8601String(),
+      'quantity_taken': quantityTaken,
+      'dosage_quantity': dosageQuantity,
     };
   }
 
@@ -169,9 +185,11 @@ class IntakeLog {
     String? skippedReason,
     String? course,
     bool? isCurrent,
-    int? remaining,
+    double? remaining,
     int? medicineId,
     DateTime? scheduledTime,
+    double? quantityTaken,
+    double? dosageQuantity,
   }) {
     return IntakeLog(
       id: id ?? this.id,
@@ -188,6 +206,8 @@ class IntakeLog {
       remaining: remaining ?? this.remaining,
       medicineId: medicineId ?? this.medicineId,
       scheduledTime: scheduledTime ?? this.scheduledTime,
+      quantityTaken: quantityTaken ?? this.quantityTaken,
+      dosageQuantity: dosageQuantity ?? this.dosageQuantity,
     );
   }
 }
