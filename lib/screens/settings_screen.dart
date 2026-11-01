@@ -4,6 +4,8 @@ import '../services/api_service.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/toast_helper.dart';
+import '../widgets/privacy_consent_dialog.dart';
+import '../widgets/onboarding_guide_dialog.dart';
 import 'admin_panel_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -18,12 +20,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isCheckingConnection = false;
   String? _connectionStatus;
   bool? _connectionSuccess;
+  bool _isConsentAccepted = false;
+  String? _consentDate;
+  String? _consentVersion;
 
   @override
   void initState() {
     super.initState();
     final apiService = context.read<ApiService>();
     _serverUrlController = TextEditingController(text: apiService.baseUrl);
+    _loadConsentStatus();
+  }
+
+  Future<void> _loadConsentStatus() async {
+    final storage = context.read<ApiService>().storageService;
+    final accepted = await storage.isPrivacyConsentAccepted();
+    final date = await storage.getPrivacyConsentDate();
+    final version = await storage.getPrivacyConsentVersion();
+    if (mounted) {
+      setState(() {
+        _isConsentAccepted = accepted;
+        _consentDate = date;
+        _consentVersion = version;
+      });
+    }
   }
 
   @override
@@ -188,9 +208,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // 1. Default Schedule Times
           _buildSectionHeader('ВРЕМЯ ПРИЁМОВ ПО УМОЛЧАНИЮ', Icons.access_time_rounded),
           _buildCardContainer([
@@ -499,6 +521,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const Divider(height: 1, indent: 16, color: AppColors.border),
             ListTile(
+              key: const Key('settings_privacy_consent_tile'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: _isConsentAccepted ? AppColors.statusOkBg : const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.verified_user_rounded,
+                  size: 20,
+                  color: _isConsentAccepted ? AppColors.statusOkText : const Color(0xFFD97706),
+                ),
+              ),
+              title: const Text(
+                'Согласие на обработку данных (152-ФЗ)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                _isConsentAccepted
+                    ? 'Принято: редакция ${_consentVersion ?? "v1.0-2026"}${_consentDate != null ? " (${_consentDate!.split("T").first})" : ""}'
+                    : 'Требуется подтверждение согласия',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: _isConsentAccepted ? AppColors.statusOkText : const Color(0xFFB45309),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: _isConsentAccepted
+                  ? const Icon(Icons.check_circle_rounded, color: AppColors.statusOkDot, size: 18)
+                  : const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textMuted),
+              onTap: () async {
+                final accepted = await PrivacyConsentDialog.show(
+                  context,
+                  storageService: apiService.storageService,
+                );
+                if (accepted == true) {
+                  await _loadConsentStatus();
+                  if (context.mounted) {
+                    ToastHelper.show(
+                      context,
+                      message: 'Согласие 152-ФЗ успешно зафиксировано',
+                      icon: '🛡️',
+                    );
+                  }
+                }
+              },
+            ),
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: Container(
                 padding: const EdgeInsets.all(6),
@@ -518,6 +590,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
               onTap: () => _showPrivacyPolicyDialog(context),
+            ),
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            ListTile(
+              key: const Key('settings_onboarding_tile'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFC7D2FE)),
+                ),
+                child: const Icon(Icons.auto_stories_rounded, size: 20, color: Color(0xFF4F46E5)),
+              ),
+              title: const Text(
+                'Гид по функциям (Онбординг)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Защита 152-ФЗ, FEFO-Opened контроль и CDS-движок',
+                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textMuted),
+              onTap: () {
+                OnboardingGuideDialog.show(
+                  context,
+                  storageService: apiService.storageService,
+                );
+              },
             ),
           ]),
 
@@ -649,7 +750,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 32),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {

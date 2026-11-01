@@ -6,6 +6,7 @@ import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/toast_helper.dart';
 import '../widgets/server_config_dialog.dart';
+import '../widgets/privacy_consent_dialog.dart';
 import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -167,6 +168,13 @@ class _LoginScreenState extends State<LoginScreen> {
         syncEnabled: _syncEnabled,
       );
 
+      // Persist 152-ФЗ consent to storage (T-5)
+      await apiService.storageService.savePrivacyConsent(
+        accepted: _termsAccepted,
+        cloudSync: _syncEnabled,
+        version: 'v1.0-2026',
+      );
+
       if (!mounted) return;
 
       // Reload initial data
@@ -216,55 +224,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _show152FZInfoModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Text('🔒', style: TextStyle(fontSize: 20)),
-            SizedBox(width: 8),
-            Text(
-              'Защита данных (152-ФЗ)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'В соответствии с Федеральным законом РФ № 152-ФЗ «О персональных данных»:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              ),
-              SizedBox(height: 8),
-              Text(
-                '• Все медицинские записи, рецепты и сведения о состоянии здоровья шифруются современным алгоритмом AES-256.\n'
-                '• Аутентификация защищена криптографическим хэшированием паролей Argon2id.\n'
-                '• При отключенной синхронизации ваши данные хранятся исключительно на вашем личном устройстве и не передаются во внешнюю сеть.\n'
-                '• Серверная база данных размещается строго в защищенном контуре в соответствии с требованиями законодательства РФ.',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.45),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Понятно'),
-          ),
-        ],
-      ),
+  Future<void> _show152FZInfoModal(BuildContext context) async {
+    final apiService = context.read<ApiService>();
+    final accepted = await PrivacyConsentDialog.show(
+      context,
+      storageService: apiService.storageService,
+      initialMandatory: _termsAccepted,
+      initialCloudSync: _syncEnabled,
     );
+    if (accepted == true && mounted) {
+      final cloud = await apiService.storageService.isPrivacyConsentCloudSync();
+      setState(() {
+        _termsAccepted = true;
+        _syncEnabled = cloud;
+      });
+    }
   }
 
   @override

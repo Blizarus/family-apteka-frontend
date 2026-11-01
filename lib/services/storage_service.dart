@@ -5,6 +5,11 @@ class StorageService {
   static const String _keySelectedProfileId = 'app_selected_profile_id';
   static const String _keySelectedBoxId = 'app_selected_box_id';
   static const String _keyThemeMode = 'app_theme_mode';
+  static const String _keyPrivacyConsentAccepted = 'privacy_consent_accepted';
+  static const String _keyPrivacyConsentCloudSync = 'privacy_consent_cloud_sync';
+  static const String _keyPrivacyConsentDate = 'privacy_consent_date';
+  static const String _keyPrivacyConsentVersion = 'privacy_consent_version';
+  static const String _keyOnboardingCompleted = 'onboarding_completed';
 
   SharedPreferences? _prefs;
   bool _initAttempted = false;
@@ -101,5 +106,93 @@ class StorageService {
       return prefs.getString(_keyThemeMode);
     }
     return _inMemoryFallback[_keyThemeMode] as String?;
+  }
+
+  // 152-ФЗ Privacy Consent & Onboarding (T-5)
+  Future<void> savePrivacyConsent({
+    required bool accepted,
+    bool cloudSync = false,
+    String version = 'v1.0-2026',
+    String? date,
+  }) async {
+    final prefs = await _getSafePrefs();
+    final consentDate = date ?? DateTime.now().toIso8601String();
+    if (prefs != null) {
+      await prefs.setBool(_keyPrivacyConsentAccepted, accepted);
+      await prefs.setBool(_keyPrivacyConsentCloudSync, cloudSync);
+      await prefs.setString(_keyPrivacyConsentDate, consentDate);
+      await prefs.setString(_keyPrivacyConsentVersion, version);
+    } else {
+      _inMemoryFallback[_keyPrivacyConsentAccepted] = accepted;
+      _inMemoryFallback[_keyPrivacyConsentCloudSync] = cloudSync;
+      _inMemoryFallback[_keyPrivacyConsentDate] = consentDate;
+      _inMemoryFallback[_keyPrivacyConsentVersion] = version;
+    }
+  }
+
+  Future<bool> isPrivacyConsentAccepted() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getBool(_keyPrivacyConsentAccepted) ?? false;
+    }
+    return (_inMemoryFallback[_keyPrivacyConsentAccepted] as bool?) ?? false;
+  }
+
+  Future<bool> isPrivacyConsentCloudSync() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getBool(_keyPrivacyConsentCloudSync) ?? false;
+    }
+    return (_inMemoryFallback[_keyPrivacyConsentCloudSync] as bool?) ?? false;
+  }
+
+  Future<String?> getPrivacyConsentDate() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getString(_keyPrivacyConsentDate);
+    }
+    return _inMemoryFallback[_keyPrivacyConsentDate] as String?;
+  }
+
+  Future<String?> getPrivacyConsentVersion() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getString(_keyPrivacyConsentVersion);
+    }
+    return _inMemoryFallback[_keyPrivacyConsentVersion] as String?;
+  }
+
+  Future<void> setOnboardingCompleted(bool completed) async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.setBool(_keyOnboardingCompleted, completed);
+    } else {
+      _inMemoryFallback[_keyOnboardingCompleted] = completed;
+    }
+  }
+
+  Future<bool> isOnboardingCompleted() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getBool(_keyOnboardingCompleted) ?? false;
+    }
+    return (_inMemoryFallback[_keyOnboardingCompleted] as bool?) ?? false;
+  }
+
+  Future<void> resetPrivacyConsent() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.remove(_keyPrivacyConsentAccepted);
+      await prefs.remove(_keyPrivacyConsentCloudSync);
+      await prefs.remove(_keyPrivacyConsentDate);
+      await prefs.remove(_keyPrivacyConsentVersion);
+      await prefs.remove(_keyOnboardingCompleted);
+    } else {
+      _inMemoryFallback.remove(_keyPrivacyConsentAccepted);
+      _inMemoryFallback.remove(_keyPrivacyConsentCloudSync);
+      _inMemoryFallback.remove(_keyPrivacyConsentDate);
+      _inMemoryFallback.remove(_keyPrivacyConsentVersion);
+      _inMemoryFallback.remove(_keyOnboardingCompleted);
+    }
   }
 }
