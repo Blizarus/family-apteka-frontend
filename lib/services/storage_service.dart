@@ -10,6 +10,7 @@ class StorageService {
   static const String _keyPrivacyConsentDate = 'privacy_consent_date';
   static const String _keyPrivacyConsentVersion = 'privacy_consent_version';
   static const String _keyOnboardingCompleted = 'onboarding_completed';
+  static const String _keyBiometricEnabled = 'biometric_auth_enabled';
 
   SharedPreferences? _prefs;
   bool _initAttempted = false;
@@ -206,7 +207,26 @@ class StorageService {
       await prefs.remove(_keyPrivacyConsentDate);
       await prefs.remove(_keyPrivacyConsentVersion);
       await prefs.remove(_keyOnboardingCompleted);
+      await prefs.remove(_keyBiometricEnabled);
     }
     _inMemoryFallback.clear();
+  }
+
+  // Biometric Authentication (T-14)
+  Future<void> setBiometricEnabled(bool enabled) async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.setBool(_keyBiometricEnabled, enabled);
+    } else {
+      _inMemoryFallback[_keyBiometricEnabled] = enabled;
+    }
+  }
+
+  Future<bool> isBiometricEnabled() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getBool(_keyBiometricEnabled) ?? false;
+    }
+    return (_inMemoryFallback[_keyBiometricEnabled] as bool?) ?? false;
   }
 }

@@ -10,11 +10,13 @@ import '../models/user.dart';
 import '../models/notification_item.dart';
 import '../models/adherence_report.dart';
 import 'storage_service.dart';
+import 'biometric_service.dart';
 
 class ApiService {
   final Dio dio;
   final FlutterSecureStorage secureStorage;
   final StorageService storageService;
+  late final BiometricService biometricService;
   bool isMockMode;
   String? _inMemoryToken; // Web fallback for secure storage
   User? _currentUser;
@@ -32,6 +34,7 @@ class ApiService {
     Dio? dio,
     FlutterSecureStorage? storage,
     StorageService? storageService,
+    BiometricService? biometricService,
     this.isMockMode = false,
     String? baseUrl,
   })  : dio = dio ??
@@ -49,6 +52,11 @@ class ApiService {
             ),
         secureStorage = storage ?? const FlutterSecureStorage(),
         storageService = storageService ?? StorageService() {
+    this.biometricService = biometricService ??
+        BiometricService(
+          storageService: this.storageService,
+          isMockMode: true,
+        );
     _initCustomUrl();
     this.dio.interceptors.add(
       InterceptorsWrapper(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../services/biometric_service.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/toast_helper.dart';
@@ -12,7 +13,12 @@ import 'admin_panel_screen.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final BiometricService? biometricService;
+
+  const SettingsScreen({
+    super.key,
+    this.biometricService,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -26,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isConsentAccepted = false;
   String? _consentDate;
   String? _consentVersion;
+  bool _isBiometricEnabled = false;
 
   @override
   void initState() {
@@ -33,6 +40,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final apiService = context.read<ApiService>();
     _serverUrlController = TextEditingController(text: apiService.baseUrl);
     _loadConsentStatus();
+    _loadBiometricStatus();
+  }
+
+  BiometricService _getBiometricService() {
+    if (widget.biometricService != null) {
+      return widget.biometricService!;
+    }
+    try {
+      return context.read<ApiService>().biometricService;
+    } catch (_) {
+      return BiometricService();
+    }
+  }
+
+  Future<void> _loadBiometricStatus() async {
+    final bioService = _getBiometricService();
+    final enabled = await bioService.isBiometricAuthEnabled();
+    if (mounted) {
+      setState(() {
+        _isBiometricEnabled = enabled;
+      });
+    }
   }
 
   Future<void> _loadConsentStatus() async {
@@ -903,6 +932,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(fontSize: 11, color: AppColors.statusOkText, fontWeight: FontWeight.w600),
               ),
               trailing: const Icon(Icons.check_circle_rounded, color: AppColors.statusOkDot, size: 18),
+            ),
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            SwitchListTile(
+              key: const Key('settings_biometric_switch'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              secondary: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: _isBiometricEnabled ? AppColors.statusOkBg : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _isBiometricEnabled ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1),
+                  ),
+                ),
+                child: Icon(
+                  Icons.fingerprint_rounded,
+                  size: 20,
+                  color: _isBiometricEnabled ? AppColors.statusOkDot : const Color(0xFF64748B),
+                ),
+              ),
+              title: const Text(
+                'Биометрическая защита (Touch ID / Face ID)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Быстрая аутентификация при разблокировке приложения',
+                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              ),
+              activeTrackColor: AppColors.primaryLight,
+              activeThumbColor: AppColors.primary,
+              value: _isBiometricEnabled,
+              onChanged: (val) async {
+                final biometricService = _getBiometricService();
+                if (val) {
+                  final authenticated = await biometricService.authenticate(
+                    localizedReason: 'Подтвердите биометрию для активации быстрого входа',
+                  );
+                  if (authenticated) {
+                    setState(() => _isBiometricEnabled = true);
+                    await biometricService.setBiometricAuthEnabled(true);
+                    if (context.mounted) {
+                      ToastHelper.show(
+                        context,
+                        message: 'Биометрическая защита включена',
+                        icon: '🔒',
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ToastHelper.show(
+                        context,
+                        message: 'Не удалось подтвердить биометрию',
+                        icon: '⚠️',
+                      );
+                    }
+                  }
+                } else {
+                  setState(() => _isBiometricEnabled = false);
+                  await biometricService.setBiometricAuthEnabled(false);
+                  if (context.mounted) {
+                    ToastHelper.show(
+                      context,
+                      message: 'Биометрическая защита отключена',
+                      icon: '🔓',
+                    );
+                  }
+                }
+              },
             ),
             const Divider(height: 1, indent: 16, color: AppColors.border),
             ListTile(
