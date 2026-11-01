@@ -4,13 +4,15 @@ class StorageService {
   static const String _keyBaseUrl = 'app_api_base_url';
   static const String _keySelectedProfileId = 'app_selected_profile_id';
   static const String _keySelectedBoxId = 'app_selected_box_id';
-  static const String _keyThemeMode = 'app_theme_mode';
+  static const String _keyThemeMode = 'theme_mode';
+  static const String _keyThemeModeLegacy = 'app_theme_mode';
   static const String _keyPrivacyConsentAccepted = 'privacy_consent_accepted';
   static const String _keyPrivacyConsentCloudSync = 'privacy_consent_cloud_sync';
   static const String _keyPrivacyConsentDate = 'privacy_consent_date';
   static const String _keyPrivacyConsentVersion = 'privacy_consent_version';
   static const String _keyOnboardingCompleted = 'onboarding_completed';
   static const String _keyBiometricEnabled = 'biometric_auth_enabled';
+  static const String _keyPushEnabled = 'push_notifications_enabled';
 
   SharedPreferences? _prefs;
   bool _initAttempted = false;
@@ -104,9 +106,9 @@ class StorageService {
   Future<String?> getThemeMode() async {
     final prefs = await _getSafePrefs();
     if (prefs != null) {
-      return prefs.getString(_keyThemeMode);
+      return prefs.getString(_keyThemeMode) ?? prefs.getString(_keyThemeModeLegacy);
     }
-    return _inMemoryFallback[_keyThemeMode] as String?;
+    return (_inMemoryFallback[_keyThemeMode] ?? _inMemoryFallback[_keyThemeModeLegacy]) as String?;
   }
 
   // 152-ФЗ Privacy Consent & Onboarding (T-5)
@@ -208,6 +210,7 @@ class StorageService {
       await prefs.remove(_keyPrivacyConsentVersion);
       await prefs.remove(_keyOnboardingCompleted);
       await prefs.remove(_keyBiometricEnabled);
+      await prefs.remove(_keyPushEnabled);
     }
     _inMemoryFallback.clear();
   }
@@ -228,5 +231,23 @@ class StorageService {
       return prefs.getBool(_keyBiometricEnabled) ?? false;
     }
     return (_inMemoryFallback[_keyBiometricEnabled] as bool?) ?? false;
+  }
+
+  // Push Notifications (FCM)
+  Future<void> setPushEnabled(bool enabled) async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.setBool(_keyPushEnabled, enabled);
+    } else {
+      _inMemoryFallback[_keyPushEnabled] = enabled;
+    }
+  }
+
+  Future<bool> isPushEnabled() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getBool(_keyPushEnabled) ?? false;
+    }
+    return (_inMemoryFallback[_keyPushEnabled] as bool?) ?? false;
   }
 }

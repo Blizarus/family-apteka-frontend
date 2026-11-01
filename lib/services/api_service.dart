@@ -1182,6 +1182,46 @@ class ApiService {
   }
 
   // ==========================================
+  // PUSH NOTIFICATIONS (FCM)
+  // ==========================================
+
+  Future<bool> registerFcmToken(String token, {String platform = 'flutter'}) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      return true;
+    }
+
+    try {
+      final response = await dio.post('/notifications/fcm-token', data: {
+        'fcm_token': token,
+        'platform': platform,
+      });
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error registering FCM token: $e');
+      return false;
+    }
+  }
+
+  Future<bool> sendTestPush({String? title, String? body}) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      return true;
+    }
+
+    try {
+      final payload = <String, dynamic>{};
+      if (title != null) payload['title'] = title;
+      if (body != null) payload['body'] = body;
+      final response = await dio.post('/notifications/test-push', data: payload);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error sending test push: $e');
+      return false;
+    }
+  }
+
+  // ==========================================
   // ADHERENCE & CLINICAL COMPLIANCE REPORT
   // ==========================================
 
