@@ -334,6 +334,129 @@ class ApiService {
   }
 
   // ==========================================
+  // 152-ФЗ PRIVACY & ACCOUNT MANAGEMENT
+  // ==========================================
+
+  Future<Map<String, dynamic>> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    if (isMockMode) {
+      if (currentPassword == 'wrong_pass') {
+        return {
+          'success': false,
+          'message': 'Текущий пароль указан неверно.',
+        };
+      }
+      return {
+        'success': true,
+        'message': 'Пароль успешно изменен.',
+      };
+    }
+
+    try {
+      final response = await dio.put('/auth/password', data: {
+        'current_password': currentPassword,
+        'password': newPassword,
+        'password_confirmation': newPasswordConfirmation,
+      });
+      return {
+        'success': response.statusCode == 200,
+        'message': response.data['message'] ?? 'Пароль успешно изменен.',
+      };
+    } catch (e) {
+      String msg = 'Не удалось изменить пароль.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {
+        'success': false,
+        'message': msg,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> destroyAccount({
+    required String currentPassword,
+  }) async {
+    if (isMockMode) {
+      if (currentPassword == 'wrong_pass') {
+        return {
+          'success': false,
+          'message': 'Неверный пароль для подтверждения удаления аккаунта.',
+        };
+      }
+      _currentUser = null;
+      await clearToken();
+      await storageService.clearAllData();
+      return {
+        'success': true,
+        'message': 'Аккаунт и все связанные персональные данные успешно удалены.',
+      };
+    }
+
+    try {
+      final response = await dio.delete('/auth/account', data: {
+        'current_password': currentPassword,
+      });
+      _currentUser = null;
+      await clearToken();
+      await storageService.clearAllData();
+      return {
+        'success': response.statusCode == 200,
+        'message': response.data['message'] ?? 'Аккаунт успешно удален.',
+      };
+    } catch (e) {
+      String msg = 'Ошибка при удалении аккаунта.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {
+        'success': false,
+        'message': msg,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> exportPersonalData() async {
+    if (isMockMode) {
+      return {
+        'meta': {
+          'document': 'Выгрузка персональных данных субъекта (152-ФЗ РФ)',
+          'legal_basis': 'Статья 14 152-ФЗ РФ «Право субъекта персональных данных на доступ к его персональным данным»',
+          'exported_at': DateTime.now().toIso8601String(),
+          'system': 'Информационная система «Семейная аптечка»',
+          'format_version': '1.0',
+        },
+        'user': {
+          'id': _currentUser?.id ?? 1,
+          'email': _currentUser?.email ?? 'anna@family.test',
+          'timezone': 'Europe/Moscow',
+          'sync_enabled': true,
+          'consent_given_at': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+          'consent_version': '1.0',
+          'registered_at': DateTime.now().subtract(const Duration(days: 60)).toIso8601String(),
+        },
+        'profiles': _mockProfiles.map((p) => p.toJson()).toList(),
+        'medicine_boxes': _mockBoxes.map((b) => b.toJson()).toList(),
+        'medicines': _mockMedicines.map((m) => m.toJson()).toList(),
+        'notifications': _mockNotifications.map((n) => n.toJson()).toList(),
+      };
+    }
+
+    try {
+      final response = await dio.get('/auth/export');
+      if (response.data is Map<String, dynamic>) {
+        return response.data as Map<String, dynamic>;
+      }
+      return <String, dynamic>{'data': response.data};
+    } catch (e) {
+      throw Exception('Ошибка при экспорте персональных данных: $e');
+    }
+  }
+
+  // ==========================================
   // IN-MEMORY MOCK DATA STORAGE
   // ==========================================
   final List<Map<String, dynamic>> _mockAdminUsers = [

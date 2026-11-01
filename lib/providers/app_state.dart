@@ -372,6 +372,39 @@ class AppState extends ChangeNotifier {
   }
 
   // Actions
+  Future<Map<String, dynamic>> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    return await apiService.updatePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      newPasswordConfirmation: newPasswordConfirmation,
+    );
+  }
+
+  Future<Map<String, dynamic>> destroyAccount({
+    required String currentPassword,
+  }) async {
+    final result = await apiService.destroyAccount(currentPassword: currentPassword);
+    if (result['success'] == true) {
+      _currentUser = null;
+      _profiles.clear();
+      _boxes.clear();
+      _medicines.clear();
+      _intakes.clear();
+      _notifications.clear();
+      _notes.clear();
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<Map<String, dynamic>> exportPersonalData() async {
+    return await apiService.exportPersonalData();
+  }
+
   void setTab(int index) {
     if (_activeTabIndex != index) {
       _activeTabIndex = index;

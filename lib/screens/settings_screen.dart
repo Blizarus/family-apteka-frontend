@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../providers/app_state.dart';
@@ -7,6 +9,7 @@ import '../widgets/toast_helper.dart';
 import '../widgets/privacy_consent_dialog.dart';
 import '../widgets/onboarding_guide_dialog.dart';
 import 'admin_panel_screen.dart';
+import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -180,6 +183,388 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Понятно'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final currentPassController = TextEditingController();
+    final newPassController = TextEditingController();
+    final confirmPassController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.password_rounded, color: AppColors.primary, size: 22),
+                SizedBox(width: 8),
+                Text(
+                  'Смена пароля',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+              ],
+            ),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Хеширование Argon2id обеспечивает криптостойкую защиту мастер-пароля.',
+                      style: TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.3),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      key: const Key('change_password_current_input'),
+                      controller: currentPassController,
+                      obscureText: obscureCurrent,
+                      decoration: InputDecoration(
+                        labelText: 'Текущий пароль',
+                        labelStyle: const TextStyle(fontSize: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility, size: 18),
+                          onPressed: () => setDialogState(() => obscureCurrent = !obscureCurrent),
+                        ),
+                      ),
+                      validator: (val) => (val == null || val.isEmpty) ? 'Введите текущий пароль' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('change_password_new_input'),
+                      controller: newPassController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'Новый пароль',
+                        labelStyle: const TextStyle(fontSize: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 18),
+                          onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                        ),
+                      ),
+                      validator: (val) {
+                        if (val == null || val.isEmpty) return 'Введите новый пароль';
+                        if (val.length < 8) return 'Минимум 8 символов';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('change_password_confirm_input'),
+                      controller: confirmPassController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'Подтверждение нового пароля',
+                        labelStyle: const TextStyle(fontSize: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      validator: (val) {
+                        if (val != newPassController.text) return 'Пароли не совпадают';
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+              ),
+              ElevatedButton(
+                key: const Key('change_password_submit_btn'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        setDialogState(() => isSubmitting = true);
+                        final appState = context.read<AppState>();
+                        final result = await appState.updatePassword(
+                          currentPassword: currentPassController.text.trim(),
+                          newPassword: newPassController.text.trim(),
+                          newPasswordConfirmation: confirmPassController.text.trim(),
+                        );
+                        if (!context.mounted) return;
+                        setDialogState(() => isSubmitting = false);
+                        if (result['success'] == true) {
+                          Navigator.pop(ctx);
+                          ToastHelper.show(
+                            context,
+                            message: 'Пароль успешно обновлен!',
+                            icon: '🔑',
+                          );
+                        } else {
+                          ToastHelper.show(
+                            context,
+                            message: result['message'] ?? 'Ошибка обновления пароля',
+                            isError: true,
+                          );
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Обновить'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _exportPersonalData(BuildContext context) async {
+    final appState = context.read<AppState>();
+    ToastHelper.show(context, message: 'Формирование выгрузки 152-ФЗ...', icon: '⏳');
+
+    try {
+      final data = await appState.exportPersonalData();
+      if (!context.mounted) return;
+
+      final prettyJson = const JsonEncoder.withIndent('  ').convert(data);
+      final profilesCount = (data['profiles'] as List?)?.length ?? 0;
+      final boxesCount = (data['medicine_boxes'] as List?)?.length ?? 0;
+
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.download_for_offline_outlined, color: AppColors.primary, size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Выгрузка данных (152-ФЗ)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryBorderLight),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          Text('$profilesCount', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primaryHover)),
+                          const Text('Профилей', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        ],
+                      ),
+                      Container(height: 24, width: 1, color: AppColors.border),
+                      Column(
+                        children: [
+                          Text('$boxesCount', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primaryHover)),
+                          const Text('Аптечек', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        ],
+                      ),
+                      Container(height: 24, width: 1, color: AppColors.border),
+                      const Column(
+                        children: [
+                          Text('AES-256', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primaryHover)),
+                          Text('Расшифровано', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'В соответствии со ст. 14 152-ФЗ вам предоставляется полный машиночитаемый дамп учетных данных:',
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 150,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      prettyJson,
+                      style: const TextStyle(fontSize: 10, fontFamily: 'monospace', color: AppColors.textPrimary),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.copy, size: 14),
+              label: const Text('Скопировать JSON'),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: prettyJson));
+                ToastHelper.show(context, message: 'JSON скопирован в буфер обмена', icon: '📋');
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Закрыть'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ToastHelper.show(context, message: 'Ошибка формирования выгрузки: $e', isError: true);
+      }
+    }
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    final passwordController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 24),
+                SizedBox(width: 8),
+                Text(
+                  'Удаление аккаунта',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF991B1B)),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: const Text(
+                      'Право на забвение (ст. 21 152-ФЗ РФ):\n'
+                      'Все связанные персональные данные (профили семьи, медицинские заметки, курсы приёма и личные аптечки) будут безвозвратно уничтожены, а токены доступа аннулированы.',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF991B1B), height: 1.4),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Для подтверждения удаления введите текущий пароль:',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    key: const Key('delete_account_password_input'),
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      hintText: 'Текущий пароль',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+              ),
+              ElevatedButton(
+                key: const Key('delete_account_confirm_btn'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final pass = passwordController.text.trim();
+                        if (pass.isEmpty) {
+                          ToastHelper.show(context, message: 'Введите пароль', isError: true);
+                          return;
+                        }
+                        setDialogState(() => isSubmitting = true);
+                        final appState = context.read<AppState>();
+                        final result = await appState.destroyAccount(currentPassword: pass);
+                        if (!context.mounted) return;
+                        setDialogState(() => isSubmitting = false);
+                        if (result['success'] == true) {
+                          Navigator.pop(ctx);
+                          ToastHelper.show(
+                            context,
+                            message: 'Аккаунт и персональные данные успешно удалены.',
+                            icon: '🗑️',
+                          );
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        } else {
+                          ToastHelper.show(
+                            context,
+                            message: result['message'] ?? 'Неверный пароль',
+                            isError: true,
+                          );
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Удалить данные навсегда'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -619,6 +1004,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   storageService: apiService.storageService,
                 );
               },
+            ),
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            ListTile(
+              key: const Key('settings_change_password_tile'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: const Icon(Icons.password_rounded, size: 20, color: Color(0xFF334155)),
+              ),
+              title: const Text(
+                'Смена пароля (Argon2id)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Обновление мастер-пароля учетной записи',
+                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+              onTap: () => _showChangePasswordDialog(context),
+            ),
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            ListTile(
+              key: const Key('settings_export_data_tile'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.primaryBorderLight),
+                ),
+                child: const Icon(Icons.download_for_offline_outlined, size: 20, color: AppColors.primaryHover),
+              ),
+              title: const Text(
+                'Экспорт персональных данных (DSAR)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Выгрузка архива данных в формате JSON (ст. 14 152-ФЗ)',
+                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+              onTap: () => _exportPersonalData(context),
+            ),
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            ListTile(
+              key: const Key('settings_delete_account_tile'),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: const Icon(Icons.delete_forever_rounded, size: 20, color: Color(0xFFDC2626)),
+              ),
+              title: const Text(
+                'Удаление учетной записи (ст. 21 152-ФЗ)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+              ),
+              subtitle: const Text(
+                'Право на забвение: полное уничтожение персональных данных',
+                style: TextStyle(fontSize: 11, color: Color(0xFFEF4444)),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFDC2626)),
+              onTap: () => _showDeleteAccountDialog(context),
             ),
           ]),
 

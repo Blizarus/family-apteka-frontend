@@ -195,4 +195,18 @@ class StorageService {
       _inMemoryFallback.remove(_keyOnboardingCompleted);
     }
   }
+
+  Future<void> clearAllData() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.remove(_keySelectedProfileId);
+      await prefs.remove(_keySelectedBoxId);
+      await prefs.remove(_keyPrivacyConsentAccepted);
+      await prefs.remove(_keyPrivacyConsentCloudSync);
+      await prefs.remove(_keyPrivacyConsentDate);
+      await prefs.remove(_keyPrivacyConsentVersion);
+      await prefs.remove(_keyOnboardingCompleted);
+    }
+    _inMemoryFallback.clear();
+  }
 }
