@@ -8,6 +8,7 @@ import '../models/shopping_item.dart';
 import '../models/user.dart';
 import '../models/reference_medicine.dart';
 import '../models/notification_item.dart';
+import '../models/adherence_report.dart';
 import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
@@ -22,6 +23,10 @@ class AppState extends ChangeNotifier {
   String _searchQuery = '';
   bool _isSyncing = false;
   bool _isLoading = true;
+
+  AdherenceReport? _adherenceReport;
+  bool _isLoadingReport = false;
+  String _reportPeriod = '7_days'; // '7_days' | '30_days'
 
   List<Profile> _profiles = [];
   List<MedicineBox> _boxes = [];
@@ -91,6 +96,9 @@ class AppState extends ChangeNotifier {
   List<Medicine> get medicines => _medicines;
   List<NotificationItem> get notifications => _notifications;
   int get unreadNotificationsCount => _notifications.where((n) => !n.isRead).length;
+  AdherenceReport? get adherenceReport => _adherenceReport;
+  bool get isLoadingReport => _isLoadingReport;
+  String get reportPeriod => _reportPeriod;
   List<MedicalNote> get notes => _notes;
   List<ShoppingItem> get shoppingItems => _shoppingItems;
   List<ShoppingItem> get purchasedItems => _purchasedItems;
@@ -266,10 +274,17 @@ class AppState extends ChangeNotifier {
       }
       _notifications = results[5] as List<NotificationItem>;
 
-      if (_boxes.isNotEmpty && !_boxes.any((b) => b.id == _selectedBoxId)) {
+      final savedBoxId = await apiService.storageService.getSelectedBoxId();
+      if (savedBoxId != null && _boxes.any((b) => b.id == savedBoxId)) {
+        _selectedBoxId = savedBoxId;
+      } else if (_boxes.isNotEmpty && !_boxes.any((b) => b.id == _selectedBoxId)) {
         _selectedBoxId = _boxes.first.id;
       }
-      if (_profiles.isNotEmpty &&
+
+      final savedProfileId = await apiService.storageService.getSelectedProfileId();
+      if (savedProfileId != null && _profiles.any((p) => p.id == savedProfileId)) {
+        _selectedProfileId = savedProfileId;
+      } else if (_profiles.isNotEmpty &&
           _selectedProfileId != null &&
           !_profiles.any((p) => p.id == _selectedProfileId)) {
         _selectedProfileId = _profiles.first.id;
@@ -365,11 +380,42 @@ class AppState extends ChangeNotifier {
   void selectProfile(int? profileId) {
     _selectedProfileId = profileId;
     notifyListeners();
+    if (profileId != null) {
+      apiService.storageService.saveSelectedProfileId(profileId);
+    }
   }
 
   void selectBox(int boxId) {
     _selectedBoxId = boxId;
     notifyListeners();
+    apiService.storageService.saveSelectedBoxId(boxId);
+  }
+
+  Future<void> fetchAdherenceReport({String? period, int? profileId}) async {
+    if (period != null) {
+      _reportPeriod = period;
+    }
+    _isLoadingReport = true;
+    notifyListeners();
+
+    try {
+      _adherenceReport = await apiService.getAdherenceReport(
+        period: _reportPeriod,
+        profileId: profileId ?? _selectedProfileId,
+      );
+    } catch (e) {
+      debugPrint('Error fetching adherence report: $e');
+    } finally {
+      _isLoadingReport = false;
+      notifyListeners();
+    }
+  }
+
+  void setReportPeriod(String period) {
+    if (_reportPeriod != period) {
+      _reportPeriod = period;
+      fetchAdherenceReport(period: period);
+    }
   }
 
   Future<MedicineBox?> createMedicineBox({

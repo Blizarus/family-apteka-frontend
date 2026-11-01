@@ -8,6 +8,7 @@ import '../widgets/toast_helper.dart';
 import '../widgets/family_member_form.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
+import 'history_report_screen.dart';
 
 class FamilyScreen extends StatefulWidget {
   const FamilyScreen({super.key});
@@ -336,16 +337,28 @@ class _FamilyScreenState extends State<FamilyScreen> {
             ),
           ),
 
-          // Action buttons: Edit & Select
+          // Action buttons: Edit, Report & Select
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textMuted),
-                tooltip: 'Редактировать профиль',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: () => FamilyMemberFormSheet.show(context, profile: p),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 16, color: Color(0xFF0D9488)),
+                    tooltip: 'Отчёт для врача',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => HistoryReportScreen.show(context, profileId: p.id),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textMuted),
+                    tooltip: 'Редактировать профиль',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => FamilyMemberFormSheet.show(context, profile: p),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               if (isSelected)

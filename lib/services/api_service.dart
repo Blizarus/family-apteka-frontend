@@ -8,10 +8,13 @@ import '../models/reference_medicine.dart';
 import '../models/intake_log.dart';
 import '../models/user.dart';
 import '../models/notification_item.dart';
+import '../models/adherence_report.dart';
+import 'storage_service.dart';
 
 class ApiService {
   final Dio dio;
   final FlutterSecureStorage secureStorage;
+  final StorageService storageService;
   bool isMockMode;
   String? _inMemoryToken; // Web fallback for secure storage
   User? _currentUser;
@@ -28,6 +31,7 @@ class ApiService {
   ApiService({
     Dio? dio,
     FlutterSecureStorage? storage,
+    StorageService? storageService,
     this.isMockMode = false,
     String? baseUrl,
   })  : dio = dio ??
@@ -43,7 +47,8 @@ class ApiService {
                 },
               ),
             ),
-        secureStorage = storage ?? const FlutterSecureStorage() {
+        secureStorage = storage ?? const FlutterSecureStorage(),
+        storageService = storageService ?? StorageService() {
     _initCustomUrl();
     this.dio.interceptors.add(
       InterceptorsWrapper(
@@ -102,6 +107,11 @@ class ApiService {
 
   Future<void> _initCustomUrl() async {
     try {
+      final fromPrefs = await storageService.getBaseUrl();
+      if (fromPrefs != null && fromPrefs.trim().isNotEmpty) {
+        dio.options.baseUrl = fromPrefs.trim();
+        return;
+      }
       final savedUrl = await secureStorage.read(key: 'custom_api_url').timeout(
         const Duration(milliseconds: 300),
         onTimeout: () => null,
@@ -114,6 +124,7 @@ class ApiService {
           await secureStorage.delete(key: 'custom_api_url');
         } else {
           dio.options.baseUrl = trimmed;
+          await storageService.saveBaseUrl(trimmed);
         }
       }
     } catch (_) {}
@@ -129,6 +140,7 @@ class ApiService {
     }
     dio.options.baseUrl = cleanUrl;
     try {
+      await storageService.saveBaseUrl(cleanUrl);
       await secureStorage.write(key: 'custom_api_url', value: cleanUrl);
     } catch (_) {}
   }
@@ -1009,6 +1021,126 @@ class ApiService {
     }
 
     await dio.delete('/notifications/$id');
+  }
+
+  // ==========================================
+  // ADHERENCE & CLINICAL COMPLIANCE REPORT
+  // ==========================================
+
+  Future<AdherenceReport> getAdherenceReport({
+    String period = '7_days',
+    int? profileId,
+  }) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      return _generateMockAdherenceReport(period: period, profileId: profileId);
+    }
+
+    final queryParams = <String, dynamic>{
+      'period': period,
+    };
+    if (profileId != null) {
+      queryParams['profile_id'] = profileId;
+    }
+
+    final response = await dio.get('/reports/adherence', queryParameters: queryParams);
+    final data = response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : <String, dynamic>{};
+    return AdherenceReport.fromJson(data);
+  }
+
+  AdherenceReport _generateMockAdherenceReport({
+    required String period,
+    int? profileId,
+  }) {
+    final daysCount = period == '30_days' ? 30 : 7;
+    final now = DateTime.now();
+    final startDate = now.subtract(Duration(days: daysCount - 1));
+    final dailyStats = <DailyStat>[];
+
+    int totalScheduled = 0;
+    int totalTaken = 0;
+    int totalMissed = 0;
+
+    for (int i = 0; i < daysCount; i++) {
+      final date = startDate.add(Duration(days: i));
+      final dateStr =
+          "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
+      // Realistic intake simulation: mostly 2 or 3 scheduled, occasional skip
+      final scheduled = (i % 3 == 0) ? 3 : 2;
+      // Missed intake on day index 2 or 15 for realism
+      final missed = (i == 2 || (daysCount > 7 && i == 14)) ? 1 : 0;
+      final taken = scheduled - missed;
+
+      totalScheduled += scheduled;
+      totalTaken += taken;
+      totalMissed += missed;
+
+      dailyStats.add(DailyStat(
+        date: dateStr,
+        scheduled: scheduled,
+        taken: taken,
+        missed: missed,
+      ));
+    }
+
+    final rate = totalScheduled > 0
+        ? double.parse(((totalTaken / totalScheduled) * 100).toStringAsFixed(1))
+        : 100.0;
+
+    // Calculate streak from the end
+    int streak = 0;
+    for (int i = dailyStats.length - 1; i >= 0; i--) {
+      if (dailyStats[i].missed > 0) break;
+      if (dailyStats[i].taken > 0) streak++;
+    }
+
+    final medicinesSummary = <MedicineAdherence>[
+      MedicineAdherence(
+        medicineId: 1,
+        name: 'Аспирин Кардио',
+        scheduledCount: daysCount,
+        takenCount: daysCount,
+        missedCount: 0,
+        adherenceRate: 100.0,
+      ),
+      MedicineAdherence(
+        medicineId: 2,
+        name: 'Нурофен Экспресс',
+        scheduledCount: (daysCount * 0.6).round(),
+        takenCount: (daysCount * 0.6).round() - (totalMissed > 0 ? 1 : 0),
+        missedCount: (totalMissed > 0 ? 1 : 0),
+        adherenceRate: double.parse(
+          ((((daysCount * 0.6).round() - (totalMissed > 0 ? 1 : 0)) / (daysCount * 0.6).round()) * 100)
+              .toStringAsFixed(1),
+        ),
+      ),
+      MedicineAdherence(
+        medicineId: 3,
+        name: 'Омепразол',
+        scheduledCount: (daysCount * 0.4).round(),
+        takenCount: (daysCount * 0.4).round(),
+        missedCount: 0,
+        adherenceRate: 100.0,
+      ),
+    ];
+
+    return AdherenceReport(
+      period: PeriodInfo(
+        type: period,
+        startDate: startDate,
+        endDate: now,
+      ),
+      scheduledCount: totalScheduled,
+      takenCount: totalTaken,
+      missedCount: totalMissed,
+      adherenceRate: rate,
+      streakDays: streak > 0 ? streak : 3,
+      dailyStats: dailyStats,
+      medicinesSummary: medicinesSummary,
+    );
   }
 
   // ==========================================

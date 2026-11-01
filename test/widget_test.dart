@@ -78,6 +78,8 @@ void main() {
     expect(find.text('Пропустить'), findsWidgets);
 
     // Open skip reason dialog
+    await tester.ensureVisible(find.text('Пропустить').first);
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.text('Пропустить').first);
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 500));

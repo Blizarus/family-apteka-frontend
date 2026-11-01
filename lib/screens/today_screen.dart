@@ -9,6 +9,7 @@ import '../widgets/intake_course_wizard.dart';
 import '../widgets/skip_reason_dialog.dart';
 import '../widgets/toast_helper.dart';
 import '../widgets/notification_center_sheet.dart';
+import 'history_report_screen.dart';
 
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
@@ -126,30 +127,40 @@ class TodayScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primarySurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primaryBorder),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🎯', style: TextStyle(fontSize: 13)),
-              const SizedBox(width: 5),
-              Text(
-                '$taken / $total принято',
-                style: const TextStyle(
-                  color: AppColors.primaryDeep,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => HistoryReportScreen.show(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primarySurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primaryBorder),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🎯', style: TextStyle(fontSize: 13)),
+                const SizedBox(width: 5),
+                Text(
+                  '$taken / $total принято',
+                  style: const TextStyle(
+                    color: AppColors.primaryDeep,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 2),
+        IconButton(
+          icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFF0D9488), size: 22),
+          tooltip: 'Отчёт для врача',
+          onPressed: () => HistoryReportScreen.show(context),
+        ),
+        const SizedBox(width: 2),
         IconButton(
           icon: Badge(
             isLabelVisible: state.unreadNotificationsCount > 0,
