@@ -60,6 +60,24 @@ class Medicine {
   int? get daysUntilExpiration => effectiveExpirationDate?.difference(DateTime.now()).inDays;
   bool get isLowStock => remaining <= lowStockThreshold && remaining > 0;
 
+  static int _parseIntSafe(dynamic val, [int fallback = 0]) {
+    if (val == null) return fallback;
+    if (val is num) return val.toInt();
+    final s = val.toString().trim();
+    final d = double.tryParse(s);
+    if (d != null) return d.toInt();
+    return int.tryParse(s) ?? fallback;
+  }
+
+  static int? _parseNullableIntSafe(dynamic val) {
+    if (val == null) return null;
+    if (val is num) return val.toInt();
+    final s = val.toString().trim();
+    final d = double.tryParse(s);
+    if (d != null) return d.toInt();
+    return int.tryParse(s);
+  }
+
   factory Medicine.fromJson(Map<String, dynamic> json) {
     ReferenceMedicine? refMed;
     if (json['reference_medicine'] is Map<String, dynamic>) {
@@ -114,8 +132,7 @@ class Medicine {
       }
     }
 
-    final daysAfterOpening = (json['days_after_opening'] as num?)?.toInt() ??
-        (json['daysAfterOpening'] as num?)?.toInt();
+    final daysAfterOpening = _parseNullableIntSafe(json['days_after_opening'] ?? json['daysAfterOpening']);
 
     DateTime? effectiveExpirationDate;
     if (json['effective_expiration_date'] != null) {
@@ -189,13 +206,11 @@ class Medicine {
             ? Map<String, dynamic>.from(json['instructions'] as Map)
             : <String, dynamic>{});
 
-    final lowStockThreshold = (json['low_stock_threshold'] as num?)?.toInt() ??
-        (json['lowStockThreshold'] as num?)?.toInt() ??
-        3;
+    final lowStockThreshold = _parseIntSafe(json['low_stock_threshold'] ?? json['lowStockThreshold'], 3);
 
     return Medicine(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      boxId: (json['boxId'] ?? json['medicine_box_id'] as num?)?.toInt() ?? 1,
+      id: _parseIntSafe(json['id']),
+      boxId: _parseIntSafe(json['boxId'] ?? json['medicine_box_id'], 1),
       name: name,
       substance: substance,
       form: form,
@@ -203,7 +218,7 @@ class Medicine {
       total: total > 0 ? total : remaining,
       expiry: expiry,
       status: status,
-      referenceMedicineId: (json['reference_medicine_id'] as num?)?.toInt() ?? refMed?.id,
+      referenceMedicineId: _parseNullableIntSafe(json['reference_medicine_id']) ?? refMed?.id,
       referenceMedicine: refMed,
       composition: refMed?.composition ?? (json['composition'] as String? ?? ''),
       allergenTags: allergenTags,

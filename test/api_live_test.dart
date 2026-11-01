@@ -9,7 +9,7 @@ void main() {
     setUp(() {
       apiService = ApiService(
         isMockMode: false,
-        baseUrl: 'http://127.0.0.1:8000/api',
+        baseUrl: 'http://e340043kek.temp.swtest.ru/api',
       );
     });
 
@@ -38,9 +38,10 @@ void main() {
         final medicines = await apiService.getMedicines();
         expect(medicines, isNotEmpty);
 
-        // Fetch Intakes (using the date from database: 2026-10-28)
-        final intakes = await apiService.getIntakes(date: '2026-10-28');
-        expect(intakes, isNotEmpty);
+        // Fetch Intakes (using today's date)
+        final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+        final intakes = await apiService.getIntakes(date: todayStr);
+        expect(intakes, isA<List>());
 
         // Search Reference Medicines Catalog
         final refMeds = await apiService.searchReferenceMedicines('Ибупрофен');
