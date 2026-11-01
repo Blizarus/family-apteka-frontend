@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../providers/app_state.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/parse_helper.dart';
+import 'out_of_stock_dialog.dart';
 
 class QuickIntakeSheet extends StatefulWidget {
   final Medicine medicine;
@@ -145,6 +147,83 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
             ),
           ),
         );
+      }
+    } on StockConfirmationRequiredException catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        final result = await OutOfStockConfirmationDialog.show(
+          context,
+          medicineName: widget.medicine.name,
+          remainingQuantity: e.remainingQuantity,
+        );
+        if (!mounted) return;
+        if (result == OutOfStockDialogResult.addToShopping) {
+          state.addToShoppingList(
+            widget.medicine.name,
+            quantity: 1,
+            dosage: widget.medicine.form,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('✓ «${widget.medicine.name}» добавлен в список покупок'),
+            ),
+          );
+        } else if (result == OutOfStockDialogResult.confirmIntake) {
+          setState(() => _isSubmitting = true);
+          try {
+            await state.recordQuickIntake(
+              medicineId: widget.medicine.id,
+              profileId: _selectedProfileId!,
+              quantity: _quantity,
+              symptom: symptom,
+              confirmWithoutStock: true,
+            );
+            if (mounted) {
+              Navigator.of(context).pop();
+              final formattedQty = _formatQuantity(_quantity);
+              final snackMessage =
+                  '✓ Принято: ${widget.medicine.name} ($formattedQty $_unitLabel) • Зафиксировано без списания остатка';
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: const Color(0xFF0F172A),
+                  elevation: 6,
+                  duration: const Duration(seconds: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          snackMessage,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          } catch (err) {
+            if (mounted) {
+              setState(() => _isSubmitting = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: const Color(0xFF991B1B),
+                  content: Text('Ошибка записи приёма: $err'),
+                ),
+              );
+            }
+          }
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -12,6 +12,25 @@ import '../models/adherence_report.dart';
 import 'storage_service.dart';
 import 'biometric_service.dart';
 
+class StockConfirmationRequiredException implements Exception {
+  final String message;
+  final double remainingQuantity;
+  final int? intakeLogId;
+  final int? medicineId;
+  final String? medicineName;
+
+  const StockConfirmationRequiredException({
+    required this.message,
+    this.remainingQuantity = 0.0,
+    this.intakeLogId,
+    this.medicineId,
+    this.medicineName,
+  });
+
+  @override
+  String toString() => 'StockConfirmationRequiredException: $message (остаток: $remainingQuantity)';
+}
+
 class ApiService {
   final Dio dio;
   final FlutterSecureStorage secureStorage;
@@ -1345,23 +1364,113 @@ class ApiService {
   // INTAKE ACTIONS: TAKE, SKIP, SNOOZE
   // ==========================================
 
-  Future<bool> markIntakeTaken(int intakeId, bool taken) async {
+  void addMockIntake(IntakeLog log) => _mockIntakes.add(log);
+  void removeMockIntake(int id) => _mockIntakes.removeWhere((i) => i.id == id);
+  void setMockIntakeRemaining(int id, double? remaining) {
+    final idx = _mockIntakes.indexWhere((i) => i.id == id);
+    if (idx != -1) {
+      _mockIntakes[idx] = _mockIntakes[idx].copyWith(remaining: remaining);
+    }
+  }
+
+  Future<Map<String, dynamic>> takeIntakeLog(
+    int id, {
+    bool confirmWithoutStock = false,
+  }) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      final index = _mockIntakes.indexWhere((i) => i.id == id);
+      if (index != -1) {
+        final current = _mockIntakes[index];
+        if (current.isTaken) {
+          return {
+            'message': 'Приём лекарства уже был зафиксирован ранее.',
+            'already_taken': true,
+            'data': current.toJson(),
+            'remaining_quantity': (current.remaining ?? 0).toDouble(),
+          };
+        }
+        if ((current.remaining != null && current.remaining! <= 0) && !confirmWithoutStock) {
+          throw StockConfirmationRequiredException(
+            message: 'Недостаточно препарата в аптечке для списания остатка. Подтвердите приём без списания.',
+            remainingQuantity: (current.remaining ?? 0).toDouble(),
+            intakeLogId: id,
+            medicineName: current.medicineName,
+          );
+        }
+
+        final newRemaining = current.remaining != null && current.remaining! > 0
+            ? (current.remaining! - 1).clamp(0.0, 99999.0)
+            : 0.0;
+        _mockIntakes[index] = current.copyWith(
+          taken: true,
+          status: 'taken',
+          isCurrent: false,
+          remaining: confirmWithoutStock && (current.remaining == null || current.remaining! <= 0)
+              ? 0.0
+              : newRemaining.toDouble(),
+        );
+        return {
+          'message': confirmWithoutStock
+              ? 'Приём зафиксирован без списания остатка.'
+              : 'Приём лекарства успешно зафиксирован.',
+          'stock_warning': confirmWithoutStock,
+          'data': _mockIntakes[index].toJson(),
+          'remaining_quantity': (confirmWithoutStock && (current.remaining == null || current.remaining! <= 0))
+              ? 0.0
+              : newRemaining,
+        };
+      }
+      return {'message': 'Log not found', 'success': false};
+    }
+
+    try {
+      final response = await dio.post(
+        '/intake-logs/$id/take',
+        data: {'confirm_without_stock': confirmWithoutStock},
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return {'data': data, 'statusCode': response.statusCode};
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        final data = e.response?.data;
+        if (data is Map && (data['requires_confirmation'] == true || data['stock_warning'] == true)) {
+          throw StockConfirmationRequiredException(
+            message: data['message']?.toString() ?? 'Недостаточно препарата в аптечке для списания остатка.',
+            remainingQuantity: (data['remaining_quantity'] as num?)?.toDouble() ?? 0.0,
+            intakeLogId: id,
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> markIntakeTaken(int intakeId, bool taken, {bool confirmWithoutStock = false}) async {
+    if (taken) {
+      final res = await takeIntakeLog(intakeId, confirmWithoutStock: confirmWithoutStock);
+      return res.isNotEmpty;
+    }
+
     if (isMockMode) {
       await Future.delayed(const Duration(milliseconds: 150));
       final index = _mockIntakes.indexWhere((i) => i.id == intakeId);
       if (index != -1) {
         final current = _mockIntakes[index];
         _mockIntakes[index] = current.copyWith(
-          taken: taken,
-          status: taken ? 'taken' : 'scheduled',
-          isCurrent: taken ? false : current.isCurrent,
+          taken: false,
+          status: 'scheduled',
+          isCurrent: current.isCurrent,
         );
         return true;
       }
       return false;
     }
 
-    final endpoint = taken ? '/intake-logs/$intakeId/take' : '/intake-logs/$intakeId/skip';
+    final endpoint = '/intake-logs/$intakeId/skip';
     final response = await dio.post(endpoint);
     return response.statusCode == 200 || response.statusCode == 201;
   }
@@ -1548,11 +1657,19 @@ class ApiService {
   // QUICK INTAKE (PRN / РАЗОВЫЙ ПРИЁМ)
   // ==========================================
 
+  void setMockMedicineRemaining(int id, double remaining) {
+    final idx = _mockMedicines.indexWhere((m) => m.id == id);
+    if (idx != -1) {
+      _mockMedicines[idx] = _mockMedicines[idx].copyWith(remaining: remaining);
+    }
+  }
+
   Future<Map<String, dynamic>> recordQuickIntake({
     required int medicineId,
     required int profileId,
     double quantity = 1.0,
     String? symptom,
+    bool confirmWithoutStock = false,
   }) async {
     if (isMockMode) {
       await Future.delayed(const Duration(milliseconds: 200));
@@ -1564,7 +1681,17 @@ class ApiService {
       String medForm = 'Таблетки';
       if (medIdx != -1) {
         final current = _mockMedicines[medIdx];
-        newRemaining = (current.remaining - quantity).clamp(0.0, 99999.0);
+        if (current.remaining < quantity && !confirmWithoutStock) {
+          throw StockConfirmationRequiredException(
+            message: 'Недостаточно препарата в аптечке для списания остатка. Подтвердите приём без списания.',
+            remainingQuantity: current.remaining,
+            medicineId: medicineId,
+            medicineName: current.name,
+          );
+        }
+        newRemaining = confirmWithoutStock && current.remaining < quantity
+            ? current.remaining
+            : (current.remaining - quantity).clamp(0.0, 99999.0);
         _mockMedicines[medIdx] = current.copyWith(
           remaining: newRemaining,
           status: newRemaining == 0 ? 'expired' : (newRemaining < 5 ? 'expiring' : current.status),
@@ -1605,6 +1732,10 @@ class ApiService {
         'success': true,
         'remaining': newRemaining,
         'intake_log_id': newLogId,
+        'message': confirmWithoutStock
+            ? 'Приём зафиксирован без списания остатка.'
+            : 'Приём лекарства успешно зафиксирован.',
+        'stock_warning': confirmWithoutStock,
       };
     }
 
@@ -1615,15 +1746,40 @@ class ApiService {
         'quantity': quantity,
         'symptom': symptom,
         'taken_at': DateTime.now().toIso8601String(),
+        'confirm_without_stock': confirmWithoutStock,
       });
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        final data = e.response?.data;
+        if (data is Map && (data['requires_confirmation'] == true || data['stock_warning'] == true)) {
+          throw StockConfirmationRequiredException(
+            message: data['message']?.toString() ?? 'Недостаточно препарата в аптечке для списания остатка.',
+            remainingQuantity: (data['remaining_quantity'] as num?)?.toDouble() ?? 0.0,
+            medicineId: medicineId,
+          );
+        }
+      }
       if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
         return {'success': true, 'fallback': true};
       }
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> quickIntake({
+    required int medicineId,
+    required int profileId,
+    double quantity = 1.0,
+    String? symptom,
+    bool confirmWithoutStock = false,
+  }) => recordQuickIntake(
+    medicineId: medicineId,
+    profileId: profileId,
+    quantity: quantity,
+    symptom: symptom,
+    confirmWithoutStock: confirmWithoutStock,
+  );
 
   // ==========================================
   // ADMIN PANEL METHODS (LR 2 Table 1, lines 4-5)

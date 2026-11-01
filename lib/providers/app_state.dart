@@ -35,6 +35,7 @@ class AppState extends ChangeNotifier {
   List<Medicine> _medicines = [];
   List<NotificationItem> _notifications = [];
   List<MedicalNote> _notes = [];
+  final Set<int> _processingIntakeIds = <int>{};
   final List<ShoppingItem> _shoppingItems = [
     const ShoppingItem(
       id: '1',
@@ -102,6 +103,9 @@ class AppState extends ChangeNotifier {
   bool get isLoadingReport => _isLoadingReport;
   String get reportPeriod => _reportPeriod;
   List<MedicalNote> get notes => _notes;
+  Set<int> get processingIntakeIds => Set.unmodifiable(_processingIntakeIds);
+  bool isIntakeProcessing(int intakeId) => _processingIntakeIds.contains(intakeId);
+  bool get isTakingLog => _processingIntakeIds.isNotEmpty;
   List<ShoppingItem> get shoppingItems => _shoppingItems;
   List<ShoppingItem> get purchasedItems => _purchasedItems;
   List<String> get shoppingList => _shoppingItems.map((e) => e.name).toList();
@@ -433,6 +437,7 @@ class AppState extends ChangeNotifier {
       _boxes.clear();
       _medicines.clear();
       _intakes.clear();
+      _processingIntakeIds.clear();
       _notifications.clear();
       _notes.clear();
       notifyListeners();
@@ -538,12 +543,32 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> markIntakeTaken(int intakeId) async {
-    final success = await apiService.markIntakeTaken(intakeId, true);
-    if (success) {
-      await refreshData();
+  Future<Map<String, dynamic>?> takeIntakeLog(
+    int intakeId, {
+    bool confirmWithoutStock = false,
+  }) async {
+    if (_processingIntakeIds.contains(intakeId)) {
+      return null;
     }
-    return success;
+    _processingIntakeIds.add(intakeId);
+    notifyListeners();
+
+    try {
+      final res = await apiService.takeIntakeLog(
+        intakeId,
+        confirmWithoutStock: confirmWithoutStock,
+      );
+      await refreshData();
+      return res;
+    } finally {
+      _processingIntakeIds.remove(intakeId);
+      notifyListeners();
+    }
+  }
+
+  Future<bool> markIntakeTaken(int intakeId, {bool confirmWithoutStock = false}) async {
+    final res = await takeIntakeLog(intakeId, confirmWithoutStock: confirmWithoutStock);
+    return res != null;
   }
 
   Future<bool> skipIntake(int intakeId, {String? reason}) async {
@@ -565,11 +590,15 @@ class AppState extends ChangeNotifier {
   Future<bool> toggleIntake(int intakeId) async {
     final item = _intakes.firstWhere((i) => i.id == intakeId);
     final nextStatus = !item.isTaken;
-    final success = await apiService.markIntakeTaken(intakeId, nextStatus);
-    if (success) {
-      await refreshData();
+    if (nextStatus) {
+      return markIntakeTaken(intakeId);
+    } else {
+      final success = await apiService.markIntakeTaken(intakeId, false);
+      if (success) {
+        await refreshData();
+      }
+      return success;
     }
-    return success;
   }
 
   Future<void> createIntakeCourse(Map<String, dynamic> payload) async {
@@ -592,17 +621,33 @@ class AppState extends ChangeNotifier {
     required int profileId,
     double quantity = 1.0,
     String? symptom,
+    bool confirmWithoutStock = false,
   }) async {
     final result = await apiService.recordQuickIntake(
       medicineId: medicineId,
       profileId: profileId,
       quantity: quantity,
       symptom: symptom,
+      confirmWithoutStock: confirmWithoutStock,
     );
     await refreshData();
     notifyListeners();
     return result;
   }
+
+  Future<Map<String, dynamic>> quickIntake({
+    required int medicineId,
+    required int profileId,
+    double quantity = 1.0,
+    String? symptom,
+    bool confirmWithoutStock = false,
+  }) => recordQuickIntake(
+    medicineId: medicineId,
+    profileId: profileId,
+    quantity: quantity,
+    symptom: symptom,
+    confirmWithoutStock: confirmWithoutStock,
+  );
 
   Future<Medicine> addMedicine(Map<String, dynamic> data) async {
     final created = await apiService.addMedicine(data);

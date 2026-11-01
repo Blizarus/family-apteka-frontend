@@ -9,6 +9,8 @@ import '../widgets/intake_course_wizard.dart';
 import '../widgets/skip_reason_dialog.dart';
 import '../widgets/toast_helper.dart';
 import '../widgets/notification_center_sheet.dart';
+import '../widgets/out_of_stock_dialog.dart';
+import '../services/api_service.dart';
 import 'history_report_screen.dart';
 
 class TodayScreen extends StatelessWidget {
@@ -559,11 +561,16 @@ class TodayScreen extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            onPressed: () {
-              state.markIntakeTaken(item.id);
-              ToastHelper.show(context, message: 'Приём зафиксирован!', icon: '💊');
-            },
-            child: const Text('Принять', style: TextStyle(fontSize: 11, color: AppColors.primaryHover)),
+            onPressed: state.isIntakeProcessing(item.id)
+                ? null
+                : () => _handleTakeIntake(context, state, item),
+            child: state.isIntakeProcessing(item.id)
+                ? const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Принять', style: TextStyle(fontSize: 11, color: AppColors.primaryHover)),
           ),
         ],
       ),
@@ -708,22 +715,23 @@ class TodayScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
-                    state.markIntakeTaken(item.id);
-                    ToastHelper.show(
-                      context,
-                      message: 'Принято: ${item.medicineName}. Остаток в аптечке обновлён!',
-                      icon: '💊',
-                    );
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check, size: 14),
-                      SizedBox(width: 4),
-                      Text('Принято', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
+                  onPressed: state.isIntakeProcessing(item.id)
+                      ? null
+                      : () => _handleTakeIntake(context, state, item),
+                  child: state.isIntakeProcessing(item.id)
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check, size: 14),
+                            SizedBox(width: 4),
+                            Text('Принято', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                          ],
+                        ),
                 ),
               ),
               const SizedBox(width: 6),
@@ -894,15 +902,16 @@ class TodayScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: () {
-                    state.markIntakeTaken(item.id);
-                    ToastHelper.show(
-                      context,
-                      message: 'Принято: ${item.medicineName}. Остаток в аптечке обновлён!',
-                      icon: '💊',
-                    );
-                  },
-                  child: const Text('Принять', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                  onPressed: state.isIntakeProcessing(item.id)
+                      ? null
+                      : () => _handleTakeIntake(context, state, item),
+                  child: state.isIntakeProcessing(item.id)
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Принять', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(width: 6),
@@ -967,5 +976,80 @@ class TodayScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleTakeIntake(
+    BuildContext context,
+    AppState state,
+    IntakeLog item,
+  ) async {
+    if (state.isIntakeProcessing(item.id)) return;
+
+    try {
+      final res = await state.takeIntakeLog(item.id);
+      if (!context.mounted) return;
+      if (res != null) {
+        final message = res['message']?.toString() ?? '';
+        if (message.contains('уже был зафиксирован ранее') || res['already_taken'] == true) {
+          ToastHelper.show(
+            context,
+            message: 'Приём лекарства уже был зафиксирован ранее.',
+            icon: 'ℹ️',
+          );
+        } else {
+          ToastHelper.show(
+            context,
+            message: 'Принято: ${item.medicineName}. Остаток в аптечке обновлён!',
+            icon: '💊',
+          );
+        }
+      }
+    } on StockConfirmationRequiredException catch (e) {
+      if (!context.mounted) return;
+      final result = await OutOfStockConfirmationDialog.show(
+        context,
+        medicineName: item.medicineName,
+        remainingQuantity: e.remainingQuantity,
+      );
+      if (!context.mounted) return;
+      if (result == OutOfStockDialogResult.addToShopping) {
+        state.addToShoppingList(
+          item.medicineName,
+          quantity: 1,
+          dosage: item.form,
+        );
+        ToastHelper.show(
+          context,
+          message: '«${item.medicineName}» добавлен в список покупок',
+          icon: '🛒',
+        );
+      } else if (result == OutOfStockDialogResult.confirmIntake) {
+        try {
+          await state.takeIntakeLog(item.id, confirmWithoutStock: true);
+          if (context.mounted) {
+            ToastHelper.show(
+              context,
+              message: 'Приём зафиксирован без списания остатка',
+              icon: '💊',
+            );
+          }
+        } catch (err) {
+          if (context.mounted) {
+            ToastHelper.show(
+              context,
+              message: 'Ошибка приёма: $err',
+              icon: '⚠️',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ToastHelper.show(
+        context,
+        message: 'Ошибка приёма: $e',
+        icon: '⚠️',
+      );
+    }
   }
 }
