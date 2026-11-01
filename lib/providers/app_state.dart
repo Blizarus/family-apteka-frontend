@@ -23,6 +23,7 @@ class AppState extends ChangeNotifier {
   String _searchQuery = '';
   bool _isSyncing = false;
   bool _isLoading = true;
+  ThemeMode _themeMode = ThemeMode.system;
 
   AdherenceReport? _adherenceReport;
   bool _isLoadingReport = false;
@@ -89,6 +90,7 @@ class AppState extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   bool get isSyncing => _isSyncing;
   bool get isLoading => _isLoading;
+  ThemeMode get themeMode => _themeMode;
 
   List<Profile> get profiles => _profiles;
   List<MedicineBox> get boxes => _boxes;
@@ -145,6 +147,32 @@ class AppState extends ChangeNotifier {
   void setRepeatOnMissed(bool value) {
     _repeatOnMissed = value;
     notifyListeners();
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    if (_themeMode == mode) return;
+    _themeMode = mode;
+    notifyListeners();
+    final modeStr = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+    apiService.storageService.saveThemeMode(modeStr);
+  }
+
+  Future<void> loadThemeMode() async {
+    final savedThemeMode = await apiService.storageService.getThemeMode();
+    if (savedThemeMode != null) {
+      if (savedThemeMode == 'light') {
+        _themeMode = ThemeMode.light;
+      } else if (savedThemeMode == 'dark') {
+        _themeMode = ThemeMode.dark;
+      } else if (savedThemeMode == 'system') {
+        _themeMode = ThemeMode.system;
+      }
+      notifyListeners();
+    }
   }
 
   List<MedicalNote> get filteredNotes {
@@ -289,6 +317,17 @@ class AppState extends ChangeNotifier {
           _selectedProfileId != null &&
           !_profiles.any((p) => p.id == _selectedProfileId)) {
         _selectedProfileId = _profiles.first.id;
+      }
+
+      final savedThemeMode = await apiService.storageService.getThemeMode();
+      if (savedThemeMode != null) {
+        if (savedThemeMode == 'light') {
+          _themeMode = ThemeMode.light;
+        } else if (savedThemeMode == 'dark') {
+          _themeMode = ThemeMode.dark;
+        } else if (savedThemeMode == 'system') {
+          _themeMode = ThemeMode.system;
+        }
       }
 
       if (_notes.isEmpty) {

@@ -602,23 +602,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final apiService = context.watch<ApiService>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppDarkColors.surface : Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: isDark ? AppDarkColors.textPrimary : AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Настройки',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: isDark ? AppDarkColors.textPrimary : AppColors.textPrimary,
           ),
         ),
       ),
@@ -734,7 +735,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 3. Synchronization & Server
+          // 3. Theme Mode
+          _buildSectionHeader('ТЕМА ОФОРМЛЕНИЯ', Icons.palette_outlined),
+          _buildCardContainer([
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        state.themeMode == ThemeMode.dark
+                            ? Icons.dark_mode_rounded
+                            : (state.themeMode == ThemeMode.light
+                                ? Icons.light_mode_rounded
+                                : Icons.brightness_auto_rounded),
+                        size: 20,
+                        color: isDark ? AppDarkColors.primary : AppColors.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Тема оформления',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppDarkColors.textPrimary : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Выбор светлой, тёмной или системной темы',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? AppDarkColors.textMuted : AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      key: const Key('theme_mode_segmented_button'),
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.system,
+                          label: Text('Системная 🌓', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.light,
+                          label: Text('Светлая ☀️', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.dark,
+                          label: Text('Тёмная 🌙', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                      selected: {state.themeMode},
+                      onSelectionChanged: (Set<ThemeMode> newSelection) {
+                        if (newSelection.isNotEmpty) {
+                          state.setThemeMode(newSelection.first);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+
+          const SizedBox(height: 20),
+
+          // 4. Synchronization & Server
           _buildSectionHeader('СИНХРОНИЗАЦИЯ И СЕРВЕР', Icons.cloud_sync_outlined),
           _buildCardContainer([
             Padding(
@@ -1309,19 +1390,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: AppColors.primaryHover),
+          Icon(icon, size: 13, color: isDark ? AppDarkColors.primary : AppColors.primaryHover),
           const SizedBox(width: 6),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
-              color: AppColors.textMuted,
+              color: isDark ? AppDarkColors.textMuted : AppColors.textMuted,
             ),
           ),
         ],
@@ -1330,11 +1412,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildCardContainer(List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppDarkColors.surface : Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: isDark ? AppDarkColors.border : AppColors.border),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1353,6 +1436,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required TimeOfDay time,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       borderRadius: BorderRadius.circular(AppTheme.cardRadius),
       onTap: onTap,
@@ -1366,16 +1450,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: isDark ? AppDarkColors.textPrimary : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 1),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    style: TextStyle(fontSize: 11, color: isDark ? AppDarkColors.textMuted : AppColors.textMuted),
                   ),
                 ],
               ),
@@ -1383,20 +1467,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.primarySurface,
+                color: isDark ? AppDarkColors.primarySurface : AppColors.primarySurface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primaryBorderLight),
+                border: Border.all(color: isDark ? AppDarkColors.primaryBorderLight : AppColors.primaryBorderLight),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.schedule, size: 13, color: AppColors.primaryHover),
+                  Icon(Icons.schedule, size: 13, color: isDark ? AppDarkColors.primaryHover : AppColors.primaryHover),
                   const SizedBox(width: 4),
                   Text(
                     _formatTimeOfDay(time),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.primaryHover,
+                      color: isDark ? AppDarkColors.primaryHover : AppColors.primaryHover,
                     ),
                   ),
                 ],

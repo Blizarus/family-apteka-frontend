@@ -37,6 +37,8 @@ class FamilyAptekaApp extends StatelessWidget {
       title: 'Семейная Аптечка',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: context.watch<AppState>().themeMode,
       home: const AuthCheckWrapper(),
     );
   }
@@ -64,9 +66,9 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
       future: _authFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: AppColors.background,
-            body: Center(
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
           );

@@ -102,7 +102,13 @@ const double kCardRadius = 18.0;
 class AppTheme {
   static const double cardRadius = 18.0;
 
-  static ThemeData get lightTheme {
+  static final ThemeData _lightTheme = _buildLightTheme();
+  static ThemeData get lightTheme => _lightTheme;
+
+  static final ThemeData _darkTheme = _buildDarkTheme();
+  static ThemeData get darkTheme => _darkTheme;
+
+  static ThemeData _buildLightTheme() {
     final interFont = GoogleFonts.inter().fontFamily;
 
     return ThemeData(
@@ -234,7 +240,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
+  static ThemeData _buildDarkTheme() {
     final interFont = GoogleFonts.inter().fontFamily;
 
     return ThemeData(
