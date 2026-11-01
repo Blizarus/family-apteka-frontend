@@ -9,7 +9,7 @@ void main() {
     setUp(() {
       apiService = ApiService(
         isMockMode: false,
-        baseUrl: 'http://e340043kek.temp.swtest.ru/api',
+        baseUrl: const String.fromEnvironment('STAGING_API_URL', defaultValue: 'http://127.0.0.1:8000/api'),
       );
     });
 

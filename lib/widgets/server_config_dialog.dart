@@ -203,7 +203,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                 runSpacing: 6,
                 children: [
                   ActionChip(
-                    label: const Text('☁️ swtest.ru (основной)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    label: const Text('☁️ Production (SpaceWeb)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: AppColors.primarySurface,
                     side: const BorderSide(color: AppColors.primaryBorder),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -212,16 +212,25 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                     },
                   ),
                   ActionChip(
-                    label: const Text('🌐 bluzaus.swtest.ru (зеркало)', style: TextStyle(fontSize: 10)),
+                    label: const Text('🐳 Staging (Docker :8080)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: AppColors.surfaceSubtle,
                     side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
-                      _urlController.text = 'http://bluzaus.ru.swtest.ru/api';
+                      _urlController.text = 'http://127.0.0.1:8080/api';
                     },
                   ),
                   ActionChip(
-                    label: const Text('10.0.2.2 (Android Эмулятор)', style: TextStyle(fontSize: 10)),
+                    label: const Text('💻 Local (Artisan :8000)', style: TextStyle(fontSize: 10)),
+                    backgroundColor: AppColors.surfaceSubtle,
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    onPressed: () {
+                      _urlController.text = 'http://127.0.0.1:8000/api';
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('📱 Android Emulator (10.0.2.2)', style: TextStyle(fontSize: 10)),
                     backgroundColor: AppColors.surfaceSubtle,
                     side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
