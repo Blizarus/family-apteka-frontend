@@ -290,5 +290,87 @@ void main() {
       expect(pdfContentText, contains('penicillin'),
           reason: 'PDF обязан отражать анамнез аллергических реакций пациента');
     });
+
+    test('Клинический сценарий с пропусками доз: корректный расчёт комплаенса < 100% в PDF', () async {
+      // -------------------------------------------------------------
+      // Профиль пациента: Бабушка Елена (хроническая гипертензия)
+      // -------------------------------------------------------------
+      final profile = Profile(
+        id: 202,
+        name: 'Бабушка Елена',
+        role: 'Член семьи',
+        avatar: '👵',
+        subtitle: 'Хронический профиль',
+        allergies: const [],
+        notes: 'Артериальная гипертензия II ст., контроль давления',
+      );
+
+      // Сценарий: 4 назначенных приёма, 3 принято, 1 пропущен -> приверженность 75.0%
+      final adherenceReport = AdherenceReport(
+        period: PeriodInfo(
+          type: '7_days',
+          startDate: DateTime.now().subtract(const Duration(days: 6)),
+          endDate: DateTime.now(),
+        ),
+        scheduledCount: 4,
+        takenCount: 3,
+        missedCount: 1,
+        adherenceRate: 75.0,
+        streakDays: 0,
+        dailyStats: [
+          DailyStat(date: '2026-10-27', scheduled: 1, taken: 1, missed: 0),
+          DailyStat(date: '2026-10-28', scheduled: 1, taken: 1, missed: 0),
+          DailyStat(date: '2026-10-29', scheduled: 1, taken: 0, missed: 1), // пропуск
+          DailyStat(date: '2026-10-30', scheduled: 1, taken: 1, missed: 0),
+        ],
+        medicinesSummary: [
+          MedicineAdherence(
+            medicineId: 401,
+            name: 'Эналаприл 10 мг',
+            scheduledCount: 4,
+            takenCount: 3,
+            missedCount: 1,
+            adherenceRate: 75.0,
+          ),
+        ],
+      );
+
+      expect(adherenceReport.adherenceRate, 75.0);
+      expect(adherenceReport.missedCount, 1);
+      expect(adherenceReport.complianceLevelLabel, equals('Умеренный комплаенс'),
+          reason: 'При 75% комплаенс классифицируется как умеренный (60-79%)');
+
+      Uint8List? fontBytes;
+      final fontFile = File(r'C:\Windows\Fonts\arial.ttf');
+      if (fontFile.existsSync()) {
+        fontBytes = fontFile.readAsBytesSync();
+      }
+
+      final Uint8List pdfBytes = await PdfReportService.generateAdherencePdf(
+        report: adherenceReport,
+        profile: profile,
+        doctorNote: 'Зафиксирован пропуск дозы 29.10. Рекомендовано настроить push-напоминания.',
+        customFontRegular: fontBytes != null ? pw.Font.ttf(fontBytes.buffer.asByteData()) : null,
+        customFontBold: fontBytes != null ? pw.Font.ttf(fontBytes.buffer.asByteData()) : null,
+      );
+
+      // Проверка валидности структуры
+      expect(pdfBytes, isNotEmpty);
+      final pdfContentText = extractPdfTextContent(pdfBytes);
+
+      // 1. Проверка имени пациента
+      expect(pdfContentText, contains('Пациент: Бабушка Елена (Член семьи)'),
+          reason: 'PDF обязан содержать имя пациента «Бабушка Елена» и роль');
+
+      // 2. Проверка процента приверженности и статуса (НЕ 100%)
+      expect(pdfContentText, contains('75.0%'),
+          reason: 'PDF обязан содержать фактический расчётный процент комплаенса 75.0%');
+      expect(pdfContentText, contains('Умеренный комплаенс'),
+          reason: 'PDF обязан содержать клиническую категорию «Умеренный комплаенс»');
+      expect(pdfContentText, contains('Пропущено 1 приёмов'),
+          reason: 'PDF обязан отображать количество пропусков');
+      expect(pdfContentText, contains('Эналаприл 10 мг'),
+          reason: 'PDF обязан содержать название препарата в таблице');
+    });
   });
 }
