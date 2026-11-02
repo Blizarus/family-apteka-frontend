@@ -11,6 +11,8 @@ class PdfReportService {
     required AdherenceReport report,
     required Profile? profile,
     String doctorNote = '',
+    pw.Font? customFontRegular,
+    pw.Font? customFontBold,
   }) async {
     final pdf = pw.Document(
       title: 'Клинический отчёт о комплаенсе — Семейная аптечка',
@@ -20,13 +22,18 @@ class PdfReportService {
     pw.Font fontRegular;
     pw.Font fontBold;
 
-    try {
-      fontRegular = await PdfGoogleFonts.robotoRegular();
-      fontBold = await PdfGoogleFonts.robotoBold();
-    } catch (e) {
-      debugPrint('Failed to load Google Fonts, falling back to standard fonts: $e');
-      fontRegular = pw.Font.helvetica();
-      fontBold = pw.Font.helveticaBold();
+    if (customFontRegular != null && customFontBold != null) {
+      fontRegular = customFontRegular;
+      fontBold = customFontBold;
+    } else {
+      try {
+        fontRegular = await PdfGoogleFonts.robotoRegular();
+        fontBold = await PdfGoogleFonts.robotoBold();
+      } catch (e) {
+        debugPrint('Failed to load Google Fonts, falling back to standard fonts: $e');
+        fontRegular = pw.Font.helvetica();
+        fontBold = pw.Font.helveticaBold();
+      }
     }
 
     final theme = pw.ThemeData.withFont(
