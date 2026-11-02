@@ -53,7 +53,7 @@ class ApiService {
     FlutterSecureStorage? storage,
     StorageService? storageService,
     BiometricService? biometricService,
-    this.isMockMode = false,
+    bool isMockMode = false,
     String? baseUrl,
   })  : dio = dio ??
             Dio(
@@ -69,11 +69,12 @@ class ApiService {
               ),
             ),
         secureStorage = storage ?? const FlutterSecureStorage(),
-        storageService = storageService ?? StorageService() {
+        storageService = storageService ?? StorageService(),
+        isMockMode = kReleaseMode ? false : isMockMode {
     this.biometricService = biometricService ??
         BiometricService(
           storageService: this.storageService,
-          isMockMode: true,
+          isMockMode: kReleaseMode ? false : isMockMode,
         );
     _initCustomUrl();
     this.dio.interceptors.add(
@@ -1375,6 +1376,7 @@ class ApiService {
   Future<Map<String, dynamic>> takeIntakeLog(
     int id, {
     bool confirmWithoutStock = false,
+    String? idempotencyKey,
   }) async {
     if (isMockMode) {
       await Future.delayed(const Duration(milliseconds: 150));
@@ -1424,9 +1426,20 @@ class ApiService {
     }
 
     try {
+      final postData = <String, dynamic>{
+        'confirm_without_stock': confirmWithoutStock,
+      };
+      if (idempotencyKey != null) {
+        postData['idempotency_key'] = idempotencyKey;
+      }
+      final headers = <String, dynamic>{};
+      if (idempotencyKey != null) {
+        headers['X-Idempotency-Key'] = idempotencyKey;
+      }
       final response = await dio.post(
-        '/intake-logs/$id/take',
-        data: {'confirm_without_stock': confirmWithoutStock},
+        '/intake-logs//take',
+        data: postData,
+        options: Options(headers: headers),
       );
       final data = response.data;
       if (data is Map<String, dynamic>) {
@@ -1669,6 +1682,7 @@ class ApiService {
     double quantity = 1.0,
     String? symptom,
     bool confirmWithoutStock = false,
+    String? idempotencyKey,
   }) async {
     if (isMockMode) {
       await Future.delayed(const Duration(milliseconds: 200));
@@ -1739,14 +1753,26 @@ class ApiService {
     }
 
     try {
-      final response = await dio.post('/intake-logs/quick', data: {
+      final postData = <String, dynamic>{
         'medicine_id': medicineId,
         'profile_id': profileId,
         'quantity': quantity,
         'symptom': symptom,
         'taken_at': DateTime.now().toIso8601String(),
         'confirm_without_stock': confirmWithoutStock,
-      });
+      };
+      if (idempotencyKey != null) {
+        postData['idempotency_key'] = idempotencyKey;
+      }
+      final headers = <String, dynamic>{};
+      if (idempotencyKey != null) {
+        headers['X-Idempotency-Key'] = idempotencyKey;
+      }
+      final response = await dio.post(
+        '/intake-logs/quick',
+        data: postData,
+        options: Options(headers: headers),
+      );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
@@ -1772,12 +1798,14 @@ class ApiService {
     double quantity = 1.0,
     String? symptom,
     bool confirmWithoutStock = false,
+    String? idempotencyKey,
   }) => recordQuickIntake(
     medicineId: medicineId,
     profileId: profileId,
     quantity: quantity,
     symptom: symptom,
     confirmWithoutStock: confirmWithoutStock,
+    idempotencyKey: idempotencyKey,
   );
 
   // ==========================================
