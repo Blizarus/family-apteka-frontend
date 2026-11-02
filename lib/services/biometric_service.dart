@@ -1,19 +1,25 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import 'storage_service.dart';
 
 /// Service providing biometric authentication (Touch ID, Face ID, fingerprint).
-/// Supports mock mode for widget testing and devices without biometrics hardware.
+/// Uses LocalAuthentication in production, supports mock mode for tests and non-hardware environments.
 class BiometricService {
+  final LocalAuthentication _localAuth;
   StorageService? _storageService;
   bool isMockMode;
   bool mockAuthResult;
   bool mockAvailable;
 
   BiometricService({
+    LocalAuthentication? localAuth,
     StorageService? storageService,
-    this.isMockMode = true,
+    bool? isMockMode,
     this.mockAuthResult = true,
     this.mockAvailable = true,
-  }) {
+  })  : _localAuth = localAuth ?? LocalAuthentication(),
+        isMockMode = isMockMode ?? !kReleaseMode {
     _storageService = storageService;
   }
 
@@ -33,12 +39,26 @@ class BiometricService {
     mockAvailable = available;
   }
 
-  /// Checks whether biometric authentication (Touch ID / Face ID) is supported on the device.
+  /// Checks whether biometric authentication is supported and enrolled on the device.
+  /// Gracefully returns false if no biometric hardware or enrolled prints exist.
   Future<bool> isBiometricAvailable() async {
     if (isMockMode) {
       return mockAvailable;
     }
-    return mockAvailable;
+
+    try {
+      final canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      if (!canAuthenticateWithBiometrics || !isDeviceSupported) {
+        return false;
+      }
+      final enrolled = await _localAuth.getAvailableBiometrics();
+      return enrolled.isNotEmpty;
+    } on PlatformException {
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Prompts the user for biometric authentication with the given [localizedReason].
@@ -49,7 +69,23 @@ class BiometricService {
     if (isMockMode) {
       return mockAuthResult;
     }
-    return mockAuthResult;
+
+    try {
+      final isAvailable = await isBiometricAvailable();
+      if (!isAvailable) {
+        return false;
+      }
+
+      return await _localAuth.authenticate(
+        localizedReason: localizedReason,
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
+      );
+    } on PlatformException {
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Checks whether biometric authentication is enabled in user settings.

@@ -47,11 +47,25 @@ class SafetyAlertBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final isSafe = safetyData!['is_safe'] as bool? ?? true;
-    final hasCritical = safetyData!['has_critical'] as bool? ?? false;
+    // Fail-closed архитектура: если поле отсутствует, дефолт false!
+    final isSafe = safetyData!['is_safe'] == true;
+    final hasCritical = safetyData!['has_critical'] == true;
     final warnings = (safetyData!['warnings'] as List?)?.map((e) => e.toString()).toList() ?? [];
+    final unverifiedChecks = (safetyData!['unverified_checks'] as List?)?.map((e) => e.toString()).toList() ?? [];
+    final disclaimer = safetyData!['disclaimer'] as String? ??
+        'Автоматическая проверка взаимодействия лекарств носит информационный характер и не заменяет консультацию врача или провизора. При наличии сомнений обратитесь к врачу.';
 
-    if (isSafe && warnings.isEmpty) {
+    // Явный статус: 'safe', 'conflict', 'unverifiable'
+    final rawStatus = safetyData!['status'] as String?;
+    final status = rawStatus ??
+        (warnings.isNotEmpty
+            ? 'conflict'
+            : (isSafe && unverifiedChecks.isEmpty && safetyData!.containsKey('is_safe')
+                ? 'safe'
+                : 'unverifiable'));
+
+    // 1. ИСХОД SAFE
+    if (status == 'safe' && isSafe && warnings.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
@@ -59,29 +73,43 @@ class SafetyAlertBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFBBF7D0)),
         ),
-        child: const Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 18),
-            SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Безопасно по данным системы поддержки решений (CDS)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF15803D),
-                    ),
+            const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Безопасно по данным системы поддержки решений (CDS)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF15803D),
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Аллергий на активные и вспомогательные вещества, а также дублирования не обнаружено.',
+                        style: TextStyle(fontSize: 10, color: Color(0xFF166534)),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Аллергий на активные и вспомогательные вещества, а также дублирования не обнаружено.',
-                    style: TextStyle(fontSize: 10, color: Color(0xFF166534)),
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              disclaimer,
+              style: const TextStyle(
+                fontSize: 9.5,
+                color: Color(0xFF15803D),
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],
@@ -89,11 +117,84 @@ class SafetyAlertBanner extends StatelessWidget {
       );
     }
 
-    final bgColor = hasCritical ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB);
-    final borderColor = hasCritical ? const Color(0xFFFECACA) : const Color(0xFFFDE68A);
-    final iconColor = hasCritical ? const Color(0xFFDC2626) : const Color(0xFFD97706);
-    final titleColor = hasCritical ? const Color(0xFFB91C1C) : const Color(0xFFB45309);
-    final textColor = hasCritical ? const Color(0xFF991B1B) : const Color(0xFF92400E);
+    // 2. ИСХОД UNVERIFIABLE
+    if (status == 'unverifiable') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(
+                  Icons.help_outline_rounded,
+                  color: Color(0xFFD97706),
+                  size: 18,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Данные неполные: проверить не удалось, обратитесь к врачу или провизору',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB45309),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (unverifiedChecks.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              ...unverifiedChecks.map(
+                (reason) => Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('? ', style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.w700)),
+                      Expanded(
+                        child: Text(
+                          reason,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            color: Color(0xFF92400E),
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              disclaimer,
+              style: const TextStyle(
+                fontSize: 9.5,
+                color: Color(0xFF92400E),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3. ИСХОД CONFLICT
+    final bgColor = hasCritical ? const Color(0xFFFEF2F2) : const Color(0xFFFFF7ED);
+    final borderColor = hasCritical ? const Color(0xFFFECACA) : const Color(0xFFFFEDD5);
+    final iconColor = hasCritical ? const Color(0xFFDC2626) : const Color(0xFFEA580C);
+    final titleColor = hasCritical ? const Color(0xFFB91C1C) : const Color(0xFFC2410C);
+    final textColor = hasCritical ? const Color(0xFF991B1B) : const Color(0xFF9A3412);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -149,6 +250,15 @@ class SafetyAlertBanner extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            disclaimer,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: textColor,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],

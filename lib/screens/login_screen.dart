@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
@@ -259,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     // Brand Logo & Icon (Long Press to configure server API URL)
                     GestureDetector(
-                      onLongPress: () => ServerConfigDialog.show(context),
+                      onLongPress: kReleaseMode ? null : () => ServerConfigDialog.show(context),
                       behavior: HitTestBehavior.opaque,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -909,7 +910,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Server Configuration Chip / Button
                     Center(
                       child: InkWell(
-                        onTap: () => ServerConfigDialog.show(context),
+                        onTap: kReleaseMode ? null : () => ServerConfigDialog.show(context),
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

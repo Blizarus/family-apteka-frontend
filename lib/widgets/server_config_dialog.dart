@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
@@ -8,6 +9,9 @@ class ServerConfigDialog extends StatefulWidget {
   const ServerConfigDialog({super.key});
 
   static Future<void> show(BuildContext context) {
+    if (kReleaseMode) {
+      return Future.value();
+    }
     return showDialog<void>(
       context: context,
       builder: (ctx) => const ServerConfigDialog(),

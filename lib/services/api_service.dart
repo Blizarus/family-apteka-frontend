@@ -45,7 +45,6 @@ class ApiService {
 
   static const String defaultBaseUrl =
       String.fromEnvironment('API_URL', defaultValue: 'http://e340043kek.temp.swtest.ru/api');
-  static const String mirrorBaseUrl = 'http://bluzaus.ru.swtest.ru/api';
 
   String get baseUrl => dio.options.baseUrl;
 
@@ -87,7 +86,7 @@ class ApiService {
           return handler.next(options);
         },
         onError: (DioException error, handler) {
-          debugPrint('API Error [${error.response?.statusCode}]: ${error.requestOptions.path}');
+          if (kDebugMode) debugPrint('API Error [${error.response?.statusCode}]: ${error.requestOptions.path}');
           return handler.next(error);
         },
       ),
@@ -196,7 +195,7 @@ class ApiService {
       final response = await testDio.get('/reference-medicines');
       return response.statusCode == 200;
     } catch (e) {
-      debugPrint('Connection check failed for $cleanUrl: $e');
+      if (kDebugMode) debugPrint('Connection check failed for $cleanUrl: $e');
       return false;
     }
   }

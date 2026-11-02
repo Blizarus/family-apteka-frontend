@@ -89,13 +89,16 @@ class PushNotificationService {
     _instance = null;
   }
 
-  /// Получение FCM-токена устройства (генерация mock/device токена fcm_device_token_...)
+  /// Получение FCM-токена устройства (в тестовом/отладочном режиме mock-токен, в релизе без Firebase - null)
   Future<String?> getDeviceToken() async {
     if (_deviceToken != null) {
       return _deviceToken;
     }
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    _deviceToken = 'fcm_device_token_${timestamp}_mock';
+    if (kReleaseMode) {
+      // В релизной сборке не имитируем токен: если Firebase SDK не сконфигурирован, возвращаем null
+      return null;
+    }
+    _deviceToken = 'fcm_device_token_${DateTime.now().millisecondsSinceEpoch}_mock';
     return _deviceToken;
   }
 
