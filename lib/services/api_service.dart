@@ -53,7 +53,7 @@ class ApiService {
     FlutterSecureStorage? storage,
     StorageService? storageService,
     BiometricService? biometricService,
-    bool isMockMode = false,
+    this.isMockMode = false,
     String? baseUrl,
   })  : dio = dio ??
             Dio(
@@ -69,12 +69,14 @@ class ApiService {
               ),
             ),
         secureStorage = storage ?? const FlutterSecureStorage(),
-        storageService = storageService ?? StorageService(),
-        isMockMode = kReleaseMode ? false : isMockMode {
-    this.biometricService = biometricService ??
+        storageService = storageService ?? StorageService() {
+    if (kReleaseMode) {
+      isMockMode = false;
+    }
+    biometricService = biometricService ??
         BiometricService(
-          storageService: this.storageService,
-          isMockMode: kReleaseMode ? false : isMockMode,
+          storageService: storageService,
+          isMockMode: isMockMode,
         );
     _initCustomUrl();
     this.dio.interceptors.add(
