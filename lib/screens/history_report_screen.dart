@@ -408,7 +408,7 @@ class _HistoryReportScreenState extends State<HistoryReportScreen> {
               _buildMetricItem(
                 label: 'Пропущено',
                 value: '${report.missedCount}',
-                sub: 'приёмов',
+                sub: PdfReportService.formatIntakeNoun(report.missedCount),
                 color: report.missedCount > 0 ? const Color(0xFFEF4444) : AppColors.textMuted,
               ),
               Container(width: 1, height: 32, color: AppColors.border),

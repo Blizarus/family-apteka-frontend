@@ -115,6 +115,29 @@ void main() {
       expect(lowReport.complianceLevelLabel, 'Низкий комплаенс');
     });
 
+    test('Adherence rate is dynamically calculated from actual intake counts', () {
+      // 1. DailyStat dynamic adherence calculation from actual scheduled/taken counts
+      final stat1 = DailyStat(date: '2026-11-01', scheduled: 4, taken: 3, missed: 1);
+      expect(stat1.adherenceRate, equals(75.0)); // (3 / 4) * 100 = 75.0%
+
+      final stat2 = DailyStat(date: '2026-11-02', scheduled: 5, taken: 4, missed: 1);
+      expect(stat2.adherenceRate, equals(80.0)); // (4 / 5) * 100 = 80.0%
+
+      final statEmpty = DailyStat(date: '2026-11-03', scheduled: 0, taken: 0, missed: 0);
+      expect(statEmpty.adherenceRate, equals(100.0)); // 0 scheduled -> 100.0%
+
+      // 2. MedicineAdherence verification
+      final med = MedicineAdherence(
+        medicineId: 10,
+        name: 'Эналаприл',
+        scheduledCount: 20,
+        takenCount: 16,
+        missedCount: 4,
+        adherenceRate: 80.0,
+      );
+      expect((med.takenCount / med.scheduledCount) * 100, equals(med.adherenceRate));
+    });
+
     test('ApiService.getAdherenceReport returns mock report for 7 and 30 days', () async {
       final apiService = ApiService(isMockMode: true);
 

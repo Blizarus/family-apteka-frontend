@@ -367,10 +367,103 @@ void main() {
           reason: 'PDF обязан содержать фактический расчётный процент комплаенса 75.0%');
       expect(pdfContentText, contains('Умеренный комплаенс'),
           reason: 'PDF обязан содержать клиническую категорию «Умеренный комплаенс»');
-      expect(pdfContentText, contains('Пропущено 1 приёмов'),
-          reason: 'PDF обязан отображать количество пропусков');
+      expect(pdfContentText, contains('Пропущено 1 приём'),
+          reason: 'PDF обязан корректно склонять количество пропусков: «1 приём»');
       expect(pdfContentText, contains('Эналаприл 10 мг'),
           reason: 'PDF обязан содержать название препарата в таблице');
+    });
+
+    test('Русская грамматическая плюрализация приёмов (1 приём, 2 приёма, 5 приёмов, 11 приёмов, 21 приём, 22 приёма)', () {
+      expect(PdfReportService.formatIntakesWithCount(1), equals('1 приём'));
+      expect(PdfReportService.formatIntakeNoun(1), equals('приём'));
+
+      expect(PdfReportService.formatIntakesWithCount(2), equals('2 приёма'));
+      expect(PdfReportService.formatIntakeNoun(2), equals('приёма'));
+
+      expect(PdfReportService.formatIntakesWithCount(3), equals('3 приёма'));
+      expect(PdfReportService.formatIntakesWithCount(4), equals('4 приёма'));
+
+      expect(PdfReportService.formatIntakesWithCount(5), equals('5 приёмов'));
+      expect(PdfReportService.formatIntakeNoun(5), equals('приёмов'));
+
+      expect(PdfReportService.formatIntakesWithCount(11), equals('11 приёмов'));
+      expect(PdfReportService.formatIntakeNoun(11), equals('приёмов'));
+
+      expect(PdfReportService.formatIntakesWithCount(12), equals('12 приёмов'));
+      expect(PdfReportService.formatIntakesWithCount(19), equals('19 приёмов'));
+
+      expect(PdfReportService.formatIntakesWithCount(20), equals('20 приёмов'));
+
+      expect(PdfReportService.formatIntakesWithCount(21), equals('21 приём'));
+      expect(PdfReportService.formatIntakeNoun(21), equals('приём'));
+
+      expect(PdfReportService.formatIntakesWithCount(22), equals('22 приёма'));
+      expect(PdfReportService.formatIntakeNoun(22), equals('приёма'));
+
+      expect(PdfReportService.formatIntakesWithCount(25), equals('25 приёмов'));
+      expect(PdfReportService.formatIntakesWithCount(101), equals('101 приём'));
+      expect(PdfReportService.formatIntakesWithCount(111), equals('111 приёмов'));
+      expect(PdfReportService.formatIntakesWithCount(114), equals('114 приёмов'));
+      expect(PdfReportService.formatIntakesWithCount(124), equals('124 приёма'));
+    });
+
+    test('Пороговые значения комплаенса: граничные тесты 59.9, 60.0, 79.9, 80.0, 80.1', () {
+      AdherenceReport createReportWithRate(double rate) {
+        return AdherenceReport(
+          period: PeriodInfo(startDate: DateTime(2026, 10, 1), endDate: DateTime(2026, 10, 7), type: '7_days'),
+          scheduledCount: 10,
+          takenCount: 8,
+          missedCount: 2,
+          adherenceRate: rate,
+          streakDays: 3,
+          dailyStats: [],
+          medicinesSummary: [],
+        );
+      }
+
+      // 59.9% -> Низкий комплаенс
+      expect(createReportWithRate(59.9).complianceLevelLabel, equals('Низкий комплаенс'));
+
+      // 60.0% -> Умеренный комплаенс (нижняя граница умеренного)
+      expect(createReportWithRate(60.0).complianceLevelLabel, equals('Умеренный комплаенс'));
+
+      // 79.9% -> Умеренный комплаенс (верхняя граница умеренного)
+      expect(createReportWithRate(79.9).complianceLevelLabel, equals('Умеренный комплаенс'));
+
+      // 80.0% -> Высокий комплаенс (ровно 80.0% классифицируется как Высокий)
+      expect(createReportWithRate(80.0).complianceLevelLabel, equals('Высокий комплаенс'));
+
+      // 80.1% -> Высокий комплаенс
+      expect(createReportWithRate(80.1).complianceLevelLabel, equals('Высокий комплаенс'));
+    });
+
+    test('Оффлайн-генерация PDF со встроенными шрифтами Roboto без сети и валидация падения', () async {
+      final report = AdherenceReport(
+        period: PeriodInfo(startDate: DateTime(2026, 10, 1), endDate: DateTime(2026, 10, 7), type: '7_days'),
+        scheduledCount: 5,
+        takenCount: 5,
+        missedCount: 0,
+        adherenceRate: 100.0,
+        streakDays: 5,
+        dailyStats: [],
+        medicinesSummary: [],
+      );
+
+      // Генерация БЕЗ явной передачи шрифтов — использует локальные ассеты assets/fonts/Roboto-*.ttf
+      final pdfBytes = await PdfReportService.generateAdherencePdf(
+        report: report,
+        profile: Profile(id: 1, name: 'Автономный Тест', role: 'Пациент', avatar: '👤', subtitle: 'Тестовый профиль', birthDate: null, allergies: []),
+        doctorNote: 'Автономная проверка шрифтов без внешних сетевых запросов',
+      );
+
+      expect(pdfBytes, isNotEmpty);
+      expect(pdfBytes.length, greaterThan(1000));
+
+      // Проверка падения при запросе несуществующего шрифта
+      expect(
+        () async => await PdfReportService.loadLocalFont('assets/fonts/NonExistentFont.ttf'),
+        throwsA(isA<StateError>()),
+      );
     });
   });
 }

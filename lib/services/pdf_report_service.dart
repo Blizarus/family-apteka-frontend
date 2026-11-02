@@ -1,11 +1,63 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import '../models/adherence_report.dart';
 import '../models/profile.dart';
 
 class PdfReportService {
+  /// Форматирование существительного «приём» по правилам русской плюрализации:
+  /// 1 приём, 2-4 приёма, 5-20 приёмов, 21 приём, 22 приёма, 25 приёмов.
+  static String formatIntakeNoun(int count) {
+    final mod100 = count.abs() % 100;
+    final mod10 = count.abs() % 10;
+    if (mod100 >= 11 && mod100 <= 19) {
+      return 'приёмов';
+    }
+    if (mod10 == 1) {
+      return 'приём';
+    }
+    if (mod10 >= 2 && mod10 <= 4) {
+      return 'приёма';
+    }
+    return 'приёмов';
+  }
+
+  /// Полная фраза с числом: «1 приём», «2 приёма», «5 приёмов», «11 приёмов», «21 приём»
+  static String formatIntakesWithCount(int count) {
+    return '$count ${formatIntakeNoun(count)}';
+  }
+
+  /// Загрузка шрифта из локальных ассетов приложения без использования внешних сетевых запросов.
+  static Future<pw.Font> loadLocalFont(String assetPath) async {
+    // 1. Попытка через стандартный asset bundle Flutter
+    try {
+      final bytes = await rootBundle.load(assetPath);
+      return pw.Font.ttf(bytes);
+    } catch (_) {}
+
+    // 2. Попытка чтения локального файла (для тестов вне платформенного окружения)
+    final candidatePaths = [
+      assetPath,
+      'app/frontend/$assetPath',
+      '../$assetPath',
+      '../../$assetPath',
+    ];
+    for (final path in candidatePaths) {
+      final file = File(path);
+      if (file.existsSync()) {
+        final bytes = file.readAsBytesSync();
+        return pw.Font.ttf(bytes.buffer.asByteData());
+      }
+    }
+
+    throw StateError(
+      'Локальный шрифт "$assetPath" не найден в ассетах приложения. '
+      'Убедитесь, что файлы шрифтов помещены в assets/fonts/ и объявлены в pubspec.yaml.',
+    );
+  }
+
   /// Генерация бинарных данных PDF-документа отчёта о комплаенсе для врача.
   static Future<Uint8List> generateAdherencePdf({
     required AdherenceReport report,
@@ -26,14 +78,9 @@ class PdfReportService {
       fontRegular = customFontRegular;
       fontBold = customFontBold;
     } else {
-      try {
-        fontRegular = await PdfGoogleFonts.robotoRegular();
-        fontBold = await PdfGoogleFonts.robotoBold();
-      } catch (e) {
-        debugPrint('Failed to load Google Fonts, falling back to standard fonts: $e');
-        fontRegular = pw.Font.helvetica();
-        fontBold = pw.Font.helveticaBold();
-      }
+      // Использование встроенных локальных шрифтов Roboto из assets/fonts
+      fontRegular = await loadLocalFont('assets/fonts/Roboto-Regular.ttf');
+      fontBold = await loadLocalFont('assets/fonts/Roboto-Bold.ttf');
     }
 
     final theme = pw.ThemeData.withFont(
@@ -126,7 +173,7 @@ class PdfReportService {
               pw.SizedBox(width: 8),
               _buildKpiCard('Принято вовремя', '${report.takenCount}', 'успешно', PdfColors.green800),
               pw.SizedBox(width: 8),
-              _buildKpiCard('Пропущено', '${report.missedCount}', 'приёмов', PdfColors.red800),
+              _buildKpiCard('Пропущено', '${report.missedCount}', formatIntakeNoun(report.missedCount), PdfColors.red800),
               pw.SizedBox(width: 8),
               _buildKpiCard('Стрик дисциплины', '${report.streakDays} дн.', 'подряд', primaryColor),
             ],
