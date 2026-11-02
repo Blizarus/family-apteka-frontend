@@ -244,12 +244,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppDarkColors.background : AppColors.background;
+    final surface = isDark ? AppDarkColors.surface : Colors.white;
+    final surfaceSubtle = isDark ? AppDarkColors.surfaceSubtle : AppColors.background;
+    final border = isDark ? AppDarkColors.border : AppColors.border;
+    final textPrimary = isDark ? AppDarkColors.textPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppDarkColors.textSecondary : AppColors.textSecondary;
+    final textMuted = isDark ? AppDarkColors.textMuted : AppColors.textMuted;
+    final primarySurface = isDark ? AppDarkColors.primarySurface : AppColors.primarySurface;
+    final primaryBorder = isDark ? AppDarkColors.primaryBorder : AppColors.primaryBorder;
+    final selectorBg = isDark ? AppDarkColors.surfaceSubtle : const Color(0xFFE2E8F0);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 520;
 
         Widget content = Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: bg,
           body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -270,9 +282,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 72,
                               height: 72,
                               decoration: BoxDecoration(
-                                color: AppColors.primarySurface,
+                                color: primarySurface,
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: AppColors.primaryBorder),
+                                border: Border.all(color: primaryBorder),
                                 boxShadow: [
                                   BoxShadow(
                                     color: AppColors.primary.withValues(alpha: 0.15),
@@ -288,13 +300,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 16),
 
                           // Title & Subtitle
-                          const Text(
+                          Text(
                             'Семейная Аптечка',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: textPrimary,
                             ),
                           ),
                         ],
@@ -306,9 +318,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? 'Health-Tech Minimal • Регистрация по 152-ФЗ'
                           : 'Health-Tech Minimal • Вход в систему',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -318,7 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE2E8F0),
+                        color: selectorBg,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
@@ -335,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 duration: const Duration(milliseconds: 200),
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: !_isRegisterMode ? Colors.white : Colors.transparent,
+                                  color: !_isRegisterMode ? surface : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: !_isRegisterMode
                                       ? [
@@ -355,9 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: !_isRegisterMode
                                         ? FontWeight.w700
                                         : FontWeight.w600,
-                                    color: !_isRegisterMode
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
+                                    color: !_isRegisterMode ? AppColors.primary : textSecondary,
                                   ),
                                 ),
                               ),
@@ -375,7 +385,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 duration: const Duration(milliseconds: 200),
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: _isRegisterMode ? Colors.white : Colors.transparent,
+                                  color: _isRegisterMode ? surface : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: _isRegisterMode
                                       ? [
@@ -395,9 +405,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: _isRegisterMode
                                         ? FontWeight.w700
                                         : FontWeight.w600,
-                                    color: _isRegisterMode
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
+                                    color: _isRegisterMode ? AppColors.primary : textSecondary,
                                   ),
                                 ),
                               ),
@@ -412,9 +420,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: surface,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: border),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.03),
@@ -428,27 +436,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           // In Registration mode: Full Name field
                           if (_isRegisterMode) ...[
-                            const Text(
+                            Text(
                               'ВАШЕ ИМЯ ИЛИ ПСЕВДОНИМ',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.8,
-                                color: AppColors.textMuted,
+                                color: textMuted,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Container(
                               decoration: BoxDecoration(
-                                color: AppColors.background,
+                                color: surfaceSubtle,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: border),
                               ),
                               child: TextField(
                                 controller: _nameController,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textPrimary,
+                                  color: textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 decoration: const InputDecoration(
@@ -475,28 +483,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
 
                           // Email Field
-                          const Text(
+                          Text(
                             'ЭЛЕКТРОННАЯ ПОЧТА',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Container(
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: surfaceSubtle,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: border),
                             ),
                             child: TextField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: AppColors.textPrimary,
+                                color: textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                               decoration: const InputDecoration(
@@ -526,26 +534,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             _isRegisterMode
                                 ? 'ПАРОЛЬ (ОТ 8 СИМВОЛОВ)'
                                 : 'ПАРОЛЬ',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Container(
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: surfaceSubtle,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: border),
                             ),
                             child: TextField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: AppColors.textPrimary,
+                                color: textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                               decoration: InputDecoration(
@@ -586,28 +594,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           // In Registration mode: Confirm Password field
                           if (_isRegisterMode) ...[
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'ПОДТВЕРЖДЕНИЕ ПАРОЛЯ',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.8,
-                                color: AppColors.textMuted,
+                                color: textMuted,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Container(
                               decoration: BoxDecoration(
-                                color: AppColors.background,
+                                color: surfaceSubtle,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: border),
                               ),
                               child: TextField(
                                 controller: _passwordConfirmController,
                                 obscureText: _obscureConfirmPassword,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textPrimary,
+                                  color: textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 decoration: InputDecoration(
@@ -731,9 +739,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: AppColors.background,
+                                color: surfaceSubtle,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: border),
                               ),
                               child: Row(
                                 children: [
@@ -741,7 +749,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Row(
+                                        Row(
                                           children: [
                                             Text('🔄', style: TextStyle(fontSize: 12)),
                                             SizedBox(width: 6),
@@ -751,7 +759,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w700,
-                                                  color: AppColors.textPrimary,
+                                                  color: textPrimary,
                                                 ),
                                               ),
                                             ),
@@ -762,9 +770,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                           _syncEnabled
                                               ? 'Синхронизация между семейными устройствами включена'
                                               : 'Если выключено — данные сохраняются только на этом устройстве',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 10,
-                                            color: AppColors.textMuted,
+                                            color: textMuted,
                                           ),
                                         ),
                                       ],
@@ -840,9 +848,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Quick Test Credentials Button
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.primaryDeep,
-                        side: const BorderSide(color: AppColors.primaryBorder),
+                        backgroundColor: surface,
+                        foregroundColor: isDark ? AppDarkColors.primary : AppColors.primaryDeep,
+                        side: BorderSide(color: primaryBorder),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -864,9 +872,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF4F46E5),
-                          side: const BorderSide(color: Color(0xFFC7D2FE)),
+                          backgroundColor: surface,
+                          foregroundColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+                          side: BorderSide(color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -896,12 +904,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 10),
 
                     // Preset Hint Info
-                    const Text(
+                    Text(
                       'Тестовые данные: anna@family.test (пароль: password) • admin@family.test (пароль: admin123)\nRate limit: 5 попыток в минуту • 152-ФЗ Protected',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                         height: 1.4,
                       ),
                     ),
@@ -915,9 +923,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: surface,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: border),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.03),
@@ -943,10 +951,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 context.watch<ApiService>().isMockMode
                                     ? 'Автономный режим (Демо)'
                                     : 'Сервер: swtest.ru',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary,
+                                  color: textSecondary,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -1015,7 +1023,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 840,
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: bg,
                       borderRadius: BorderRadius.circular(44),
                       border: Border.all(color: const Color(0xFF334155), width: 8),
                       boxShadow: [
