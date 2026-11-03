@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/providers/app_state.dart';
+import 'package:frontend/services/api_service.dart';
 import 'package:frontend/services/local_notification_service.dart';
+import 'package:frontend/services/storage_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +39,23 @@ void main() {
 
       await service.cancelReminder(101);
       await service.cancelAll();
+    });
+
+    test('4. AppState loads intakes and integrates with reminder lifecycle (DEF-17 & DEF-19)', () async {
+      final storage = await StorageService.init();
+      final apiService = ApiService(isMockMode: true, storageService: storage);
+      final appState = AppState(apiService: apiService);
+
+      await appState.loadIntakes();
+      expect(appState.intakes, isNotEmpty);
+
+      final firstId = appState.intakes.first.id;
+      final takenOk = await appState.markIntakeTaken(firstId);
+      expect(takenOk, isTrue);
+
+      final undoRes = await appState.undoIntake(firstId);
+      expect(undoRes, isNotNull);
+      expect(appState.intakes.firstWhere((i) => i.id == firstId).isTaken, isFalse);
     });
   });
 }

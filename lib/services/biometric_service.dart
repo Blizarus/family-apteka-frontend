@@ -61,9 +61,11 @@ class BiometricService {
   }
 
   /// Prompts the user for biometric authentication with the given [localizedReason].
+  /// [biometricOnly] defaults to `false` allowing system PIN / passcode fallback (DEF-18).
   /// Returns `true` if authentication succeeded, `false` otherwise.
   Future<bool> authenticate({
     required String localizedReason,
+    bool biometricOnly = false,
   }) async {
     if (isMockMode) {
       return mockAuthResult;
@@ -77,7 +79,7 @@ class BiometricService {
 
       return await _localAuth.authenticate(
         localizedReason: localizedReason,
-        biometricOnly: true,
+        biometricOnly: biometricOnly,
         persistAcrossBackgrounding: true,
       );
     } on PlatformException {

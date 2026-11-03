@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/api_service.dart';
-
+import 'services/local_notification_service.dart';
 import 'services/storage_service.dart';
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
+import 'widgets/app_lock_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize local notifications service (DEF-17)
+  await LocalNotificationService.instance.initialize();
 
   // Initialize persistent storage before rendering first frame
   final storageService = await StorageService.init();
@@ -85,7 +89,7 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
 
         final isAuthenticated = snapshot.data ?? false;
         if (isAuthenticated) {
-          return const MainScreen();
+          return const AppLockGate(child: MainScreen());
         } else {
           return const LoginScreen();
         }

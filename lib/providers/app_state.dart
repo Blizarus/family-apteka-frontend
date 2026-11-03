@@ -10,6 +10,7 @@ import '../models/reference_medicine.dart';
 import '../models/notification_item.dart';
 import '../models/adherence_report.dart';
 import '../services/api_service.dart';
+import '../services/local_notification_service.dart';
 
 class AppState extends ChangeNotifier {
   final ApiService apiService;
@@ -306,6 +307,7 @@ class AppState extends ChangeNotifier {
       }
       _notifications = results[5] as List<NotificationItem>;
       _generateLowStockNotifications();
+      _scheduleRemindersForIntakes(_intakes);
 
       final savedBoxId = await apiService.storageService.getSelectedBoxId();
       if (savedBoxId != null && _boxes.any((b) => b.id == savedBoxId)) {
@@ -400,6 +402,7 @@ class AppState extends ChangeNotifier {
       _medicines = results[1] as List<Medicine>;
       _notifications = results[2] as List<NotificationItem>;
       _generateLowStockNotifications();
+      _scheduleRemindersForIntakes(_intakes);
 
       // Обновляем сопоставления в существующих заметках
       _notes = _notes.map((note) {
@@ -561,6 +564,7 @@ class AppState extends ChangeNotifier {
         intakeId,
         confirmWithoutStock: confirmWithoutStock,
       );
+      await LocalNotificationService.instance.cancelReminder(intakeId);
       await refreshData();
       return res;
     } finally {
@@ -577,9 +581,43 @@ class AppState extends ChangeNotifier {
   Future<bool> skipIntake(int intakeId, {String? reason}) async {
     final success = await apiService.skipIntake(intakeId, reason: reason);
     if (success) {
+      await LocalNotificationService.instance.cancelReminder(intakeId);
       await refreshData();
     }
     return success;
+  }
+
+  Future<Map<String, dynamic>?> undoIntake(int intakeId) async {
+    if (_processingIntakeIds.contains(intakeId)) {
+      return null;
+    }
+    _processingIntakeIds.add(intakeId);
+    notifyListeners();
+
+    try {
+      final res = await apiService.undoIntakeLog(intakeId);
+      await refreshData();
+      return res;
+    } finally {
+      _processingIntakeIds.remove(intakeId);
+      notifyListeners();
+    }
+  }
+
+  Future<void> _scheduleRemindersForIntakes(List<IntakeLog> logs) async {
+    for (final log in logs) {
+      if (!log.isTaken && log.status != 'skipped') {
+        final scheduledTime = log.scheduledTime;
+        if (scheduledTime != null && scheduledTime.isAfter(DateTime.now())) {
+          await LocalNotificationService.instance.scheduleIntakeReminder(
+            id: log.id,
+            title: 'Время принять лекарство',
+            body: '${log.medicineName} • ${log.rule}',
+            scheduledDate: scheduledTime,
+          );
+        }
+      }
+    }
   }
 
   Future<bool> snoozeIntake(int intakeId, {int minutes = 15}) async {
@@ -616,6 +654,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> loadIntakes({DateTime? date}) async {
     _intakes = await apiService.getIntakes();
+    _scheduleRemindersForIntakes(_intakes);
     notifyListeners();
   }
 

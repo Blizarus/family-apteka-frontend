@@ -9,6 +9,7 @@ import 'package:frontend/services/storage_service.dart';
 import 'package:frontend/services/biometric_service.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/widgets/biometric_prompt_dialog.dart';
+import 'package:frontend/widgets/app_lock_gate.dart';
 
 class _DelayedBiometricService extends BiometricService {
   final Completer<bool> completer = Completer<bool>();
@@ -16,7 +17,7 @@ class _DelayedBiometricService extends BiometricService {
   _DelayedBiometricService() : super(isMockMode: true);
 
   @override
-  Future<bool> authenticate({required String localizedReason}) {
+  Future<bool> authenticate({required String localizedReason, bool biometricOnly = false}) {
     return completer.future;
   }
 }
@@ -440,6 +441,70 @@ void main() {
 
       // Clean snackbar
       await tester.pump(const Duration(seconds: 4));
+    });
+  });
+
+  group('4. AppLockGate Biometric Gatekeeper Tests (DEF-18)', () {
+    testWidgets('Renders child immediately when biometric is disabled', (tester) async {
+      SharedPreferences.setMockInitialValues({'biometric_auth_enabled': false});
+      final storage = await StorageService.init();
+      final apiService = ApiService(isMockMode: true, storageService: storage);
+      final bioService = BiometricService(isMockMode: true, mockAuthResult: true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Provider<ApiService>.value(
+            value: apiService,
+            child: AppLockGate(
+              biometricService: bioService,
+              child: const Text('Secured Content'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Secured Content'), findsOneWidget);
+      expect(find.byKey(const Key('app_lock_unlock_button')), findsNothing);
+    });
+
+    testWidgets('Displays lock screen and allows unlock when biometric is enabled', (tester) async {
+      SharedPreferences.setMockInitialValues({'biometric_auth_enabled': true});
+      final storage = await StorageService.init();
+      final apiService = ApiService(isMockMode: true, storageService: storage);
+      // Initially auth fails
+      final bioService = BiometricService(isMockMode: true, mockAuthResult: false);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Provider<ApiService>.value(
+            value: apiService,
+            child: AppLockGate(
+              biometricService: bioService,
+              child: const Text('Secured Content'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Lock screen displayed
+      expect(find.text('Вход заблокирован'), findsOneWidget);
+      expect(find.byKey(const Key('app_lock_unlock_button')), findsOneWidget);
+      expect(find.text('Secured Content'), findsNothing);
+
+      // Now set mock result to success and tap unlock
+      bioService.mockAuthResult = true;
+      await tester.tap(find.byKey(const Key('app_lock_unlock_button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Secured Content'), findsOneWidget);
+      expect(find.byKey(const Key('app_lock_unlock_button')), findsNothing);
     });
   });
 }

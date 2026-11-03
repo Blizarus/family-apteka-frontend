@@ -492,6 +492,15 @@ class TodayScreen extends StatelessWidget {
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: semantic.successText),
             ),
           ),
+          const SizedBox(width: 4),
+          IconButton(
+            key: Key('undo_intake_${item.id}'),
+            icon: Icon(Icons.undo_rounded, size: 18, color: cs.primary),
+            tooltip: 'Отменить приём',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () => _handleUndoIntake(context, state, item),
+          ),
         ],
       ),
     );
@@ -1082,6 +1091,51 @@ class TodayScreen extends StatelessWidget {
         message: 'Ошибка приёма: $e',
         icon: '⚠️',
       );
+    }
+  }
+
+  Future<void> _handleUndoIntake(BuildContext context, AppState state, IntakeLog item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Отмена приёма'),
+        content: Text(
+          'Вы действительно хотите отменить приём «${item.medicineName}» и вернуть препарат на остаток?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            key: const Key('confirm_undo_button'),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Вернуть приём'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final res = await state.undoIntake(item.id);
+        if (context.mounted) {
+          final msg = res?['message']?.toString() ?? 'Приём отменён, остаток восстановлен.';
+          ToastHelper.show(
+            context,
+            message: msg,
+            icon: '↩️',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ToastHelper.show(
+            context,
+            message: 'Ошибка отмены приёма: $e',
+            icon: '⚠️',
+          );
+        }
+      }
     }
   }
 }

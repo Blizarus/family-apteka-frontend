@@ -1503,6 +1503,42 @@ class ApiService {
     return response.statusCode == 200 || response.statusCode == 201;
   }
 
+  Future<Map<String, dynamic>> undoIntakeLog(int id) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      final index = _mockIntakes.indexWhere((i) => i.id == id);
+      if (index != -1) {
+        final current = _mockIntakes[index];
+        final restored = ((current.remaining ?? 0) + 1.0).toDouble();
+        _mockIntakes[index] = current.copyWith(
+          taken: false,
+          status: 'scheduled',
+          remaining: restored,
+        );
+        return {
+          'message': 'Приём успешно отменён, остаток восстановлен (мок)',
+          'data': _mockIntakes[index].toJson(),
+          'refunded_quantity': 1.0,
+          'remaining_quantity': restored,
+        };
+      }
+      return {'message': 'Log not found', 'success': false};
+    }
+
+    try {
+      final response = await dio.post('/intake-logs/$id/undo');
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return {'data': data, 'statusCode': response.statusCode};
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?['message'] ?? 'Ошибка отмены приёма: ${e.message}',
+      );
+    }
+  }
+
   // ==========================================
   // CLINICAL DECISION SUPPORT (CDS) SAFETY CHECK
   // ==========================================
