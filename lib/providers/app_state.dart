@@ -518,7 +518,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteMedicineBox(int boxId) async {
+  Future<bool> deleteMedicineBox(int boxId) async {
     try {
       final success = await apiService.deleteMedicineBox(boxId);
       if (success) {
@@ -527,9 +527,12 @@ class AppState extends ChangeNotifier {
           _selectedBoxId = _boxes.isNotEmpty ? _boxes.first.id : 1;
         }
         notifyListeners();
+        return true;
       }
+      return false;
     } catch (e) {
       debugPrint('Error deleting medicine box: $e');
+      rethrow;
     }
   }
 

@@ -150,8 +150,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
       if (confirmed != true || !mounted) return;
 
-      await state.toggleBlockUser(userId, true);
-      if (mounted) {
+      try {
+        await state.toggleBlockUser(userId, true);
+        if (!mounted) return;
         ToastHelper.show(
           context,
           message: 'Пользователь заблокирован, все активные сессии аннулированы',
@@ -159,17 +160,34 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           isError: true,
         );
         _loadUsers();
+      } catch (e) {
+        if (!mounted) return;
+        ToastHelper.show(
+          context,
+          message: 'Ошибка блокировки пользователя: $e',
+          icon: '⚠️',
+          isError: true,
+        );
       }
     } else {
       // Unblock
-      await state.toggleBlockUser(userId, false);
-      if (mounted) {
+      try {
+        await state.toggleBlockUser(userId, false);
+        if (!mounted) return;
         ToastHelper.show(
           context,
           message: 'Пользователь $email успешно разблокирован',
           icon: '✓',
         );
         _loadUsers();
+      } catch (e) {
+        if (!mounted) return;
+        ToastHelper.show(
+          context,
+          message: 'Ошибка разблокировки пользователя: $e',
+          icon: '⚠️',
+          isError: true,
+        );
       }
     }
   }
@@ -530,17 +548,27 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     'is_prescription': isPrescription,
                   };
 
-                  Navigator.pop(ctx);
                   final state = context.read<AppState>();
-                  await state.addReferenceMedicine(payload);
-
-                  if (!mounted) return;
-                  ToastHelper.show(
-                    context,
-                    message: 'Препарат успешно добавлен в справочник ГРЛС',
-                    icon: '💊',
-                  );
-                  _loadReferenceMedicines(_medSearchController.text.trim());
+                  try {
+                    await state.addReferenceMedicine(payload);
+                    if (!dialogCtx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    ToastHelper.show(
+                      context,
+                      message: 'Препарат успешно добавлен в справочник ГРЛС',
+                      icon: '💊',
+                    );
+                    _loadReferenceMedicines(_medSearchController.text.trim());
+                  } catch (e) {
+                    if (!mounted) return;
+                    ToastHelper.show(
+                      context,
+                      message: 'Ошибка добавления препарата: $e',
+                      icon: '⚠️',
+                      isError: true,
+                    );
+                  }
                 },
                 icon: const Icon(Icons.check_rounded, size: 16),
                 label: const Text('Сохранить в ГРЛС'),
