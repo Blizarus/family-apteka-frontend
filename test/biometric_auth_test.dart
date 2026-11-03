@@ -33,6 +33,11 @@ void main() {
   });
 
   group('1. BiometricService & StorageService Unit Tests (T-14)', () {
+    test('DEF-04: BiometricService default constructor initializes isMockMode to false', () {
+      final service = BiometricService();
+      expect(service.isMockMode, isFalse);
+    });
+
     test('StorageService saves and retrieves biometricEnabled state', () async {
       final storage = StorageService();
       expect(await storage.isBiometricEnabled(), isFalse);

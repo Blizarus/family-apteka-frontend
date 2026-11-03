@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'storage_service.dart';
@@ -19,7 +18,7 @@ class BiometricService {
     this.mockAuthResult = true,
     this.mockAvailable = true,
   })  : _localAuth = localAuth ?? LocalAuthentication(),
-        isMockMode = isMockMode ?? !kReleaseMode {
+        isMockMode = isMockMode ?? false {
     _storageService = storageService;
   }
 

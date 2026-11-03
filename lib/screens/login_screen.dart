@@ -11,13 +11,21 @@ import '../widgets/privacy_consent_dialog.dart';
 import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool? showDemoCredentials;
+
+  const LoginScreen({
+    super.key,
+    this.showDemoCredentials,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  bool get _shouldShowDemoCredentials =>
+      widget.showDemoCredentials ?? !kReleaseMode;
+
   bool _isRegisterMode = false;
 
   final TextEditingController _nameController =
@@ -845,76 +853,78 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    if (_shouldShowDemoCredentials) ...[
+                      const SizedBox(height: 18),
 
-                    // Quick Test Credentials Button
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: surface,
-                        foregroundColor: primaryColor,
-                        side: BorderSide(color: primaryBorder),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: _isLoading ? null : _fillTestCredentials,
-                      icon: const Text('⚡', style: TextStyle(fontSize: 15)),
-                      label: Text(
-                        _isRegisterMode
-                            ? 'Заполнить демо-данными'
-                            : 'Тестовый вход (anna@family.test)',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    if (!_isRegisterMode) ...[
-                      const SizedBox(height: 8),
+                      // Quick Test Credentials Button
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: surface,
-                          foregroundColor: semantic.info,
-                          side: BorderSide(color: semantic.infoBorder),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          foregroundColor: primaryColor,
+                          side: BorderSide(color: primaryBorder),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: _isLoading ? null : () {
-                          setState(() {
-                            _emailController.text = 'admin@family.test';
-                            _passwordController.text = 'admin123';
-                          });
-                          ToastHelper.show(
-                            context,
-                            message: 'Данные администратора подставлены',
-                            icon: '🛡️',
-                          );
-                        },
-                        icon: const Text('🛡️', style: TextStyle(fontSize: 14)),
-                        label: const Text(
-                          'Вход администратора (admin@family.test)',
-                          style: TextStyle(
+                        onPressed: _isLoading ? null : _fillTestCredentials,
+                        icon: const Text('⚡', style: TextStyle(fontSize: 15)),
+                        label: Text(
+                          _isRegisterMode
+                              ? 'Заполнить демо-данными'
+                              : 'Тестовый вход (anna@family.test)',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 10),
+                      if (!_isRegisterMode) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: surface,
+                            foregroundColor: semantic.info,
+                            side: BorderSide(color: semantic.infoBorder),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: _isLoading ? null : () {
+                            setState(() {
+                              _emailController.text = 'admin@family.test';
+                              _passwordController.text = 'admin123';
+                            });
+                            ToastHelper.show(
+                              context,
+                              message: 'Данные администратора подставлены',
+                              icon: '🛡️',
+                            );
+                          },
+                          icon: const Text('🛡️', style: TextStyle(fontSize: 14)),
+                          label: const Text(
+                            'Вход администратора (admin@family.test)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
 
-                    // Preset Hint Info
-                    Text(
-                      'Тестовые данные: anna@family.test (пароль: password) • admin@family.test (пароль: admin123)\nRate limit: 5 попыток в минуту • 152-ФЗ Protected',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: textMuted,
-                        height: 1.4,
+                      // Preset Hint Info
+                      Text(
+                        'Тестовые данные: anna@family.test (пароль: password) • admin@family.test (пароль: admin123)\nRate limit: 5 попыток в минуту • 152-ФЗ Protected',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: textMuted,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 16),
 
                     // Server Configuration Chip / Button
