@@ -19,9 +19,11 @@ class TodayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppDarkColors.background : AppColors.background;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bg,
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'today_screen_add_course_fab',
         backgroundColor: AppColors.primary,
@@ -321,9 +323,9 @@ class TodayScreen extends StatelessWidget {
         margin: const EdgeInsets.only(top: 24),
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.border : AppColors.border),
         ),
         child: Column(
           children: [
@@ -588,7 +590,7 @@ class TodayScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primary, width: 2),
         boxShadow: [
@@ -812,9 +814,9 @@ class TodayScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.border : AppColors.border),
       ),
       child: Column(
         children: [

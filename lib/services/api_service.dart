@@ -98,23 +98,41 @@ class ApiService {
 
   Future<String?> _getToken() async {
     if (_inMemoryToken != null) return _inMemoryToken;
+    if (isMockMode) return _inMemoryToken;
+
+    // 1. Fast check in StorageService (SharedPreferences is already warm in memory)
+    try {
+      final backupToken = await storageService.getAuthToken();
+      if (backupToken != null && backupToken.isNotEmpty) {
+        _inMemoryToken = backupToken;
+        return backupToken;
+      }
+    } catch (_) {}
+
+    // 2. Hardware Keystore / FlutterSecureStorage fallback
     try {
       final token = await secureStorage.read(key: 'auth_token').timeout(
-        const Duration(milliseconds: 200),
+        const Duration(milliseconds: 500),
         onTimeout: () => null,
       );
-      _inMemoryToken = token;
-      return token;
-    } catch (_) {
-      return _inMemoryToken;
-    }
+      if (token != null && token.isNotEmpty) {
+        _inMemoryToken = token;
+        return token;
+      }
+    } catch (_) {}
+
+    return _inMemoryToken;
   }
 
   Future<void> setToken(String token) async {
     _inMemoryToken = token;
     try {
+      await storageService.saveAuthToken(token);
+    } catch (_) {}
+    if (isMockMode) return;
+    try {
       await secureStorage.write(key: 'auth_token', value: token).timeout(
-        const Duration(milliseconds: 200),
+        const Duration(milliseconds: 500),
         onTimeout: () => null,
       );
     } catch (_) {}
@@ -123,8 +141,12 @@ class ApiService {
   Future<void> clearToken() async {
     _inMemoryToken = null;
     try {
+      await storageService.clearAuthToken();
+    } catch (_) {}
+    if (isMockMode) return;
+    try {
       await secureStorage.delete(key: 'auth_token').timeout(
-        const Duration(milliseconds: 200),
+        const Duration(milliseconds: 500),
         onTimeout: () => null,
       );
     } catch (_) {}
@@ -345,8 +367,22 @@ class ApiService {
       }
       return response.statusCode == 200;
     } catch (e) {
-      if (e is DioException && e.response?.statusCode == 401) {
-        await clearToken();
+      if (e is DioException) {
+        // If server explicitly responded with 401 Unauthorized, token is expired or revoked.
+        if (e.response?.statusCode == 401) {
+          await clearToken();
+          return false;
+        }
+        // If network is offline or server unreachable (e.g. connection timeout, receive timeout,
+        // no connection, host unreachable), KEEP user authenticated so they are not kicked to login.
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.unknown ||
+            e.response == null) {
+          return true;
+        }
       }
       return false;
     }

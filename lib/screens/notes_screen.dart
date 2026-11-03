@@ -197,8 +197,9 @@ class _NotesScreenState extends State<NotesScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
       floatingActionButton: AnimatedPadding(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,

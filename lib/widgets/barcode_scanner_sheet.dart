@@ -25,18 +25,19 @@ class BarcodeScannerSheet extends StatefulWidget {
 }
 
 class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final MobileScannerController _controller;
   late final AnimationController _laserAnimationController;
   final TextEditingController _manualCodeController = TextEditingController();
 
   bool _isTorchOn = false;
   bool _hasDetected = false;
-  bool _isCameraError = false;
+  bool _isRetrying = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       returnImage: false,
@@ -49,11 +50,33 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _retryCamera();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _laserAnimationController.dispose();
     _controller.dispose();
     _manualCodeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _retryCamera() async {
+    if (_isRetrying || !mounted) return;
+    setState(() => _isRetrying = true);
+    try {
+      await _controller.stop();
+    } catch (_) {}
+    try {
+      await _controller.start();
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isRetrying = false);
+    }
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -103,30 +126,21 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // 1. Camera Viewfinder
-          if (!_isCameraError)
-            Positioned.fill(
-              child: MobileScanner(
-                controller: _controller,
-                onDetect: _onDetect,
-                errorBuilder: (context, error, child) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && !_isCameraError) {
-                      setState(() => _isCameraError = true);
-                    }
-                  });
-                  return _buildFallbackView();
-                },
-              ),
-            )
-          else
-            Positioned.fill(child: _buildFallbackView()),
+          // 1. Camera Viewfinder with inline error handling
+          Positioned.fill(
+            child: MobileScanner(
+              controller: _controller,
+              onDetect: _onDetect,
+              errorBuilder: (context, error, child) {
+                return _buildCameraErrorView(error);
+              },
+            ),
+          ),
 
           // 2. Targeting Overlay with Laser
-          if (!_isCameraError)
-            Positioned.fill(
-              child: _buildScannerOverlay(scanWindowSize),
-            ),
+          Positioned.fill(
+            child: _buildScannerOverlay(scanWindowSize),
+          ),
 
           // 3. Top Action Bar: Close, Title, Torch, Flip
           Positioned(
@@ -303,41 +317,82 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
     );
   }
 
-  Widget _buildFallbackView() {
+  Widget _buildCameraErrorView(MobileScannerException error) {
+    final bool isPermission = error.errorCode == MobileScannerErrorCode.permissionDenied;
+
     return Container(
       color: const Color(0xFF0F172A),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isPermission ? const Color(0xFFF59E0B).withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isPermission ? Icons.videocam_off_rounded : Icons.camera_alt_outlined,
+                size: 44,
+                color: isPermission ? const Color(0xFFFBBF24) : const Color(0xFF2DD4BF),
+              ),
             ),
-            child: const Icon(
-              Icons.camera_alt_outlined,
-              size: 48,
-              color: Color(0xFF2DD4BF),
+            const SizedBox(height: 14),
+            Text(
+              isPermission ? 'Требуется доступ к камере' : 'Камера инициализируется...',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Камера недоступна (Web / Эмулятор)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+            const SizedBox(height: 6),
+            Text(
+              isPermission
+                  ? 'Предоставьте разрешение для автоматического считывания штрихкодов и DataMatrix кодов «Честный Знак»'
+                  : 'Повторите попытку или введите считанный штрихкод вручную ниже',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
             ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Вы можете ввести считанный код вручную или нажать тестовый штрихкод',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.white70),
-          ),
+            const SizedBox(height: 16),
+
+            // Retry / Request Permission Button
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isPermission ? const Color(0xFF0D9488) : const Color(0xFF1E293B),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: Color(0xFF2DD4BF), width: 1.2),
+                ),
+                elevation: 0,
+              ),
+              onPressed: _isRetrying ? null : _retryCamera,
+              icon: _isRetrying
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Icon(isPermission ? Icons.lock_open_rounded : Icons.refresh_rounded, size: 18),
+              label: Text(
+                _isRetrying ? 'Подключение камеры...' : (isPermission ? 'Разрешить доступ к камере' : 'Повторить попытку'),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Divider(color: Colors.white12, height: 1),
+            const SizedBox(height: 14),
+            const Text(
+              'ИЛИ ВВЕДИТЕ ШТРИХКОД ВРУЧНУЮ',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: Colors.white54,
+              ),
+            ),
           const SizedBox(height: 20),
 
           // Manual code entry
@@ -397,6 +452,7 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
             ],
           ),
         ],
+      ),
       ),
     );
   }

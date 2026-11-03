@@ -97,9 +97,9 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeInOutCubic,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.border : AppColors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),

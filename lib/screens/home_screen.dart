@@ -14,9 +14,10 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
       appBar: AppBar(
         title: const Text('Семейная Аптечка'),
         actions: [
@@ -52,10 +53,11 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNavigationBar(BuildContext context, AppState state) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? AppDarkColors.surface : Colors.white,
+        border: Border(top: BorderSide(color: isDark ? AppDarkColors.border : AppColors.border, width: 1)),
       ),
       padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Row(

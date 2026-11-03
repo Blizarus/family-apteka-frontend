@@ -27,9 +27,17 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final currentBox = state.selectedBox;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppDarkColors.background : AppColors.background;
+    final surface = isDark ? AppDarkColors.surface : Colors.white;
+    final border = isDark ? AppDarkColors.border : AppColors.border;
+    final textPrimary = isDark ? AppDarkColors.textPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppDarkColors.textSecondary : AppColors.textSecondary;
+    final textMuted = isDark ? AppDarkColors.textMuted : AppColors.textMuted;
+    final surfaceSubtle = isDark ? AppDarkColors.surfaceSubtle : AppColors.surfaceSubtle;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bg,
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'med_box_fab',
         backgroundColor: AppColors.primary,
@@ -51,19 +59,19 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
               // 1. Header with Storage Box Selector Dropdown
-              _buildHeader(context, currentBox),
+              _buildHeader(context, currentBox, isDark, textPrimary, textSecondary, textMuted, surfaceSubtle),
               const SizedBox(height: 12),
 
               // 2. Search Field
-              _buildSearchField(state),
+              _buildSearchField(state, isDark, surface, border, textPrimary, textMuted),
               const SizedBox(height: 12),
 
               // 3. Traffic Light Filter Buttons
-              _buildTrafficLightFilters(state),
+              _buildTrafficLightFilters(state, isDark, surface, border, textPrimary, textSecondary),
               const SizedBox(height: 14),
 
               // 4. Medicine List
-              _buildMedicineList(context, state),
+              _buildMedicineList(context, state, isDark, surface, border, textPrimary, textSecondary, textMuted),
               const SizedBox(height: 60), // Spacing for FAB
             ],
           ),
@@ -72,17 +80,17 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, dynamic currentBox) {
+  Widget _buildHeader(BuildContext context, dynamic currentBox, bool isDark, Color textPrimary, Color textSecondary, Color textMuted, Color surfaceSubtle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'ИНВЕНТАРЬ АПТЕЧКИ',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
-            color: AppColors.primaryHover,
+            color: isDark ? AppDarkColors.primary : AppColors.primaryHover,
           ),
         ),
         const SizedBox(height: 4),
@@ -96,10 +104,10 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
               children: [
                 Text(
                   currentBox?.name ?? 'Домашняя аптечка',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -107,15 +115,15 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSubtle,
+                    color: surfaceSubtle,
                     borderRadius: BorderRadius.circular(100),
                   ),
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     '▼',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                     ),
                   ),
                 ),
@@ -125,34 +133,36 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
         ),
         Text(
           currentBox?.location ?? 'Шкаф в коридоре (полка 2)',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSearchField(AppState state) {
+  Widget _buildSearchField(AppState state, bool isDark, Color surface, Color border, Color textPrimary, Color textMuted) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: border),
       ),
       child: TextField(
         controller: _searchController,
-        style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+        style: TextStyle(fontSize: 12, color: textPrimary),
         onChanged: (val) => state.setSearchQuery(val),
         decoration: InputDecoration(
           isDense: true,
+          filled: true,
+          fillColor: Colors.transparent,
           hintText: 'Поиск по названию или веществу...',
-          hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+          hintStyle: TextStyle(fontSize: 12, color: textMuted),
+          prefixIcon: Icon(Icons.search, size: 18, color: textMuted),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 16, color: AppColors.textMuted),
+                  icon: Icon(Icons.clear, size: 16, color: textMuted),
                   onPressed: () {
                     _searchController.clear();
                     state.setSearchQuery('');
@@ -166,7 +176,14 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
     );
   }
 
-  Widget _buildTrafficLightFilters(AppState state) {
+  Widget _buildTrafficLightFilters(AppState state, bool isDark, Color surface, Color border, Color textPrimary, Color textSecondary) {
+    final expiringBg = isDark ? AppDarkColors.statusExpiringBg : AppColors.statusExpiringBg;
+    final expiringBorder = isDark ? AppDarkColors.statusExpiringBorder : AppColors.statusExpiringBorder;
+    final expiringText = isDark ? AppDarkColors.statusExpiringText : AppColors.statusExpiringText;
+    final expiredBg = isDark ? AppDarkColors.statusExpiredBg : AppColors.statusExpiredBg;
+    final expiredBorder = isDark ? AppDarkColors.statusExpiredBorder : AppColors.statusExpiredBorder;
+    final expiredText = isDark ? AppDarkColors.statusExpiredText : AppColors.statusExpiredText;
+
     return Row(
       children: [
         // 1. All
@@ -175,10 +192,10 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
             label: 'Все',
             count: '${state.countAllMedicines} шт.',
             isSelected: state.medicineFilter == 'all',
-            bgColor: Colors.white,
-            selectedBorderColor: AppColors.primary,
-            unselectedBorderColor: AppColors.border,
-            textColor: AppColors.textPrimary,
+            bgColor: surface,
+            selectedBorderColor: isDark ? AppDarkColors.primary : AppColors.primary,
+            unselectedBorderColor: border,
+            textColor: textPrimary,
             onTap: () => state.setMedicineFilter('all'),
           ),
         ),
@@ -190,10 +207,10 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
             label: 'Истекают',
             count: '${state.countExpiringMedicines} шт.',
             isSelected: state.medicineFilter == 'expiring',
-            bgColor: AppColors.statusExpiringBg,
-            selectedBorderColor: AppColors.statusExpiringText,
-            unselectedBorderColor: AppColors.statusExpiringBorder,
-            textColor: AppColors.statusExpiringText,
+            bgColor: expiringBg,
+            selectedBorderColor: expiringText,
+            unselectedBorderColor: expiringBorder,
+            textColor: expiringText,
             onTap: () => state.setMedicineFilter('expiring'),
           ),
         ),
@@ -205,10 +222,10 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
             label: 'Просрочены',
             count: '${state.countExpiredMedicines} шт.',
             isSelected: state.medicineFilter == 'expired',
-            bgColor: AppColors.statusExpiredBg,
-            selectedBorderColor: AppColors.statusExpiredText,
-            unselectedBorderColor: AppColors.statusExpiredBorder,
-            textColor: AppColors.statusExpiredText,
+            bgColor: expiredBg,
+            selectedBorderColor: expiredText,
+            unselectedBorderColor: expiredBorder,
+            textColor: expiredText,
             onTap: () => state.setMedicineFilter('expired'),
           ),
         ),
@@ -265,7 +282,7 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
     );
   }
 
-  Widget _buildMedicineList(BuildContext context, AppState state) {
+  Widget _buildMedicineList(BuildContext context, AppState state, bool isDark, Color surface, Color border, Color textPrimary, Color textSecondary, Color textMuted) {
     final list = state.filteredMedicines;
 
     if (list.isEmpty) {
@@ -273,26 +290,26 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
         margin: const EdgeInsets.only(top: 20),
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: border),
         ),
-        child: const Column(
+        child: Column(
           children: [
-            Text('🔍', style: TextStyle(fontSize: 32)),
-            SizedBox(height: 8),
+            const Text('🔍', style: TextStyle(fontSize: 32)),
+            const SizedBox(height: 8),
             Text(
               'Ничего не найдено',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: textPrimary,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Попробуйте изменить поисковый запрос или фильтр.',
-              style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 10, color: textMuted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -302,21 +319,21 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
 
     return Column(
       children: list.map((m) {
-        Color borderColor = AppColors.border;
-        Color expiryColor = AppColors.textSecondary;
+        Color borderColor = border;
+        Color expiryColor = textSecondary;
 
         if (m.isExpiring) {
-          borderColor = AppColors.statusExpiringBorder;
-          expiryColor = AppColors.statusExpiringText;
+          borderColor = isDark ? AppDarkColors.statusExpiringBorder : AppColors.statusExpiringBorder;
+          expiryColor = isDark ? AppDarkColors.statusExpiringText : AppColors.statusExpiringText;
         } else if (m.isExpired) {
-          borderColor = AppColors.statusExpiredBorder;
-          expiryColor = AppColors.statusExpiredText;
+          borderColor = isDark ? AppDarkColors.statusExpiredBorder : AppColors.statusExpiredBorder;
+          expiryColor = isDark ? AppDarkColors.statusExpiredText : AppColors.statusExpiredText;
         }
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: surface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: borderColor),
             boxShadow: [
@@ -346,10 +363,10 @@ class _MedicineBoxScreenState extends State<MedicineBoxScreen> {
                               Flexible(
                                 child: Text(
                                   m.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
+                                    color: textPrimary,
                                   ),
                                 ),
                               ),

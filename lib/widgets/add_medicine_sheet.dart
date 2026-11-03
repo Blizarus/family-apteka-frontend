@@ -323,9 +323,9 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
       margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -489,7 +489,7 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                             hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surfaceSubtle : AppColors.surfaceSubtle,
                             prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textMuted),
                             suffixIcon: _isSearching
                                 ? const Padding(
@@ -699,7 +699,7 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                             hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                             isDense: true,
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surfaceSubtle : AppColors.surfaceSubtle,
                             prefixIcon: const Icon(Icons.edit_note, size: 20, color: AppColors.textMuted),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
