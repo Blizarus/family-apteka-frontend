@@ -241,8 +241,9 @@ class _LoginScreenState extends State<LoginScreen> {
       initialMandatory: _termsAccepted,
       initialCloudSync: _syncEnabled,
     );
-    if (accepted == true && mounted) {
+    if (accepted == true) {
       final cloud = await apiService.storageService.isPrivacyConsentCloudSync();
+      if (!mounted) return;
       setState(() {
         _termsAccepted = true;
         _syncEnabled = cloud;

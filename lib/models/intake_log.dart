@@ -65,7 +65,7 @@ class IntakeLog {
     return form.isNotEmpty ? form.toLowerCase() : 'табл.';
   }
 
-  factory IntakeLog.fromJson(Map<String, dynamic> json) {
+  factory IntakeLog.fromJson(Map<String, dynamic> json, {DateTime? currentTime}) {
     final intakeCourse = json['intake_course'] as Map<String, dynamic>?;
     final medicine = json['medicine'] as Map<String, dynamic>?;
 
@@ -113,8 +113,32 @@ class IntakeLog {
         intakeCourse?['title'] as String? ??
         'Назначенный курс';
 
-    final isCurrent = json['isCurrent'] as bool? ??
-        (!taken && rawStatus != 'skipped' && (time == '13:00' || time == '14:00'));
+    // Dynamic isCurrent calculation (DEF-07, CWE-547)
+    final bool? explicitCurrent = (json['isCurrent'] ?? json['is_current']) as bool?;
+    final now = currentTime ?? DateTime.now();
+
+    bool computedIsCurrent = false;
+    if (!taken && rawStatus != 'skipped') {
+      DateTime? target = parsedDate;
+      if (target == null && time.isNotEmpty) {
+        final parts = time.split(':');
+        if (parts.length >= 2) {
+          final h = int.tryParse(parts[0]);
+          final m = int.tryParse(parts[1]);
+          if (h != null && m != null) {
+            target = DateTime(now.year, now.month, now.day, h, m);
+          }
+        }
+      }
+      if (target != null) {
+        // Окно актуальности: прием назначен на сегодня и находится в интервале
+        // от -60 минут (за 1 час до приема) до +120 минут (просрочен до 2 часов)
+        final isSameDay = target.year == now.year && target.month == now.month && target.day == now.day;
+        final diffMinutes = now.difference(target).inMinutes;
+        computedIsCurrent = isSameDay && (diffMinutes >= -60 && diffMinutes <= 120);
+      }
+    }
+    final isCurrent = explicitCurrent ?? computedIsCurrent;
 
     final rawRemaining = json['remaining'] ?? medicine?['quantity'];
     final remaining = ParseHelper.parseNullableDouble(rawRemaining);
@@ -165,6 +189,7 @@ class IntakeLog {
       'skipped_reason': skippedReason,
       'course': course,
       'isCurrent': isCurrent,
+      'is_current': isCurrent,
       'remaining': remaining,
       'medicine_id': medicineId,
       'scheduled_time': scheduledTime?.toIso8601String(),

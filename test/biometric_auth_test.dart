@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,17 @@ import 'package:frontend/services/storage_service.dart';
 import 'package:frontend/services/biometric_service.dart';
 import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/widgets/biometric_prompt_dialog.dart';
+
+class _DelayedBiometricService extends BiometricService {
+  final Completer<bool> completer = Completer<bool>();
+
+  _DelayedBiometricService() : super(isMockMode: true);
+
+  @override
+  Future<bool> authenticate({required String localizedReason}) {
+    return completer.future;
+  }
+}
 
 Widget buildTestSettingsApp({
   required AppState appState,
@@ -345,6 +357,46 @@ void main() {
 
       // Clean snackbar
       await tester.pump(const Duration(seconds: 4));
+    });
+
+    testWidgets('DEF-10: Unmounting SettingsScreen during biometric authentication does not throw FlutterError',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final storage = StorageService();
+      final bioService = _DelayedBiometricService();
+      final apiService = ApiService(
+        isMockMode: true,
+        storageService: storage,
+        biometricService: bioService,
+      );
+      final appState = AppState(apiService: apiService);
+
+      await tester.pumpWidget(buildTestSettingsApp(
+        appState: appState,
+        apiService: apiService,
+        biometricService: bioService,
+      ));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final switchFinder = find.byKey(const Key('settings_biometric_switch'));
+      expect(tester.widget<SwitchListTile>(switchFinder).value, isFalse);
+
+      // Tap switch to start authentication (which waits on completer)
+      await tester.tap(switchFinder);
+      await tester.pump();
+
+      // Unmount the screen while authenticate is pending
+      await tester.pumpWidget(Container());
+
+      // Now complete the authentication
+      bioService.completer.complete(true);
+      await tester.pump();
+
+      // No unhandled exception should be thrown
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('Toggling switch off disables biometric and updates storage', (tester) async {

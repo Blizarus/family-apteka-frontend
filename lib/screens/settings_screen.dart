@@ -1070,35 +1070,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     final authenticated = await biometricService.authenticate(
                       localizedReason: 'Подтвердите биометрию для активации быстрого входа',
                     );
+                    if (!mounted) return;
                     if (authenticated) {
                       setState(() => _isBiometricEnabled = true);
                       await biometricService.setBiometricAuthEnabled(true);
-                      if (context.mounted) {
-                        ToastHelper.show(
-                          context,
-                          message: 'Биометрическая защита включена',
-                          icon: '🔒',
-                        );
-                      }
+                      if (!mounted || !context.mounted) return;
+                      ToastHelper.show(
+                        context,
+                        message: 'Биометрическая защита включена',
+                        icon: '🔒',
+                      );
                     } else {
-                      if (context.mounted) {
-                        ToastHelper.show(
-                          context,
-                          message: 'Не удалось подтвердить биометрию',
-                          icon: '⚠️',
-                        );
-                      }
+                      if (!mounted || !context.mounted) return;
+                      ToastHelper.show(
+                        context,
+                        message: 'Не удалось подтвердить биометрию',
+                        icon: '⚠️',
+                      );
                     }
                   } else {
                     setState(() => _isBiometricEnabled = false);
                     await biometricService.setBiometricAuthEnabled(false);
-                    if (context.mounted) {
-                      ToastHelper.show(
-                        context,
-                        message: 'Биометрическая защита отключена',
-                        icon: '🔓',
-                      );
-                    }
+                    if (!mounted || !context.mounted) return;
+                    ToastHelper.show(
+                      context,
+                      message: 'Биометрическая защита отключена',
+                      icon: '🔓',
+                    );
                   }
                 },
               ),
