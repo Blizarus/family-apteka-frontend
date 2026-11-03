@@ -14,24 +14,29 @@ class AdminPanelScreen extends StatefulWidget {
 
 class _AdminPanelScreenState extends State<AdminPanelScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  // Tab 1: Users State
-  List<Map<String, dynamic>> _users = [];
-  bool _loadingUsers = true;
-  String _userSearchQuery = '';
-
-  // Tab 2: GRLS State
-  List<ReferenceMedicine> _referenceMedicines = [];
-  bool _loadingMeds = true;
+  late TabController _tabController;
   final TextEditingController _medSearchController = TextEditingController();
+
+  List<Map<String, dynamic>> _users = [];
+  bool _loadingUsers = false;
+
+  List<ReferenceMedicine> _referenceMedicines = [];
+  bool _loadingMeds = false;
+
+  String _userSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadUsers();
-    _loadReferenceMedicines();
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUsers();
+      _loadReferenceMedicines();
+    });
   }
 
   @override
@@ -43,36 +48,48 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
   Future<void> _loadUsers() async {
     setState(() => _loadingUsers = true);
-    final state = context.read<AppState>();
     try {
-      final list = await state.getAdminUsers();
+      final state = context.read<AppState>();
+      final users = await state.getAdminUsers();
       if (mounted) {
         setState(() {
-          _users = list;
+          _users = users;
           _loadingUsers = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _loadingUsers = false);
+        ToastHelper.show(
+          context,
+          message: 'Ошибка загрузки пользователей: $e',
+          icon: '⚠️',
+          isError: true,
+        );
       }
     }
   }
 
   Future<void> _loadReferenceMedicines([String query = '']) async {
     setState(() => _loadingMeds = true);
-    final state = context.read<AppState>();
     try {
-      final list = await state.searchReferenceMedicines(query);
+      final state = context.read<AppState>();
+      final meds = await state.searchReferenceMedicines(query);
       if (mounted) {
         setState(() {
-          _referenceMedicines = list;
+          _referenceMedicines = meds;
           _loadingMeds = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _loadingMeds = false);
+        ToastHelper.show(
+          context,
+          message: 'Ошибка загрузки ГРЛС: $e',
+          icon: '⚠️',
+          isError: true,
+        );
       }
     }
   }
@@ -80,34 +97,29 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   Future<void> _handleToggleBlockUser(Map<String, dynamic> user) async {
     final state = context.read<AppState>();
     final userId = user['id'] as int;
-    final isBlocked = user['is_blocked'] as bool? ?? false;
-    final email = user['email'] as String? ?? 'пользователя';
+    final isCurrentlyBlocked = user['is_blocked'] as bool? ?? false;
+    final email = user['email'] as String? ?? 'Пользователь';
 
-    // Self-block protection
-    if (state.currentUser != null && state.currentUser!.id == userId) {
-      ToastHelper.show(
-        context,
-        message: 'Администратор не может заблокировать свою учетную запись',
-        isError: true,
-        icon: '⚠️',
-      );
-      return;
-    }
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
 
-    if (!isBlocked) {
-      // Show confirmation dialog before blocking
+    if (!isCurrentlyBlocked) {
+      // Confirmation dialog
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
+          backgroundColor: cs.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Text('⚠️', style: TextStyle(fontSize: 20)),
-              SizedBox(width: 8),
+              const Text('⚠️', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Блокировка пользователя',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
                 ),
               ),
             ],
@@ -115,17 +127,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           content: Text(
             'Вы действительно хотите заблокировать доступ для $email?\n\n'
             'Все активные Sanctum-токены и сессии пользователя будут немедленно аннулированы.',
-            style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 13, height: 1.4, color: cs.onSurface),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text('Отмена', style: TextStyle(color: textSecondary)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE11D48),
-                foregroundColor: Colors.white,
+                backgroundColor: semantic.danger,
+                foregroundColor: cs.onError,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -174,20 +186,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     String selectedForm = 'Таблетки';
     bool isPrescription = false;
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (dialogCtx, setDialogState) {
           return AlertDialog(
+            backgroundColor: cs.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Row(
+            title: Row(
               children: [
-                Text('💊', style: TextStyle(fontSize: 20)),
-                SizedBox(width: 8),
+                const Text('💊', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Добавить препарат в ГРЛС',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
                   ),
                 ),
               ],
@@ -201,21 +219,36 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Эталонная запись реестра лекарственных средств (ЛР 2)',
-                        style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        style: TextStyle(fontSize: 11, color: textMuted),
                       ),
                       const SizedBox(height: 14),
 
                       // Торговое наименование
                       TextFormField(
                         controller: tradeNameController,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Торговое наименование *',
+                          labelStyle: TextStyle(color: textMuted),
                           hintText: 'Например, Парацетамол-Ультра',
+                          hintStyle: TextStyle(color: textMuted),
                           isDense: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
                         ),
                         validator: (val) =>
                             (val == null || val.trim().isEmpty) ? 'Обязательное поле' : null,
@@ -225,12 +258,27 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       // МНН
                       TextFormField(
                         controller: innController,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                         decoration: InputDecoration(
                           labelText: 'МНН (Действующее вещество) *',
+                          labelStyle: TextStyle(color: textMuted),
                           hintText: 'Например, Парацетамол',
+                          hintStyle: TextStyle(color: textMuted),
                           isDense: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
                         ),
                         validator: (val) =>
                             (val == null || val.trim().isEmpty) ? 'Обязательное поле' : null,
@@ -241,13 +289,28 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       TextFormField(
                         controller: barcodeController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                         decoration: InputDecoration(
                           labelText: 'Штрихкод / EAN-13 *',
+                          labelStyle: TextStyle(color: textMuted),
                           hintText: '4601234567890',
-                          prefixIcon: const Icon(Icons.qr_code_rounded, size: 18),
+                          hintStyle: TextStyle(color: textMuted),
+                          prefixIcon: Icon(Icons.qr_code_rounded, size: 18, color: textMuted),
                           isDense: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
                         ),
                         validator: (val) =>
                             (val == null || val.trim().isEmpty) ? 'Укажите штрихкод' : null,
@@ -260,14 +323,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: selectedForm,
-                              style: const TextStyle(
+                              dropdownColor: cs.surface,
+                              style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary),
+                                  color: cs.onSurface),
                               decoration: InputDecoration(
                                 labelText: 'Форма выпуска',
+                                labelStyle: TextStyle(color: textMuted),
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                filled: true,
+                                fillColor: cs.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
                               ),
                               items: const [
                                 DropdownMenuItem(value: 'Таблетки', child: Text('Таблетки')),
@@ -288,12 +362,27 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           Expanded(
                             child: TextFormField(
                               controller: dosageController,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                               decoration: InputDecoration(
                                 labelText: 'Дозировка *',
+                                labelStyle: TextStyle(color: textMuted),
                                 hintText: '500 мг',
+                                hintStyle: TextStyle(color: textMuted),
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                filled: true,
+                                fillColor: cs.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.primary),
+                                ),
                               ),
                               validator: (val) =>
                                   (val == null || val.trim().isEmpty) ? 'Укажите дозу' : null,
@@ -309,11 +398,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           Expanded(
                             child: TextFormField(
                               controller: manufacturerController,
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(fontSize: 13, color: cs.onSurface),
                               decoration: InputDecoration(
                                 labelText: 'Производитель',
+                                labelStyle: TextStyle(color: textMuted),
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                filled: true,
+                                fillColor: cs.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.primary),
+                                ),
                               ),
                             ),
                           ),
@@ -321,11 +424,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           Expanded(
                             child: TextFormField(
                               controller: countryController,
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(fontSize: 13, color: cs.onSurface),
                               decoration: InputDecoration(
                                 labelText: 'Страна',
+                                labelStyle: TextStyle(color: textMuted),
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                filled: true,
+                                fillColor: cs.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.primary),
+                                ),
                               ),
                             ),
                           ),
@@ -340,11 +457,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             child: TextFormField(
                               controller: packSizeController,
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(fontSize: 13, color: cs.onSurface),
                               decoration: InputDecoration(
                                 labelText: 'Упаковка (ед.)',
+                                labelStyle: TextStyle(color: textMuted),
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                filled: true,
+                                fillColor: cs.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.outlineVariant),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: cs.primary),
+                                ),
                               ),
                             ),
                           ),
@@ -352,9 +483,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           Expanded(
                             child: CheckboxListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: const Text('По рецепту', style: TextStyle(fontSize: 12)),
+                              title: Text('По рецепту', style: TextStyle(fontSize: 12, color: cs.onSurface)),
                               value: isPrescription,
-                              activeColor: AppColors.primary,
+                              activeColor: cs.primary,
                               onChanged: (val) {
                                 setDialogState(() => isPrescription = val ?? false);
                               },
@@ -371,12 +502,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+                child: Text('Отмена', style: TextStyle(color: textSecondary)),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -439,19 +570,23 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cs.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 18, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              size: 18, color: cs.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -459,7 +594,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
             Text(
@@ -467,14 +602,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF6366F1), // Indigo
+                color: cs.primary,
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryHover),
+            icon: Icon(Icons.refresh_rounded, color: cs.primary),
             tooltip: 'Обновить данные',
             onPressed: () {
               if (_tabController.index == 0) {
@@ -487,9 +622,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
+          labelColor: cs.primary,
+          unselectedLabelColor: textSecondary,
+          indicatorColor: cs.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
           tabs: const [
@@ -510,12 +645,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           // ==========================================
           // TAB 1: USERS LIST & BLOCK TOGGLE
           // ==========================================
-          _buildUsersTab(state),
+          _buildUsersTab(state, cs, textSecondary, textMuted),
 
           // ==========================================
           // TAB 2: GRLS REFERENCE MEDICINES & ADD FORM
           // ==========================================
-          _buildGrlsTab(),
+          _buildGrlsTab(cs, textSecondary, textMuted),
         ],
       ),
       floatingActionButton: AnimatedBuilder(
@@ -523,8 +658,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         builder: (context, _) {
           if (_tabController.index == 1) {
             return FloatingActionButton.extended(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
               elevation: 4,
               icon: const Icon(Icons.add_rounded, size: 20),
               label: const Text(
@@ -540,10 +675,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _buildUsersTab(AppState state) {
+  Widget _buildUsersTab(AppState state, ColorScheme cs, Color textSecondary, Color textMuted) {
     if (_loadingUsers) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return Center(
+        child: CircularProgressIndicator(color: cs.primary),
       );
     }
 
@@ -553,7 +688,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     }).toList();
 
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: cs.primary,
       onRefresh: _loadUsers,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -561,19 +696,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           // Search box
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cs.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: TextField(
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              decoration: const InputDecoration(
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
+              decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                prefixIcon: Icon(Icons.search_rounded, size: 18, color: AppColors.primaryHover),
+                prefixIcon: Icon(Icons.search_rounded, size: 18, color: cs.primary),
                 hintText: 'Поиск по email пользователя...',
-                hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                hintStyle: TextStyle(fontSize: 12, color: textMuted),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
               onChanged: (val) => setState(() => _userSearchQuery = val),
             ),
@@ -584,19 +719,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                const Icon(Icons.shield_outlined, size: 14, color: Color(0xFF6366F1)),
+                Icon(Icons.shield_outlined, size: 14, color: cs.primary),
                 const SizedBox(width: 6),
-                Text(
-                  'Всего: ${_users.length}   •   🟢 Активных: ${_users.where((u) => u['is_blocked'] != true).length}   •   🔴 Заблокировано: ${_users.where((u) => u['is_blocked'] == true).length}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
+                Expanded(
+                  child: Text(
+                    'Всего: ${_users.length}   •   🟢 Активных: ${_users.where((u) => u['is_blocked'] != true).length}   •   🔴 Заблокировано: ${_users.where((u) => u['is_blocked'] == true).length}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -606,21 +743,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
           if (filteredUsers.isEmpty) ...[
             const SizedBox(height: 40),
-            const Center(
+            Center(
               child: Text(
                 'Пользователи не найдены',
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                style: TextStyle(fontSize: 13, color: textMuted),
               ),
             ),
           ] else ...[
-            for (final user in filteredUsers) _buildUserCard(user, state),
+            for (final user in filteredUsers) _buildUserCard(user, state, cs, textSecondary, textMuted),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildUserCard(Map<String, dynamic> user, AppState state) {
+  Widget _buildUserCard(Map<String, dynamic> user, AppState state, ColorScheme cs, Color textSecondary, Color textMuted) {
+    final semantic = Theme.of(context).extension<SemanticColors>() ?? SemanticColors.light;
     final email = user['email'] as String? ?? 'Неизвестный email';
     final isAdmin = user['is_admin'] as bool? ?? false;
     final isBlocked = user['is_blocked'] as bool? ?? false;
@@ -632,14 +770,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isBlocked ? const Color(0xFFFECDD3) : AppColors.border,
+          color: isBlocked ? semantic.dangerBorder : cs.outlineVariant,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: cs.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -656,13 +794,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 height: 36,
                 decoration: BoxDecoration(
                   color: isBlocked
-                      ? const Color(0xFFFFF1F2)
-                      : (isAdmin ? const Color(0xFFEEF2FF) : AppColors.primarySurface),
+                      ? semantic.dangerBg
+                      : cs.primaryContainer,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isBlocked
-                        ? const Color(0xFFFECDD3)
-                        : (isAdmin ? const Color(0xFFC7D2FE) : AppColors.primaryBorderLight),
+                        ? semantic.dangerBorder
+                        : cs.outlineVariant,
                   ),
                 ),
                 alignment: Alignment.center,
@@ -670,8 +808,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   isAdmin ? Icons.shield_rounded : Icons.person_rounded,
                   size: 18,
                   color: isBlocked
-                      ? const Color(0xFFE11D48)
-                      : (isAdmin ? const Color(0xFF4F46E5) : AppColors.primaryHover),
+                      ? semantic.danger
+                      : cs.primary,
                 ),
               ),
               const SizedBox(width: 10),
@@ -684,17 +822,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         Flexible(
                           child: Text(
                             email,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isSelf) ...[
                           const SizedBox(width: 4),
-                          const Text(' (Вы)', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                          Text(' (Вы)', style: TextStyle(fontSize: 10, color: cs.primary, fontWeight: FontWeight.bold)),
                         ],
                       ],
                     ),
@@ -704,7 +842,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: isAdmin ? const Color(0xFFEEF2FF) : const Color(0xFFF1F5F9),
+                            color: isAdmin ? cs.primaryContainer : cs.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -712,7 +850,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
-                              color: isAdmin ? const Color(0xFF4F46E5) : AppColors.textSecondary,
+                              color: isAdmin ? cs.primary : textSecondary,
                             ),
                           ),
                         ),
@@ -726,10 +864,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isBlocked ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+                  color: isBlocked ? semantic.dangerBg : semantic.successBg,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isBlocked ? const Color(0xFFFECDD3) : const Color(0xFFBBF7D0),
+                    color: isBlocked ? semantic.dangerBorder : semantic.successBorder,
                   ),
                 ),
                 child: Row(
@@ -739,7 +877,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: isBlocked ? const Color(0xFFE11D48) : const Color(0xFF16A34A),
+                        color: isBlocked ? semantic.danger : semantic.success,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -749,7 +887,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: isBlocked ? const Color(0xFF991B1B) : const Color(0xFF166534),
+                        color: isBlocked ? semantic.dangerText : semantic.successText,
                       ),
                     ),
                   ],
@@ -759,26 +897,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           ),
 
           const SizedBox(height: 10),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
           const SizedBox(height: 8),
 
           // Metadata row
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textMuted),
+              Icon(Icons.calendar_today_outlined, size: 12, color: textMuted),
               const SizedBox(width: 4),
               Text(
                 'Регистрация: ${_formatDate(createdAt)}',
-                style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                style: TextStyle(fontSize: 10, color: textMuted),
               ),
               if (isBlocked && blockedAt != null) ...[
                 const SizedBox(width: 8),
-                const Text('•', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                Text('•', style: TextStyle(fontSize: 10, color: textMuted)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Блок: ${_formatDate(blockedAt)}',
-                    style: const TextStyle(fontSize: 10, color: Color(0xFFE11D48)),
+                    style: TextStyle(fontSize: 10, color: semantic.dangerText),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -793,18 +931,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (isSelf)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
                     'Текущий аккаунт',
-                    style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textMuted),
+                    style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: textMuted),
                   ),
                 )
               else if (!isBlocked)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFE11D48),
-                    side: const BorderSide(color: Color(0xFFFECDD3)),
+                    foregroundColor: semantic.dangerText,
+                    side: BorderSide(color: semantic.dangerBorder),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -818,8 +956,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               else
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF16A34A),
-                    side: const BorderSide(color: Color(0xFFBBF7D0)),
+                    foregroundColor: semantic.successText,
+                    side: BorderSide(color: semantic.successBorder),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -837,26 +975,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _buildGrlsTab() {
+  Widget _buildGrlsTab(ColorScheme cs, Color textSecondary, Color textMuted) {
     return Column(
       children: [
         // Search bar
         Container(
-          color: Colors.white,
+          color: cs.surface,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
+              color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: TextField(
               controller: _medSearchController,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.primaryHover),
+                prefixIcon: Icon(Icons.search_rounded, size: 18, color: cs.primary),
                 suffixIcon: _medSearchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 16),
@@ -867,7 +1005,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       )
                     : null,
                 hintText: 'Поиск по ГРЛС (название, МНН, штрихкод)...',
-                hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                hintStyle: TextStyle(fontSize: 12, color: textMuted),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
               onChanged: (val) => _loadReferenceMedicines(val.trim()),
@@ -878,23 +1016,23 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         // List
         Expanded(
           child: _loadingMeds
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              ? Center(child: CircularProgressIndicator(color: cs.primary))
               : _referenceMedicines.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.medication_liquid_outlined, size: 48, color: AppColors.textMuted),
+                          Icon(Icons.medication_liquid_outlined, size: 48, color: textMuted),
                           const SizedBox(height: 10),
-                          const Text(
+                          Text(
                             'Препараты не найдены',
-                            style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                            style: TextStyle(fontSize: 13, color: textMuted),
                           ),
                           const SizedBox(height: 14),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
+                              backgroundColor: cs.primary,
+                              foregroundColor: cs.onPrimary,
                               elevation: 0,
                             ),
                             onPressed: _showAddMedicineDialog,
@@ -909,7 +1047,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       itemCount: _referenceMedicines.length,
                       itemBuilder: (context, index) {
                         final med = _referenceMedicines[index];
-                        return _buildReferenceMedicineCard(med);
+                        return _buildReferenceMedicineCard(med, cs, textSecondary, textMuted);
                       },
                     ),
         ),
@@ -917,17 +1055,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     );
   }
 
-  Widget _buildReferenceMedicineCard(ReferenceMedicine med) {
+  Widget _buildReferenceMedicineCard(ReferenceMedicine med, ColorScheme cs, Color textSecondary, Color textMuted) {
+    final semantic = Theme.of(context).extension<SemanticColors>() ?? SemanticColors.light;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: cs.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -943,9 +1083,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
+                  color: cs.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.primaryBorderLight),
+                  border: Border.all(color: cs.outlineVariant),
                 ),
                 alignment: Alignment.center,
                 child: const Text('💊', style: TextStyle(fontSize: 20)),
@@ -957,16 +1097,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   children: [
                     Text(
                       med.tradeName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'МНН: ${med.inn} • ${med.dosageForm} ${med.dosage}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -975,32 +1115,32 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF1F2),
+                    color: semantic.dangerBg,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFFECDD3)),
+                    border: Border.all(color: semantic.dangerBorder),
                   ),
-                  child: const Text(
+                  child: Text(
                     'По рецепту',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFE11D48)),
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: semantic.dangerText),
                   ),
                 )
               else
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: semantic.successBg,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                    border: Border.all(color: semantic.successBorder),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Без рецепта',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: semantic.successText),
                   ),
                 ),
             ],
           ),
           const SizedBox(height: 8),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -1008,17 +1148,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.qr_code_rounded, size: 12, color: AppColors.textMuted),
+                      Icon(Icons.qr_code_rounded, size: 12, color: textMuted),
                       const SizedBox(width: 4),
                       Text(
                         med.barcode,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: cs.onSurface),
                       ),
                     ],
                   ),
@@ -1028,7 +1168,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               Expanded(
                 child: Text(
                   '${med.manufacturer} (${med.country})',
-                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 10, color: textMuted),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

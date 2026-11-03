@@ -102,6 +102,10 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
         ? (customText.isNotEmpty ? customText : 'По требованию')
         : _selectedSymptom;
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
     try {
       final res = await state.recordQuickIntake(
         medicineId: widget.medicine.id,
@@ -125,19 +129,19 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF0F172A),
+            backgroundColor: cs.inverseSurface,
             elevation: 6,
             duration: const Duration(seconds: 4),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             content: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                Icon(Icons.check_circle_rounded, color: semantic.success, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     snackMessage,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: cs.onInverseSurface,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -188,19 +192,19 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   behavior: SnackBarBehavior.floating,
-                  backgroundColor: const Color(0xFF0F172A),
+                  backgroundColor: cs.inverseSurface,
                   elevation: 6,
                   duration: const Duration(seconds: 4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   content: Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                      Icon(Icons.check_circle_rounded, color: semantic.success, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           snackMessage,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: cs.onInverseSurface,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -217,8 +221,8 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   behavior: SnackBarBehavior.floating,
-                  backgroundColor: const Color(0xFF991B1B),
-                  content: Text('Ошибка записи приёма: $err'),
+                  backgroundColor: cs.error,
+                  content: Text('Ошибка записи приёма: $err', style: TextStyle(color: cs.onError)),
                 ),
               );
             }
@@ -231,8 +235,8 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF991B1B),
-            content: Text('Ошибка записи приёма: $e'),
+            backgroundColor: cs.error,
+            content: Text('Ошибка записи приёма: $e', style: TextStyle(color: cs.onError)),
           ),
         );
       }
@@ -241,14 +245,20 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final state = context.watch<AppState>();
     final isStockExceeded = _quantity > widget.medicine.remaining;
     final keyboardPadding = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(20, 10, 20, 20 + keyboardPadding),
       child: SingleChildScrollView(
@@ -262,7 +272,7 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.borderDarker,
+                  color: cs.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -283,19 +293,19 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                           Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: AppColors.primarySurface,
+                              color: cs.primaryContainer,
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.primaryBorderLight),
+                              border: Border.all(color: cs.outlineVariant),
                             ),
-                            child: const Icon(Icons.bolt_rounded, size: 16, color: AppColors.primary),
+                            child: Icon(Icons.bolt_rounded, size: 16, color: cs.primary),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Разовый приём',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                             ),
                           ),
                         ],
@@ -303,10 +313,10 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                       const SizedBox(height: 4),
                       Text(
                         '💊 ${widget.medicine.name} • Остаток: ${widget.medicine.remainingDisplay} $_unitLabel',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primaryHover,
+                          color: cs.primary,
                         ),
                       ),
                     ],
@@ -314,7 +324,7 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.textMuted,
+                  color: textMuted,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -322,13 +332,13 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
             const SizedBox(height: 16),
 
             // 3. Section: "Кто выпил?"
-            const Text(
+            Text(
               'КТО ВЫПИЛ:',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
             const SizedBox(height: 8),
@@ -348,15 +358,15 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white,
+                          color: isSelected ? cs.primary : cs.surface,
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.border,
+                            color: isSelected ? cs.primary : cs.outlineVariant,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                    color: cs.primary.withValues(alpha: 0.25),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   )
@@ -373,7 +383,7 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: isSelected ? Colors.white : AppColors.textSecondary,
+                                color: isSelected ? cs.onPrimary : textSecondary,
                               ),
                             ),
                           ],
@@ -387,39 +397,39 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
             const SizedBox(height: 18),
 
             // 4. Section: "Сколько?" (Stepper + Quick Chips)
-            const Text(
+            Text(
               'СКОЛЬКО:',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: cs.outlineVariant),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     '${_formatQuantity(_quantity)} $_unitLabel',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                   Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline_rounded, size: 26),
-                        color: _quantity > 0.5 ? AppColors.primary : AppColors.textMuted,
+                        color: _quantity > 0.5 ? cs.primary : textMuted,
                         onPressed: _quantity > 0.5
                             ? () {
                                 HapticFeedback.selectionClick();
@@ -431,12 +441,12 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Text(
                           _formatQuantity(_quantity),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline_rounded, size: 26),
-                        color: _quantity < 10.0 ? AppColors.primary : AppColors.textMuted,
+                        color: _quantity < 10.0 ? cs.primary : textMuted,
                         onPressed: _quantity < 10.0
                             ? () {
                                 HapticFeedback.selectionClick();
@@ -462,11 +472,11 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                     labelStyle: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: isChosen ? AppColors.primaryDeep : AppColors.textSecondary,
+                      color: isChosen ? cs.primary : textSecondary,
                     ),
-                    backgroundColor: isChosen ? AppColors.primaryBorderLight : Colors.white,
+                    backgroundColor: isChosen ? cs.primaryContainer : cs.surface,
                     side: BorderSide(
-                      color: isChosen ? AppColors.primary : AppColors.border,
+                      color: isChosen ? cs.primary : cs.outlineVariant,
                     ),
                     onPressed: () {
                       HapticFeedback.selectionClick();
@@ -483,9 +493,9 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.statusExpiringBg,
+                  color: semantic.warningBg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.statusExpiringBorder),
+                  border: Border.all(color: semantic.warningBorder),
                 ),
                 child: Row(
                   children: [
@@ -494,10 +504,10 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                     Expanded(
                       child: Text(
                         'Внимание: доза (${_formatQuantity(_quantity)} $_unitLabel) превышает остаток в аптечке (${widget.medicine.remainingDisplay} $_unitLabel)',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.statusExpiringText,
+                          color: semantic.warningText,
                         ),
                       ),
                     ),
@@ -508,13 +518,13 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
             const SizedBox(height: 18),
 
             // 5. Section: "Причина / Симптом"
-            const Text(
+            Text(
               'ПРИЧИНА / СИМПТОМ:',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
             const SizedBox(height: 8),
@@ -529,12 +539,12 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
                   labelStyle: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                    color: isSelected ? cs.onPrimary : cs.onSurface,
                   ),
-                  selectedColor: AppColors.primary,
-                  backgroundColor: Colors.white,
+                  selectedColor: cs.primary,
+                  backgroundColor: cs.surface,
                   side: BorderSide(
-                    color: isSelected ? AppColors.primary : AppColors.border,
+                    color: isSelected ? cs.primary : cs.outlineVariant,
                   ),
                   onSelected: (_) {
                     HapticFeedback.selectionClick();
@@ -549,20 +559,20 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
               const SizedBox(height: 10),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: cs.outlineVariant),
                 ),
                 child: TextField(
                   controller: _customReasonController,
                   autofocus: true,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
+                  style: TextStyle(fontSize: 13, color: cs.onSurface),
+                  decoration: InputDecoration(
                     hintText: 'Укажите причину (например: зубная боль)...',
-                    hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                    prefixIcon: Icon(Icons.edit_note_rounded, size: 20, color: AppColors.primary),
+                    hintStyle: TextStyle(fontSize: 12, color: textMuted),
+                    prefixIcon: Icon(Icons.edit_note_rounded, size: 20, color: cs.primary),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                 ),
               ),
@@ -575,17 +585,17 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
               height: 50,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: _isSubmitting ? null : _submitQuickIntake,
                 icon: _isSubmitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                       )
                     : const Icon(Icons.bolt_rounded, size: 20),
                 label: Text(

@@ -126,12 +126,18 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final birthDateStr = _selectedBirthDate != null
         ? '${_selectedBirthDate!.day.toString().padLeft(2, '0')}.${_selectedBirthDate!.month.toString().padLeft(2, '0')}.${_selectedBirthDate!.year}'
         : null;
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: cs.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
@@ -142,18 +148,18 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primarySurface,
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primaryBorderLight),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_add_rounded,
-              color: AppColors.primaryHover,
+              color: cs.primary,
               size: 20,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -162,15 +168,15 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: cs.onSurface,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   'Медицинская карта и профиль',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -190,36 +196,37 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                 const SizedBox(height: 8),
 
                 // Name field
-                const Text(
+                Text(
                   'ФИО ИЛИ ИМЯ *',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
+                  style: TextStyle(color: cs.onSurface, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'Например, Артём (Сын)',
-                    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
                     filled: true,
-                    fillColor: AppColors.surfaceSubtle,
+                    fillColor: cs.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                      borderSide: BorderSide(color: cs.primary, width: 1.5),
                     ),
                   ),
                   validator: (value) {
@@ -233,13 +240,13 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                 const SizedBox(height: 14),
 
                 // Role Selector
-                const Text(
+                Text(
                   'РОЛЬ В СЕМЬЕ',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -255,18 +262,18 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                              color: isSelected ? cs.onPrimary : textSecondary,
                             ),
                           ),
                           selected: isSelected,
-                          selectedColor: AppColors.primary,
-                          backgroundColor: AppColors.surfaceSubtle,
+                          selectedColor: cs.primary,
+                          backgroundColor: cs.surfaceContainerHighest,
                           showCheckmark: false,
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                             side: BorderSide(
-                              color: isSelected ? AppColors.primary : AppColors.border,
+                              color: isSelected ? cs.primary : cs.outlineVariant,
                             ),
                           ),
                           onSelected: (val) {
@@ -281,13 +288,13 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                 const SizedBox(height: 14),
 
                 // Date of Birth
-                const Text(
+                Text(
                   'ДАТА РОЖДЕНИЯ',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -298,19 +305,19 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceSubtle,
+                      color: cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.calendar_today_rounded,
                               size: 16,
-                              color: AppColors.primaryHover,
+                              color: cs.primary,
                             ),
                             const SizedBox(width: 10),
                             Text(
@@ -318,7 +325,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: birthDateStr != null ? FontWeight.w600 : FontWeight.w400,
-                                color: birthDateStr != null ? AppColors.textPrimary : AppColors.textMuted,
+                                color: birthDateStr != null ? cs.onSurface : textMuted,
                               ),
                             ),
                           ],
@@ -326,10 +333,10 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                         if (_selectedBirthDate != null)
                           InkWell(
                             onTap: () => setState(() => _selectedBirthDate = null),
-                            child: const Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted),
+                            child: Icon(Icons.close_rounded, size: 16, color: textMuted),
                           )
                         else
-                          const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textMuted),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 12, color: textMuted),
                       ],
                     ),
                   ),
@@ -338,13 +345,13 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                 const SizedBox(height: 14),
 
                 // Allergies Input
-                const Text(
+                Text(
                   'АЛЛЕРГИИ И НЕПЕРЕНОСИМОСТИ (МЕДИЦИНСКАЯ КАРТА)',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -356,23 +363,24 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                       child: TextField(
                         controller: _allergyInputController,
                         onSubmitted: _addAllergy,
+                        style: TextStyle(color: cs.onSurface, fontSize: 12),
                         decoration: InputDecoration(
                           hintText: 'Введите аллерген (напр. Аспирин)',
-                          hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          hintStyle: TextStyle(fontSize: 12, color: textMuted),
                           filled: true,
-                          fillColor: AppColors.surfaceSubtle,
+                          fillColor: cs.surfaceContainerHighest,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide: BorderSide(color: cs.outlineVariant),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide: BorderSide(color: cs.outlineVariant),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                            borderSide: BorderSide(color: cs.primary, width: 1.5),
                           ),
                         ),
                       ),
@@ -380,8 +388,8 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                     const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -402,9 +410,9 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                       return Container(
                         padding: const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.statusExpiredBg,
+                          color: semantic.dangerBg,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.statusExpiredBorder),
+                          border: Border.all(color: semantic.dangerBorder),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -412,19 +420,19 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                             const Text('⚠️ ', style: TextStyle(fontSize: 9)),
                             Text(
                               allergy,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.statusExpiredText,
+                                color: semantic.dangerText,
                               ),
                             ),
                             const SizedBox(width: 4),
                             InkWell(
                               onTap: () => _removeAllergy(allergy),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.close_rounded,
                                 size: 14,
-                                color: AppColors.statusExpiredText,
+                                color: semantic.dangerText,
                               ),
                             ),
                           ],
@@ -444,10 +452,10 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                       .map((q) => ActionChip(
                             label: Text(
                               '+ $q',
-                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 10, color: textSecondary),
                             ),
-                            backgroundColor: Colors.white,
-                            side: const BorderSide(color: AppColors.border),
+                            backgroundColor: cs.surface,
+                            side: BorderSide(color: cs.outlineVariant),
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                             onPressed: () => _addAllergy(q),
                           ))
@@ -461,22 +469,22 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+          child: Text('Отмена', style: TextStyle(color: textMuted)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           ),
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                 )
               : const Text('Сохранить профиль', style: TextStyle(fontWeight: FontWeight.w700)),
         ),

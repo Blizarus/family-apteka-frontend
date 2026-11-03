@@ -161,6 +161,12 @@ class _AddNoteSheetState extends State<AddNoteSheet>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final state = context.watch<AppState>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final currentText = _contentController.text;
@@ -171,9 +177,9 @@ class _AddNoteSheetState extends State<AddNoteSheet>
         maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
       margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -183,7 +189,7 @@ class _AddNoteSheetState extends State<AddNoteSheet>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: cs.outlineVariant,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -196,32 +202,32 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.note_alt_outlined,
-                      color: AppColors.primary, size: 20),
+                  child: Icon(Icons.note_alt_outlined,
+                      color: cs.primary, size: 20),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Новое назначение врача',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: AppColors.textMuted),
+                  icon: Icon(Icons.close, color: textMuted),
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
 
           // Form Body
           Expanded(
@@ -229,13 +235,13 @@ class _AddNoteSheetState extends State<AddNoteSheet>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               children: [
                 // 1. Specialty Chips
-                const Text(
+                Text(
                   'СПЕЦИАЛЬНОСТЬ ВРАЧА',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -252,17 +258,17 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                           onSelected: (val) {
                             if (val) setState(() => _selectedSpecialty = spec);
                           },
-                          selectedColor: AppColors.primarySurface,
-                          backgroundColor: Colors.white,
+                          selectedColor: cs.primaryContainer,
+                          backgroundColor: cs.surface,
                           labelStyle: TextStyle(
                             fontSize: 11,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? AppColors.primaryDeep : AppColors.textSecondary,
+                            color: isSelected ? cs.onPrimaryContainer : textSecondary,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                             side: BorderSide(
-                              color: isSelected ? AppColors.primary : AppColors.border,
+                              color: isSelected ? cs.primary : cs.outlineVariant,
                             ),
                           ),
                         ),
@@ -280,32 +286,36 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'ВРАЧ / КЛИНИКА',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _doctorController,
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(fontSize: 13, color: cs.onSurface),
                             decoration: InputDecoration(
                               hintText: 'Иванов А. В.',
-                              hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                              hintStyle: TextStyle(fontSize: 12, color: textMuted),
                               isDense: true,
                               filled: true,
-                              fillColor: AppColors.background,
+                              fillColor: cs.surfaceContainerHighest,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.border),
+                                borderSide: BorderSide(color: cs.outlineVariant),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: cs.outlineVariant),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.primary),
+                                borderSide: BorderSide(color: cs.primary),
                               ),
                             ),
                           ),
@@ -318,32 +328,36 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'ДИАГНОЗ',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _diagnosisController,
-                            style: const TextStyle(fontSize: 13),
+                            style: TextStyle(fontSize: 13, color: cs.onSurface),
                             decoration: InputDecoration(
                               hintText: 'ОРВИ, фарингит',
-                              hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                              hintStyle: TextStyle(fontSize: 12, color: textMuted),
                               isDense: true,
                               filled: true,
-                              fillColor: AppColors.background,
+                              fillColor: cs.surfaceContainerHighest,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.border),
+                                borderSide: BorderSide(color: cs.outlineVariant),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: cs.outlineVariant),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.primary),
+                                borderSide: BorderSide(color: cs.primary),
                               ),
                             ),
                           ),
@@ -358,13 +372,13 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'РЕЦЕПТ И НАЗНАЧЕНИЯ',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.6,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                     Text(
@@ -372,7 +386,7 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: _isRecording ? Colors.red.shade700 : AppColors.primaryHover,
+                        color: _isRecording ? semantic.danger : cs.primary,
                       ),
                     ),
                   ],
@@ -385,9 +399,9 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
+                      color: semantic.dangerBg,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFFCA5A5)),
+                      border: Border.all(color: semantic.dangerBorder),
                     ),
                     child: Column(
                       children: [
@@ -396,13 +410,13 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                             Container(
                               width: 10,
                               height: 10,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
+                              decoration: BoxDecoration(
+                                color: semantic.danger,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Слушаю врача... говорите назначения',
                                 maxLines: 1,
@@ -410,15 +424,15 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF991B1B),
+                                  color: semantic.dangerText,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red.shade700,
-                                foregroundColor: Colors.white,
+                                backgroundColor: semantic.danger,
+                                foregroundColor: cs.onError,
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 minimumSize: Size.zero,
                                 shape: RoundedRectangleBorder(
@@ -446,7 +460,7 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                                   height: height,
                                   margin: const EdgeInsets.symmetric(horizontal: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.6 + 0.4 * ((_waveformController.value + phase) % 1.0)),
+                                    color: semantic.danger.withValues(alpha: 0.6 + 0.4 * ((_waveformController.value + phase) % 1.0)),
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 );
@@ -465,20 +479,24 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                       controller: _contentController,
                       onChanged: (val) => setState(() {}),
                       maxLines: 5,
-                      style: const TextStyle(fontSize: 13, height: 1.4),
+                      style: TextStyle(fontSize: 13, height: 1.4, color: cs.onSurface),
                       decoration: InputDecoration(
                         hintText: 'Введите текст назначений или нажмите микрофон для записи диктовки врача...',
-                        hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        hintStyle: TextStyle(fontSize: 12, color: textMuted),
                         filled: true,
-                        fillColor: AppColors.background,
+                        fillColor: cs.surfaceContainerHighest,
                         contentPadding: const EdgeInsets.fromLTRB(14, 14, 50, 14),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: cs.outlineVariant),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: cs.outlineVariant),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.primary),
+                          borderSide: BorderSide(color: cs.primary),
                         ),
                       ),
                     ),
@@ -491,16 +509,16 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _isRecording ? Colors.red : AppColors.primarySurface,
+                            color: _isRecording ? semantic.danger : cs.primaryContainer,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _isRecording ? Colors.red : AppColors.primaryBorder,
+                              color: _isRecording ? semantic.danger : cs.outlineVariant,
                             ),
                           ),
                           child: Icon(
                             _isRecording ? Icons.mic_off : Icons.mic,
                             size: 20,
-                            color: _isRecording ? Colors.white : AppColors.primaryHover,
+                            color: _isRecording ? cs.onError : cs.primary,
                           ),
                         ),
                       ),
@@ -513,15 +531,15 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                 if (previewMatches.isNotEmpty) ...[
                   Row(
                     children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.primary, size: 16),
+                      Icon(Icons.auto_awesome, color: cs.primary, size: 16),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'РАСПОЗНАННЫЕ ЛЕКАРСТВА И НАЛИЧИЕ',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.6,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -534,19 +552,19 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                     String statusLabel;
 
                     if (item.isInStock) {
-                      badgeBg = const Color(0xFFF0FDF4);
-                      badgeBorder = const Color(0xFFBBF7D0);
-                      badgeText = const Color(0xFF15803D);
+                      badgeBg = semantic.successBg;
+                      badgeBorder = semantic.successBorder;
+                      badgeText = semantic.successText;
                       statusLabel = '🟢 Есть в наличии: ${item.locationInfo}';
                     } else if (item.isLowStock) {
-                      badgeBg = const Color(0xFFFFFBEB);
-                      badgeBorder = const Color(0xFFFDE68A);
-                      badgeText = const Color(0xFFB45309);
+                      badgeBg = semantic.warningBg;
+                      badgeBorder = semantic.warningBorder;
+                      badgeText = semantic.warningText;
                       statusLabel = '🟡 Мало: ${item.locationInfo}';
                     } else {
-                      badgeBg = const Color(0xFFFEF2F2);
-                      badgeBorder = const Color(0xFFFECACA);
-                      badgeText = const Color(0xFFB91C1C);
+                      badgeBg = semantic.dangerBg;
+                      badgeBorder = semantic.dangerBorder;
+                      badgeText = semantic.dangerText;
                       statusLabel = '🔴 Нет в аптечке';
                     }
 
@@ -582,10 +600,10 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                           if (item.isMissing)
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFFB91C1C),
+                                backgroundColor: cs.surface,
+                                foregroundColor: semantic.dangerText,
                                 elevation: 0,
-                                side: const BorderSide(color: Color(0xFFFECACA)),
+                                side: BorderSide(color: semantic.dangerBorder),
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -611,8 +629,8 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                 // 5. Submit Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(

@@ -20,32 +20,37 @@ class FamilyScreen extends StatefulWidget {
 class _FamilyScreenState extends State<FamilyScreen> {
 
   Future<void> _handleLogout() async {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: cs.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
+        title: Text(
           'Выход из аккаунта',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: cs.onSurface,
           ),
         ),
-        content: const Text(
+        content: Text(
           'Вы уверены, что хотите завершить сеанс?',
-          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 13, color: textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+            child: Text('Отмена', style: TextStyle(color: textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.error,
+              foregroundColor: cs.onError,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -77,33 +82,37 @@ class _FamilyScreenState extends State<FamilyScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           children: [
             // 1. Header with Logout Button
-            _buildHeader(),
+            _buildHeader(cs, semantic, textMuted),
             const SizedBox(height: 14),
 
             // 2. Family Members Rectangular Cards
-            ...state.profiles.map((p) => _buildProfileCard(context, state, p)),
+            ...state.profiles.map((p) => _buildProfileCard(context, state, p, cs, semantic, textSecondary, textMuted)),
 
             const SizedBox(height: 8),
 
             // 3. Local SQLite Offline Sync Bar
-            _buildSyncBar(context, state),
+            _buildSyncBar(context, state, cs, semantic, textMuted),
             const SizedBox(height: 12),
 
             // 4. Add Member Button (Dashed style)
-            _buildAddMemberButton(context),
+            _buildAddMemberButton(context, cs),
             const SizedBox(height: 12),
 
             // 5. Logout Button
-            _buildLogoutButton(context),
+            _buildLogoutButton(context, cs),
             const SizedBox(height: 16),
           ],
         ),
@@ -111,12 +120,12 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ColorScheme cs, SemanticColors semantic, Color textMuted) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -126,24 +135,24 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
-                  color: AppColors.primaryHover,
+                  color: cs.primary,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
                 'Семья и профили',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
                 'Члены семьи и их персональные графики',
                 style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textMuted,
+                  color: textMuted,
                 ),
               ),
             ],
@@ -151,7 +160,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
         ),
         const SizedBox(width: 8),
         IconButton(
-          icon: const Icon(Icons.settings_outlined, size: 22, color: AppColors.textPrimary),
+          icon: Icon(Icons.settings_outlined, size: 22, color: cs.onSurface),
           tooltip: 'Настройки приложения',
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -164,9 +173,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
         const SizedBox(width: 4),
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            backgroundColor: AppColors.statusExpiredBg,
-            foregroundColor: AppColors.statusExpiredText,
-            side: const BorderSide(color: AppColors.statusExpiredBorder),
+            backgroundColor: semantic.dangerBg,
+            foregroundColor: semantic.dangerText,
+            side: BorderSide(color: semantic.dangerBorder),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -185,30 +194,38 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, AppState state, Profile p) {
+  Widget _buildProfileCard(
+    BuildContext context,
+    AppState state,
+    Profile p,
+    ColorScheme cs,
+    SemanticColors semantic,
+    Color textSecondary,
+    Color textMuted,
+  ) {
     final isSelected = state.selectedProfileId == p.id;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.border,
+          color: isSelected ? cs.primary : cs.outlineVariant,
           width: isSelected ? 1.5 : 1,
         ),
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: cs.primary.withValues(alpha: 0.12),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 )
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
+                  color: cs.shadow.withValues(alpha: 0.04),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 )
@@ -222,9 +239,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primarySurface,
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.primaryBorderLight),
+              border: Border.all(color: cs.outlineVariant),
             ),
             alignment: Alignment.center,
             child: Text(
@@ -244,10 +261,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
                     Flexible(
                       child: Text(
                         p.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: cs.onSurface,
                         ),
                       ),
                     ),
@@ -256,15 +273,15 @@ class _FamilyScreenState extends State<FamilyScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryBorderLight,
+                          color: cs.primaryContainer,
                           borderRadius: BorderRadius.circular(5),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Владелец',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primaryDeep,
+                            color: cs.primary,
                           ),
                         ),
                       ),
@@ -276,10 +293,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   p.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -287,18 +304,18 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   p.role,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 if (p.birthDate != null && p.birthDate!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     'Дата рождения: ${p.birthDate}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                 ],
@@ -312,9 +329,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.statusExpiredBg,
+                          color: semantic.dangerBg,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppColors.statusExpiredBorder),
+                          border: Border.all(color: semantic.dangerBorder),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -322,10 +339,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
                             const Text('⚠️ ', style: TextStyle(fontSize: 8)),
                             Text(
                               allergy,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.statusExpiredText,
+                                color: semantic.dangerText,
                               ),
                             ),
                           ],
@@ -346,14 +363,14 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 16, color: Color(0xFF0D9488)),
+                    icon: Icon(Icons.picture_as_pdf_outlined, size: 16, color: cs.primary),
                     tooltip: 'Отчёт для врача',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                     onPressed: () => HistoryReportScreen.show(context, profileId: p.id),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textMuted),
+                    icon: Icon(Icons.edit_outlined, size: 16, color: textMuted),
                     tooltip: 'Редактировать профиль',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
@@ -366,24 +383,24 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Выбран',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primaryHover,
+                      color: cs.primary,
                     ),
                   ),
                 )
               else
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceSubtle,
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    foregroundColor: cs.onSurface,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -411,16 +428,22 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
   }
 
-  Widget _buildSyncBar(BuildContext context, AppState state) {
+  Widget _buildSyncBar(
+    BuildContext context,
+    AppState state,
+    ColorScheme cs,
+    SemanticColors semantic,
+    Color textMuted,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: cs.shadow.withValues(alpha: 0.04),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -432,17 +455,17 @@ class _FamilyScreenState extends State<FamilyScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.statusInfoBg,
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.cloud_done_rounded,
-              color: AppColors.primaryHover,
+              color: cs.primary,
               size: 22,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -451,16 +474,16 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: cs.onSurface,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   'Локальный офлайн-кэш — в разработке (Roadmap v2)',
                   style: TextStyle(
                     fontSize: 10,
                     fontStyle: FontStyle.italic,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -470,21 +493,21 @@ class _FamilyScreenState extends State<FamilyScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.statusOkBg,
+              color: semantic.successBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.statusOkDot.withValues(alpha: 0.3)),
+              border: Border.all(color: semantic.success.withValues(alpha: 0.3)),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedIndicatorDot(),
-                SizedBox(width: 4),
+                AnimatedIndicatorDot(color: semantic.success),
+                const SizedBox(width: 4),
                 Text(
                   'Online',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.statusOkText,
+                    color: semantic.successText,
                   ),
                 ),
               ],
@@ -499,7 +522,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
     FamilyMemberFormSheet.show(context);
   }
 
-  Widget _buildAddMemberButton(BuildContext context) {
+  Widget _buildAddMemberButton(BuildContext context, ColorScheme cs) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () => _showAddMemberDialog(context),
@@ -507,26 +530,26 @@ class _FamilyScreenState extends State<FamilyScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.5),
+          color: cs.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.primary,
+            color: cs.primary,
             style: BorderStyle.solid,
             width: 1.2,
           ),
         ),
         alignment: Alignment.center,
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 16, color: AppColors.primaryHover),
-            SizedBox(width: 6),
+            Icon(Icons.add, size: 16, color: cs.primary),
+            const SizedBox(width: 6),
             Text(
               'Добавить члена семьи',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primaryHover,
+                color: cs.primary,
               ),
             ),
           ],
@@ -535,7 +558,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+  Widget _buildLogoutButton(BuildContext context, ColorScheme cs) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: _handleLogout,
@@ -543,22 +566,22 @@ class _FamilyScreenState extends State<FamilyScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: cs.outlineVariant),
         ),
         alignment: Alignment.center,
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.logout_rounded, size: 15, color: AppColors.danger),
-            SizedBox(width: 6),
+            Icon(Icons.logout_rounded, size: 15, color: cs.error),
+            const SizedBox(width: 6),
             Text(
               'Выйти из аккаунта',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.danger,
+                color: cs.error,
               ),
             ),
           ],
@@ -569,7 +592,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
 }
 
 class AnimatedIndicatorDot extends StatefulWidget {
-  const AnimatedIndicatorDot({super.key});
+  final Color color;
+  const AnimatedIndicatorDot({super.key, required this.color});
 
   @override
   State<AnimatedIndicatorDot> createState() => _AnimatedIndicatorDotState();
@@ -604,10 +628,10 @@ class _AnimatedIndicatorDotState extends State<AnimatedIndicatorDot>
           height: 7,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.statusOkDot,
+            color: widget.color,
             boxShadow: [
               BoxShadow(
-                color: AppColors.statusOkDot.withValues(
+                color: widget.color.withValues(
                   alpha: 0.3 + 0.4 * _dotController.value,
                 ),
                 blurRadius: 4 * _dotController.value,

@@ -100,8 +100,14 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.5);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.7);
+
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: cs.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
@@ -112,18 +118,18 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.statusInfoBg,
+              color: semantic.infoBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primaryBorder),
+              border: Border.all(color: cs.outline),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.dns_rounded,
-              color: AppColors.primaryHover,
+              color: cs.primary,
               size: 20,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -132,15 +138,15 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: cs.onSurface,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   'Настройки подключения для тестеров',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -156,13 +162,13 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'БАЗОВЫЙ URL API REST',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: AppColors.textMuted,
+                  color: textMuted,
                 ),
               ),
               const SizedBox(height: 6),
@@ -171,34 +177,34 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 decoration: InputDecoration(
                   hintText: 'http://127.0.0.1:8000/api',
-                  hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  hintStyle: TextStyle(fontSize: 12, color: textMuted),
                   filled: true,
-                  fillColor: AppColors.surfaceSubtle,
+                  fillColor: cs.surfaceContainerHighest,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: cs.outlineVariant),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: cs.outlineVariant),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    borderSide: BorderSide(color: cs.primary, width: 1.5),
                   ),
                 ),
               ),
               const SizedBox(height: 10),
 
               // Presets
-              const Text(
+              Text(
                 'БЫСТРЫЕ ШАБЛОНЫ:',
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: AppColors.textMuted,
+                  color: textMuted,
                 ),
               ),
               const SizedBox(height: 6),
@@ -208,8 +214,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                 children: [
                   ActionChip(
                     label: const Text('☁️ Production (SpaceWeb)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                    backgroundColor: AppColors.primarySurface,
-                    side: const BorderSide(color: AppColors.primaryBorder),
+                    backgroundColor: cs.primaryContainer,
+                    side: BorderSide(color: cs.outline),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
                       _urlController.text = 'http://e340043kek.temp.swtest.ru/api';
@@ -217,8 +223,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   ),
                   ActionChip(
                     label: const Text('🐳 Staging (Docker :8080)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                    backgroundColor: AppColors.surfaceSubtle,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
                       _urlController.text = 'http://127.0.0.1:8080/api';
@@ -226,8 +232,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   ),
                   ActionChip(
                     label: const Text('💻 Local (Artisan :8000)', style: TextStyle(fontSize: 10)),
-                    backgroundColor: AppColors.surfaceSubtle,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
                       _urlController.text = 'http://127.0.0.1:8000/api';
@@ -235,8 +241,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   ),
                   ActionChip(
                     label: const Text('📱 Android Emulator (10.0.2.2)', style: TextStyle(fontSize: 10)),
-                    backgroundColor: AppColors.surfaceSubtle,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
                       _urlController.text = 'http://10.0.2.2:8000/api';
@@ -250,31 +256,31 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceSubtle,
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: cs.outlineVariant),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Демо-режим (без сети)',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                           ),
                           Text(
                             'Автономная работа с локальными данными',
-                            style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                            style: TextStyle(fontSize: 10, color: textMuted),
                           ),
                         ],
                       ),
                     ),
                     Switch.adaptive(
                       value: _isMockMode,
-                      activeTrackColor: AppColors.primary,
+                      activeTrackColor: cs.primary,
                       onChanged: (val) {
                         setState(() => _isMockMode = val);
                         context.read<ApiService>().isMockMode = val;
@@ -290,10 +296,10 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _isSuccess ? AppColors.statusOkBg : const Color(0xFFFFF1F2),
+                    color: _isSuccess ? semantic.successBg : semantic.dangerBg,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: _isSuccess ? AppColors.statusOkDot.withValues(alpha: 0.3) : const Color(0xFFFECDD3),
+                      color: _isSuccess ? semantic.successBorder : semantic.dangerBorder,
                     ),
                   ),
                   child: Row(
@@ -301,7 +307,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                       Icon(
                         _isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
                         size: 16,
-                        color: _isSuccess ? AppColors.statusOkText : const Color(0xFF9F1239),
+                        color: _isSuccess ? semantic.success : semantic.danger,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -310,7 +316,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: _isSuccess ? AppColors.statusOkText : const Color(0xFF9F1239),
+                            color: _isSuccess ? semantic.successText : semantic.dangerText,
                           ),
                         ),
                       ),
@@ -325,27 +331,27 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
       actions: [
         TextButton(
           onPressed: _isChecking ? null : () => Navigator.of(context).pop(),
-          child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+          child: Text('Отмена', style: TextStyle(color: textMuted)),
         ),
         if (!_isSuccess && _statusMessage != null)
           TextButton(
             onPressed: _isChecking ? null : () => _testAndSave(true),
-            child: const Text('Сохранить всё равно', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('Сохранить всё равно', style: TextStyle(color: textSecondary)),
           ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           ),
           onPressed: _isChecking ? null : () => _testAndSave(false),
           child: _isChecking
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                 )
               : const Text('Сохранить и проверить связь', style: TextStyle(fontWeight: FontWeight.w700)),
         ),

@@ -77,6 +77,12 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final state = context.watch<AppState>();
     final m = state.medicines.cast<Medicine?>().firstWhere(
           (med) => med?.id == widget.medicine.id,
@@ -89,9 +95,9 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -101,7 +107,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: cs.outlineVariant,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -124,8 +130,8 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
                               color: m.isPrescription
-                                  ? const Color(0xFFFEE2E2)
-                                  : const Color(0xFFE0F2FE),
+                                  ? semantic.dangerBg
+                                  : cs.primaryContainer,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -134,8 +140,8 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: m.isPrescription
-                                    ? const Color(0xFFB91C1C)
-                                    : const Color(0xFF0369A1),
+                                    ? semantic.dangerText
+                                    : cs.primary,
                               ),
                             ),
                           ),
@@ -144,20 +150,20 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                       const SizedBox(height: 6),
                       Text(
                         m.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: cs.onSurface,
                         ),
                       ),
                       if (m.substance.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
                           'МНН: ${m.substance}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primaryHover,
+                            color: cs.primary,
                           ),
                         ),
                       ],
@@ -166,13 +172,13 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: AppColors.textMuted),
+                  icon: Icon(Icons.close, color: textMuted),
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
 
           // Scrollable content
           Expanded(
@@ -183,9 +189,9 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Row(
                     children: [
@@ -193,38 +199,38 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'ТЕКУЩИЙ ОСТАТОК',
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textMuted,
+                                color: textMuted,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${m.remainingDisplay} из ${m.totalDisplay} шт.',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: cs.onSurface,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Container(width: 1, height: 32, color: AppColors.border),
+                      Container(width: 1, height: 32, color: cs.outlineVariant),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'СРОК ГОДНОСТИ',
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textMuted,
+                                color: textMuted,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -233,7 +239,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: m.isOk ? AppColors.textPrimary : AppColors.statusExpiredText,
+                                color: m.isOk ? cs.onSurface : semantic.dangerText,
                               ),
                             ),
                           ],
@@ -242,8 +248,8 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                     ],
                   ),
                 ),
-                _buildShelfLifeBlock(context, m),
-                _buildLowStockBlock(context, m),
+                _buildShelfLifeBlock(context, m, cs, semantic),
+                _buildLowStockBlock(context, m, cs, semantic),
                 const SizedBox(height: 12),
 
                 // Main Actions: Quick Intake ("Выпить сейчас") & Assign Course ("Назначить курс")
@@ -252,9 +258,9 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: AppColors.primarySurface,
-                          foregroundColor: const Color(0xFF0D9488),
-                          side: const BorderSide(color: AppColors.primaryBorder, width: 1.2),
+                          backgroundColor: cs.primaryContainer,
+                          foregroundColor: cs.primary,
+                          side: BorderSide(color: cs.outlineVariant, width: 1.2),
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -262,13 +268,13 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                         onPressed: () {
                           QuickIntakeSheet.show(context, medicine: m);
                         },
-                        icon: const Icon(Icons.bolt_rounded, color: Color(0xFF0D9488), size: 20),
-                        label: const Text(
+                        icon: Icon(Icons.bolt_rounded, color: cs.primary, size: 20),
+                        label: Text(
                           'Выпить сейчас',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF0D9488),
+                            color: cs.primary,
                           ),
                         ),
                       ),
@@ -277,8 +283,8 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -303,9 +309,9 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.border),
+                      backgroundColor: cs.surface,
+                      foregroundColor: cs.onSurface,
+                      side: BorderSide(color: cs.outlineVariant),
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -313,13 +319,13 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                     onPressed: () {
                       MoveMedicineSheet.show(context, medicine: m);
                     },
-                    icon: const Icon(Icons.drive_file_move_outlined, color: AppColors.textPrimary, size: 20),
-                    label: const Text(
+                    icon: Icon(Icons.drive_file_move_outlined, color: cs.onSurface, size: 20),
+                    label: Text(
                       'Переместить в другую аптечку',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: cs.onSurface,
                       ),
                     ),
                   ),
@@ -330,21 +336,21 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'БЕЗОПАСНОСТЬ (CDS)',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.6,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                     Text(
                       'Пациент: $activePatient',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primaryHover,
+                        color: cs.primary,
                       ),
                     ),
                   ],
@@ -357,18 +363,18 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: AppColors.primarySurface,
-                          foregroundColor: AppColors.primaryHover,
-                          side: const BorderSide(color: AppColors.primaryBorder),
+                          backgroundColor: cs.primaryContainer,
+                          foregroundColor: cs.primary,
+                          side: BorderSide(color: cs.outlineVariant),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         onPressed: _isLoadingSafety ? null : _checkSafety,
                         icon: _isLoadingSafety
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 14,
                                 height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
                               )
                             : const Icon(Icons.shield_outlined, size: 16),
                         label: const Text(
@@ -391,13 +397,13 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
 
                 // 3. Allergens Chips (if any)
                 if (m.allergenTags.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     'ПОТЕНЦИАЛЬНЫЕ АЛЛЕРГЕНЫ И ЭКСЦИПИЕНТЫ',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.6,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -408,16 +414,16 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
+                          color: semantic.warningBg,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFDE68A)),
+                          border: Border.all(color: semantic.warningBorder),
                         ),
                         child: Text(
                           '⚠️ $tag',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF92400E),
+                            color: semantic.warningText,
                           ),
                         ),
                       );
@@ -427,11 +433,11 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                 ],
 
                 // 4. Pharmacy Metadata
-                _buildMetadataSection(m),
+                _buildMetadataSection(m, cs, textMuted),
                 const SizedBox(height: 14),
 
                 // 5. Expandable Instructions Accordion
-                _buildInstructionsAccordion(m),
+                _buildInstructionsAccordion(m, cs, textSecondary, textMuted),
                 const SizedBox(height: 20),
               ],
             ),
@@ -441,30 +447,30 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     );
   }
 
-  Widget _buildMetadataSection(Medicine m) {
+  Widget _buildMetadataSection(Medicine m, ColorScheme cs, Color textMuted) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         children: [
           if (m.manufacturer.isNotEmpty)
-            _buildMetaRow('Производитель', '${m.manufacturer}${m.country.isNotEmpty ? ' (${m.country})' : ''}'),
+            _buildMetaRow('Производитель', '${m.manufacturer}${m.country.isNotEmpty ? ' (${m.country})' : ''}', cs, textMuted),
           if (m.atcCode.isNotEmpty)
-            _buildMetaRow('АТХ-код', m.atcCode),
+            _buildMetaRow('АТХ-код', m.atcCode, cs, textMuted),
           if (m.barcode.isNotEmpty)
-            _buildMetaRow('Штрихкод', m.barcode),
+            _buildMetaRow('Штрихкод', m.barcode, cs, textMuted),
           if (m.composition.isNotEmpty)
-            _buildMetaRow('Состав', m.composition),
+            _buildMetaRow('Состав', m.composition, cs, textMuted),
         ],
       ),
     );
   }
 
-  Widget _buildMetaRow(String label, String value) {
+  Widget _buildMetaRow(String label, String value, ColorScheme cs, Color textMuted) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -474,16 +480,16 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
             width: 110,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 11, color: textMuted),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
           ),
@@ -492,7 +498,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     );
   }
 
-  Widget _buildInstructionsAccordion(Medicine m) {
+  Widget _buildInstructionsAccordion(Medicine m, ColorScheme cs, Color textSecondary, Color textMuted) {
     final instructions = m.instructions;
     if (instructions.isEmpty) {
       return const SizedBox.shrink();
@@ -509,13 +515,13 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'ОФИЦИАЛЬНАЯ ИНСТРУКЦИЯ',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 6),
@@ -526,10 +532,10 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
           return Container(
             margin: const EdgeInsets.only(bottom: 6),
             child: Material(
-              color: Colors.white,
+              color: cs.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: cs.outlineVariant),
               ),
               child: Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -539,10 +545,10 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                   leading: Text(section['icon']!, style: const TextStyle(fontSize: 16)),
                   title: Text(
                     section['title']!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                   children: [
@@ -550,9 +556,9 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         text,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondary,
+                          color: textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -586,7 +592,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     return 'табл.';
   }
 
-  Widget _buildLowStockBlock(BuildContext context, Medicine m) {
+  Widget _buildLowStockBlock(BuildContext context, Medicine m, ColorScheme cs, SemanticColors semantic) {
     if (!m.isLowStock) return const SizedBox.shrink();
 
     final unit = _getUnitDisplay(m);
@@ -596,28 +602,28 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
+        color: semantic.warningBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(color: semantic.warningBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.warning_amber_rounded,
-                color: Color(0xFFD97706),
+                color: semantic.warning,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   '⚠️ Заканчивается: осталось ${m.remainingDisplay} $unit',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF92400E),
+                    color: semantic.warningText,
                   ),
                 ),
               ),
@@ -627,19 +633,19 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Рекомендуется пополнить запас в аптечке',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFFB45309),
+                    color: semantic.warningText,
                   ),
                 ),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD97706),
-                  foregroundColor: Colors.white,
+                  backgroundColor: semantic.warning,
+                  foregroundColor: cs.onPrimary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -669,28 +675,28 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     );
   }
 
-  Widget _buildShelfLifeBlock(BuildContext context, Medicine m) {
+  Widget _buildShelfLifeBlock(BuildContext context, Medicine m, ColorScheme cs, SemanticColors semantic) {
     if (m.openedAt == null) {
       return Container(
         width: double.infinity,
         margin: const EdgeInsets.only(top: 8),
         child: OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            backgroundColor: const Color(0xFFF0FDFA),
-            foregroundColor: const Color(0xFF0D9488),
-            side: const BorderSide(color: Color(0xFF99F6E4), width: 1.2),
+            backgroundColor: cs.primaryContainer,
+            foregroundColor: cs.primary,
+            side: BorderSide(color: cs.outlineVariant, width: 1.2),
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
           ),
-          onPressed: () => _showOpenBottleDialog(m),
-          icon: const Icon(Icons.lock_open_rounded, size: 18, color: Color(0xFF0D9488)),
-          label: const Text(
+          onPressed: () => _showOpenBottleDialog(m, cs, semantic),
+          icon: Icon(Icons.lock_open_rounded, size: 18, color: cs.primary),
+          label: Text(
             'Вскрыть упаковку',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0D9488),
+              color: cs.primary,
             ),
           ),
         ),
@@ -712,10 +718,10 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isExpired ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+        color: isExpired ? semantic.dangerBg : semantic.successBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isExpired ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0),
+          color: isExpired ? semantic.dangerBorder : semantic.successBorder,
         ),
       ),
       child: Column(
@@ -726,7 +732,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
               Icon(
                 isExpired ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
                 size: 16,
-                color: isExpired ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                color: isExpired ? semantic.danger : semantic.success,
               ),
               const SizedBox(width: 6),
               Text(
@@ -735,7 +741,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
-                  color: isExpired ? const Color(0xFFB91C1C) : const Color(0xFF15803D),
+                  color: isExpired ? semantic.dangerText : semantic.successText,
                 ),
               ),
               if (isExpired) ...[
@@ -743,15 +749,15 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDC2626),
+                    color: semantic.danger,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
+                  child: Text(
                     'ИСТЁК',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: cs.onError,
                     ),
                   ),
                 ),
@@ -764,7 +770,7 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: isExpired ? const Color(0xFF991B1B) : const Color(0xFF166534),
+              color: isExpired ? semantic.dangerText : semantic.successText,
             ),
           ),
         ],
@@ -772,22 +778,24 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
     );
   }
 
-  Future<void> _showOpenBottleDialog(Medicine medicine) async {
+  Future<void> _showOpenBottleDialog(Medicine medicine, ColorScheme cs, SemanticColors semantic) async {
     final controller = TextEditingController(text: '30');
     final formKey = GlobalKey<FormState>();
+    final textMuted = Theme.of(context).textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) {
         return AlertDialog(
+          backgroundColor: cs.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
-            children: const [
-              Icon(Icons.inventory_2_outlined, color: Color(0xFF0D9488), size: 22),
-              SizedBox(width: 8),
+            children: [
+              Icon(Icons.inventory_2_outlined, color: cs.primary, size: 22),
+              const SizedBox(width: 8),
               Text(
                 'Вскрыть упаковку',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface),
               ),
             ],
           ),
@@ -799,30 +807,32 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
               children: [
                 Text(
                   'Препарат: ${medicine.name}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Сколько дней годен после вскрытия?',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 12, color: textMuted),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: controller,
                   keyboardType: TextInputType.number,
                   autofocus: false,
+                  style: TextStyle(color: cs.onSurface, fontSize: 13),
                   decoration: InputDecoration(
                     suffixText: 'дн.',
                     hintText: '30',
+                    hintStyle: TextStyle(color: textMuted),
                     filled: true,
-                    fillColor: AppColors.background,
+                    fillColor: cs.surfaceContainerHighest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF0D9488), width: 1.5),
+                      borderSide: BorderSide(color: cs.primary, width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
@@ -840,12 +850,12 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(false),
-              child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+              child: Text('Отмена', style: TextStyle(color: textMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0D9488),
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () {

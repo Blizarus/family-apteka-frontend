@@ -76,6 +76,9 @@ class _NotesScreenState extends State<NotesScreen> {
     required VoidCallback onUndo,
   }) {
     if (!mounted) return;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     setState(() => _isSnackBarActive = true);
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -84,7 +87,7 @@ class _NotesScreenState extends State<NotesScreen> {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 7), // 7-секундное окно отмены
         elevation: 6,
-        backgroundColor: const Color(0xFF0F172A), // Slate 900
+        backgroundColor: cs.inverseSurface,
         margin: const EdgeInsets.only(left: 16, right: 16, bottom: 72),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Row(
@@ -94,8 +97,8 @@ class _NotesScreenState extends State<NotesScreen> {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: cs.onInverseSurface,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -107,7 +110,7 @@ class _NotesScreenState extends State<NotesScreen> {
         ),
         action: SnackBarAction(
           label: '↩️ Отмена',
-          textColor: const Color(0xFF2DD4BF), // Bright Teal
+          textColor: cs.primary,
           onPressed: () {
             onUndo();
             ToastHelper.show(
@@ -152,33 +155,40 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   void _confirmDeleteNote(BuildContext context, MedicalNote note, int index) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: cs.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Text('🗑️', style: TextStyle(fontSize: 20)),
-            SizedBox(width: 8),
+            const Text('🗑️', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
             Text(
               'Удалить назначение?',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
             ),
           ],
         ),
         content: Text(
           'Вы уверены, что хотите удалить запись от ${note.doctorName} (${note.diagnosis})?',
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 13, color: textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.textMuted)),
+            child: Text('Отмена', style: TextStyle(color: textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBE123C),
-              foregroundColor: Colors.white,
+              backgroundColor: semantic.danger,
+              foregroundColor: cs.onError,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -196,10 +206,11 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       floatingActionButton: AnimatedPadding(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
@@ -207,13 +218,13 @@ class _NotesScreenState extends State<NotesScreen> {
         padding: EdgeInsets.only(bottom: _isSnackBarActive ? 68.0 : 0.0),
         child: FloatingActionButton.extended(
           heroTag: 'notes_screen_fab',
-          backgroundColor: AppColors.primary,
+          backgroundColor: cs.primary,
           elevation: 3,
-          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-          label: const Text(
+          icon: Icon(Icons.add_rounded, color: cs.onPrimary, size: 20),
+          label: Text(
             'Новое назначение',
             style: TextStyle(
-              color: Colors.white,
+              color: cs.onPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -223,7 +234,7 @@ class _NotesScreenState extends State<NotesScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          color: AppColors.primary,
+          color: cs.primary,
           onRefresh: () => state.refreshData(),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -238,11 +249,11 @@ class _NotesScreenState extends State<NotesScreen> {
               const SizedBox(height: 12),
 
               // 3. Search Bar
-              _buildSearchBar(),
+              _buildSearchBar(context),
               const SizedBox(height: 10),
 
               // 4. Filter Chips
-              _buildFilterChips(state),
+              _buildFilterChips(context, state),
               const SizedBox(height: 14),
 
               // 5. Content: Shopping List or Notes List
@@ -260,13 +271,16 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildHeader(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
     final activeCount = state.activeNotes.length;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -275,15 +289,15 @@ class _NotesScreenState extends State<NotesScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
                 'Назначения врачей и синхронизация с аптечкой',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textMuted,
+                  color: textMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -294,9 +308,9 @@ class _NotesScreenState extends State<NotesScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.primarySurface,
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primaryBorder),
+            border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -305,8 +319,8 @@ class _NotesScreenState extends State<NotesScreen> {
               const SizedBox(width: 5),
               Text(
                 '$activeCount активных',
-                style: const TextStyle(
-                  color: AppColors.primaryDeep,
+                style: TextStyle(
+                  color: cs.onPrimaryContainer,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -319,6 +333,11 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildPatientSelector(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final selectedProfile = state.selectedProfile;
     final hint = selectedProfile?.name ?? 'Вся семья';
 
@@ -328,13 +347,13 @@ class _NotesScreenState extends State<NotesScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'ПАЦИЕНТ:',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.6,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
             const SizedBox(width: 8),
@@ -344,10 +363,10 @@ class _NotesScreenState extends State<NotesScreen> {
                 textAlign: TextAlign.end,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primaryHover,
+                  color: cs.primary,
                 ),
               ),
             ),
@@ -368,18 +387,18 @@ class _NotesScreenState extends State<NotesScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: state.selectedProfileId == null
-                          ? AppColors.primary
-                          : Colors.white,
+                          ? cs.primary
+                          : cs.surface,
                       borderRadius: BorderRadius.circular(100),
                       border: Border.all(
                         color: state.selectedProfileId == null
-                            ? AppColors.primary
-                            : AppColors.border,
+                            ? cs.primary
+                            : cs.outlineVariant,
                       ),
                       boxShadow: state.selectedProfileId == null
                           ? [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.25),
+                                color: cs.shadow.withValues(alpha: 0.25),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               )
@@ -397,8 +416,8 @@ class _NotesScreenState extends State<NotesScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: state.selectedProfileId == null
-                                ? Colors.white
-                                : AppColors.textSecondary,
+                                ? cs.onPrimary
+                                : textSecondary,
                           ),
                         ),
                       ],
@@ -418,15 +437,15 @@ class _NotesScreenState extends State<NotesScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
+                        color: isSelected ? cs.primary : cs.surface,
                         borderRadius: BorderRadius.circular(100),
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.border,
+                          color: isSelected ? cs.primary : cs.outlineVariant,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.25),
+                                  color: cs.shadow.withValues(alpha: 0.25),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 )
@@ -443,7 +462,7 @@ class _NotesScreenState extends State<NotesScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                              color: isSelected ? cs.onPrimary : textSecondary,
                             ),
                           ),
                         ],
@@ -459,26 +478,30 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: TextField(
         controller: _searchController,
         onChanged: (val) {
           setState(() => _searchQuery = val.trim().toLowerCase());
         },
-        style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+        style: TextStyle(fontSize: 13, color: cs.onSurface),
         decoration: InputDecoration(
           hintText: 'Поиск по врачу, диагнозу, лекарству...',
-          hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+          hintStyle: TextStyle(fontSize: 13, color: textMuted),
+          prefixIcon: Icon(Icons.search, size: 18, color: textMuted),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 16, color: AppColors.textMuted),
+                  icon: Icon(Icons.clear, size: 16, color: textMuted),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -493,7 +516,10 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildFilterChips(AppState state) {
+  Widget _buildFilterChips(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
     final activeCount = state.activeNotes.length;
     final archivedCount = state.archivedNotes.length;
     final shoppingCount = state.shoppingItems.length;
@@ -503,28 +529,32 @@ class _NotesScreenState extends State<NotesScreen> {
       child: Row(
         children: [
           _buildChip(
+            context: context,
             id: 'active',
             label: 'Активные',
             count: activeCount,
           ),
           const SizedBox(width: 6),
           _buildChip(
+            context: context,
             id: 'archived',
             label: '📁 Архив',
             count: archivedCount,
           ),
           const SizedBox(width: 6),
           _buildChip(
+            context: context,
             id: 'dictated',
             label: '🎙️ Диктовка',
             count: state.filteredNotes.where((n) => n.isAudioDictated).length,
           ),
           const SizedBox(width: 6),
           _buildChip(
+            context: context,
             id: 'shopping',
             label: '🛒 В аптеку',
             count: shoppingCount,
-            highlightColor: shoppingCount > 0 ? AppColors.statusExpiringText : null,
+            highlightColor: shoppingCount > 0 ? semantic.warningText : null,
           ),
         ],
       ),
@@ -532,11 +562,17 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildChip({
+    required BuildContext context,
     required String id,
     required String label,
     int? count,
     Color? highlightColor,
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final isSelected = _activeFilter == id;
 
     return InkWell(
@@ -545,10 +581,10 @@ class _NotesScreenState extends State<NotesScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? cs.primary : cs.surface,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? cs.primary : cs.outlineVariant,
           ),
         ),
         child: Row(
@@ -560,8 +596,8 @@ class _NotesScreenState extends State<NotesScreen> {
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? Colors.white
-                    : (highlightColor ?? AppColors.textSecondary),
+                    ? cs.onPrimary
+                    : (highlightColor ?? textSecondary),
               ),
             ),
             if (count != null) ...[
@@ -570,8 +606,8 @@ class _NotesScreenState extends State<NotesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.25)
-                      : AppColors.background,
+                      ? cs.onPrimary.withValues(alpha: 0.25)
+                      : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -579,7 +615,7 @@ class _NotesScreenState extends State<NotesScreen> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : AppColors.textMuted,
+                    color: isSelected ? cs.onPrimary : textMuted,
                   ),
                 ),
               ),
@@ -591,6 +627,10 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildNotesList(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     var notes = state.filteredNotes;
 
     // Filter by Active vs Archived vs Dictated
@@ -628,12 +668,12 @@ class _NotesScreenState extends State<NotesScreen> {
         margin: const EdgeInsets.only(top: 24),
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: cs.outlineVariant),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: cs.shadow.withValues(alpha: 0.02),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -646,13 +686,11 @@ class _NotesScreenState extends State<NotesScreen> {
               height: 64,
               decoration: BoxDecoration(
                 color: isArchivedTab
-                    ? const Color(0xFFF1F5F9)
-                    : const Color(0xFFF0FDFA), // Teal 50
+                    ? cs.surfaceContainerHighest
+                    : cs.primaryContainer,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isArchivedTab
-                      ? const Color(0xFFCBD5E1)
-                      : const Color(0xFF99F6E4),
+                  color: cs.outlineVariant,
                 ),
               ),
               alignment: Alignment.center,
@@ -664,10 +702,10 @@ class _NotesScreenState extends State<NotesScreen> {
             const SizedBox(height: 14),
             Text(
               isArchivedTab ? 'Архив пуст' : 'Все назначения выполнены',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 6),
@@ -676,17 +714,17 @@ class _NotesScreenState extends State<NotesScreen> {
                   ? 'Здесь будут храниться завершенные курсы лечения и рецепты, отправленные в архив.'
                   : 'Активных предписаний врача нет. Завершенные курсы доступны во вкладке «Архив».',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textMuted,
+                color: textMuted,
                 height: 1.45,
               ),
             ),
             const SizedBox(height: 18),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -727,6 +765,12 @@ class _NotesScreenState extends State<NotesScreen> {
     MedicalNote note,
     int index,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     Profile? noteProfile;
     try {
       noteProfile = state.profiles.firstWhere((p) => p.id == note.profileId);
@@ -737,12 +781,12 @@ class _NotesScreenState extends State<NotesScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: cs.shadow.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -761,9 +805,9 @@ class _NotesScreenState extends State<NotesScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.primaryBorder),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -775,10 +819,10 @@ class _NotesScreenState extends State<NotesScreen> {
                       const SizedBox(width: 4),
                       Text(
                         note.specialty,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDeep,
+                          color: cs.onPrimaryContainer,
                         ),
                       ),
                     ],
@@ -793,9 +837,9 @@ class _NotesScreenState extends State<NotesScreen> {
                     children: [
                       Text(
                         note.clinic,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -804,9 +848,9 @@ class _NotesScreenState extends State<NotesScreen> {
                       const SizedBox(height: 1),
                       Text(
                         _formatDate(note.date),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -819,26 +863,26 @@ class _NotesScreenState extends State<NotesScreen> {
                     margin: const EdgeInsets.only(right: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
-                    child: const Text(
+                    child: Text(
                       'В архиве',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                   ),
 
                 // Quick popup / delete button
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
                     size: 18,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                   tooltip: 'Удалить запись',
                   padding: EdgeInsets.zero,
@@ -849,7 +893,7 @@ class _NotesScreenState extends State<NotesScreen> {
             ),
           ),
 
-          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          Divider(height: 1, thickness: 1, color: cs.outlineVariant),
 
           // 2. Doctor, Diagnosis & Patient Tag
           Padding(
@@ -863,10 +907,10 @@ class _NotesScreenState extends State<NotesScreen> {
                     Expanded(
                       child: Text(
                         'Врач: ${note.doctorName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: cs.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -876,9 +920,9 @@ class _NotesScreenState extends State<NotesScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.background,
+                          color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: cs.outlineVariant),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -887,10 +931,10 @@ class _NotesScreenState extends State<NotesScreen> {
                             const SizedBox(width: 4),
                             Text(
                               noteProfile.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary,
+                                color: textSecondary,
                               ),
                             ),
                           ],
@@ -904,9 +948,9 @@ class _NotesScreenState extends State<NotesScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.borderDarker),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -916,10 +960,10 @@ class _NotesScreenState extends State<NotesScreen> {
                       Flexible(
                         child: Text(
                           'Диагноз: ${note.diagnosis}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -934,21 +978,21 @@ class _NotesScreenState extends State<NotesScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF), // Blue 50
+                      color: semantic.infoBg,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFBFDBFE)), // Blue 200
+                      border: Border.all(color: semantic.infoBorder),
                     ),
-                    child: const Wrap(
+                    child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text('🎙️', style: TextStyle(fontSize: 11)),
-                        SizedBox(width: 5),
+                        const Text('🎙️', style: TextStyle(fontSize: 11)),
+                        const SizedBox(width: 5),
                         Text(
                           'Надиктовано голосом врача (распознано ИИ)',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1D4ED8), // Blue 700
+                            color: semantic.infoText,
                           ),
                         ),
                       ],
@@ -965,15 +1009,15 @@ class _NotesScreenState extends State<NotesScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Text(
               note.content,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
                 height: 1.45,
               ),
             ),
@@ -987,7 +1031,7 @@ class _NotesScreenState extends State<NotesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Wrap(
+                  Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
@@ -996,17 +1040,17 @@ class _NotesScreenState extends State<NotesScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.6,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
-                      SizedBox(width: 6),
-                      Text('•', style: TextStyle(color: AppColors.textMuted)),
-                      SizedBox(width: 6),
+                      const SizedBox(width: 6),
+                      Text('•', style: TextStyle(color: textMuted)),
+                      const SizedBox(width: 6),
                       Text(
                         'Светофор запасов',
                         style: TextStyle(
                           fontSize: 10,
-                          color: AppColors.primaryHover,
+                          color: cs.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1033,6 +1077,10 @@ class _NotesScreenState extends State<NotesScreen> {
     PrescribedMedicineItem item, {
     MedicalNote? note,
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
     Color bg;
     Color border;
     Color textColor;
@@ -1040,22 +1088,22 @@ class _NotesScreenState extends State<NotesScreen> {
     String statusText;
 
     if (item.isInStock) {
-      bg = AppColors.statusOkBg;
-      border = const Color(0xFFA7F3D0);
-      textColor = AppColors.statusOkText;
+      bg = semantic.successBg;
+      border = semantic.successBorder;
+      textColor = semantic.successText;
       statusIcon = '🟢';
       statusText = '✓ В аптечке: ${item.remainingCount} шт. (${item.locationInfo})';
     } else if (item.isLowStock) {
-      bg = AppColors.statusExpiringBg;
-      border = AppColors.statusExpiringBorder;
-      textColor = AppColors.statusExpiringText;
+      bg = semantic.warningBg;
+      border = semantic.warningBorder;
+      textColor = semantic.warningText;
       statusIcon = '🟡';
       statusText =
           'Мало: ${item.remainingCount} шт. (требуется ${item.neededCount} шт.)';
     } else {
-      bg = AppColors.statusExpiredBg;
-      border = AppColors.statusExpiredBorder;
-      textColor = AppColors.statusExpiredText;
+      bg = semantic.dangerBg;
+      border = semantic.dangerBorder;
+      textColor = semantic.dangerText;
       statusIcon = '🔴';
       statusText = 'Отсутствует в аптечке';
     }
@@ -1140,20 +1188,20 @@ class _NotesScreenState extends State<NotesScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: cs.primary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.play_arrow_rounded, size: 14, color: Colors.white),
-                    SizedBox(width: 2),
+                    Icon(Icons.play_arrow_rounded, size: 14, color: cs.onPrimary),
+                    const SizedBox(width: 2),
                     Text(
                       'Назначить',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: cs.onPrimary,
                       ),
                     ),
                   ],
@@ -1180,13 +1228,13 @@ class _NotesScreenState extends State<NotesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isInShoppingList
-                      ? AppColors.primarySurface
-                      : Colors.white,
+                      ? cs.primaryContainer
+                      : cs.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isInShoppingList
-                        ? AppColors.primary
-                        : AppColors.borderDarker,
+                        ? cs.primary
+                        : cs.outlineVariant,
                   ),
                 ),
                 child: Row(
@@ -1198,8 +1246,8 @@ class _NotesScreenState extends State<NotesScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: isInShoppingList
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
+                            ? cs.primary
+                            : cs.onSurface,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1209,8 +1257,8 @@ class _NotesScreenState extends State<NotesScreen> {
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: isInShoppingList
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
+                            ? cs.primary
+                            : cs.onSurface,
                       ),
                     ),
                   ],
@@ -1227,13 +1275,19 @@ class _NotesScreenState extends State<NotesScreen> {
   // SHOPPING LIST VIEW (WITH CROSS-LINKED PURCHASE LOGIC)
   // -------------------------------------------------------------
   Widget _buildShoppingListView(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final items = state.shoppingItems;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1242,18 +1296,18 @@ class _NotesScreenState extends State<NotesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Row(
                   children: [
-                    Text('🛒', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
+                    const Text('🛒', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Список покупок в аптеку',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: cs.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1264,7 +1318,7 @@ class _NotesScreenState extends State<NotesScreen> {
               ),
               if (items.isNotEmpty)
                 IconButton(
-                  icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.textMuted),
+                  icon: Icon(Icons.copy_rounded, size: 18, color: textMuted),
                   tooltip: 'Скопировать список',
                   onPressed: () {
                     final text = items
@@ -1284,11 +1338,11 @@ class _NotesScreenState extends State<NotesScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Отметка «Куплено» сразу добавляет препарат в инвентарь аптечки и перекрашивает статус в рецептах в зеленый.',
             style: TextStyle(
               fontSize: 11,
-              color: AppColors.textMuted,
+              color: textMuted,
               height: 1.4,
             ),
           ),
@@ -1306,30 +1360,30 @@ class _NotesScreenState extends State<NotesScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.primarySurface,
+                color: cs.primaryContainer,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primaryBorderLight),
+                border: Border.all(color: cs.outlineVariant),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.checklist_rounded, size: 16, color: AppColors.primaryHover),
-                  SizedBox(width: 8),
+                  Icon(Icons.checklist_rounded, size: 16, color: cs.primary),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Открыть полный список покупок',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primaryHover,
+                        color: cs.onPrimaryContainer,
                       ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
                   ),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppColors.primaryHover),
+                  const SizedBox(width: 6),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 11, color: cs.primary),
                 ],
               ),
             ),
@@ -1342,19 +1396,19 @@ class _NotesScreenState extends State<NotesScreen> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: TextField(
                     controller: _newShoppingItemController,
-                    style: const TextStyle(fontSize: 12),
-                    decoration: const InputDecoration(
+                    style: TextStyle(fontSize: 12, color: cs.onSurface),
+                    decoration: InputDecoration(
                       hintText: 'Добавить препарат в список...',
-                      hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      hintStyle: TextStyle(fontSize: 12, color: textMuted),
                       isDense: true,
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                     onSubmitted: (val) {
                       _addCustomShoppingItem(context, state);
@@ -1365,8 +1419,8 @@ class _NotesScreenState extends State<NotesScreen> {
               const SizedBox(width: 8),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                   shape: RoundedRectangleBorder(
@@ -1384,23 +1438,23 @@ class _NotesScreenState extends State<NotesScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               alignment: Alignment.center,
-              child: const Column(
+              child: Column(
                 children: [
-                  Text('🎉', style: TextStyle(fontSize: 32)),
-                  SizedBox(height: 8),
+                  const Text('🎉', style: TextStyle(fontSize: 32)),
+                  const SizedBox(height: 8),
                   Text(
                     'Список покупок пуст',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Все назначенные врачами препараты есть в вашей домашней аптечке.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    style: TextStyle(fontSize: 11, color: textMuted),
                   ),
                 ],
               ),
@@ -1411,7 +1465,7 @@ class _NotesScreenState extends State<NotesScreen> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: items.length,
               separatorBuilder: (context, index) =>
-                  const Divider(height: 1, color: AppColors.border),
+                  Divider(height: 1, color: cs.outlineVariant),
               itemBuilder: (ctx, i) {
                 final item = items[i];
                 return Padding(
@@ -1421,17 +1475,17 @@ class _NotesScreenState extends State<NotesScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.statusExpiringBg,
+                          color: semantic.warningBg,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppColors.statusExpiringBorder),
+                          border: Border.all(color: semantic.warningBorder),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${item.count} уп.',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.statusExpiringText,
+                            color: semantic.warningText,
                           ),
                         ),
                       ),
@@ -1442,18 +1496,18 @@ class _NotesScreenState extends State<NotesScreen> {
                           children: [
                             Text(
                               item.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: cs.onSurface,
                               ),
                             ),
                             if (item.dosage.isNotEmpty)
                               Text(
                                 item.dosage,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: AppColors.textMuted,
+                                  color: textMuted,
                                 ),
                               ),
                           ],
@@ -1462,12 +1516,12 @@ class _NotesScreenState extends State<NotesScreen> {
                       // Reactive action: "Куплено" (real inventory addition)
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.statusOkBg,
-                          foregroundColor: AppColors.statusOkText,
+                          backgroundColor: semantic.successBg,
+                          foregroundColor: semantic.successText,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           minimumSize: Size.zero,
-                          side: const BorderSide(color: Color(0xFFA7F3D0)),
+                          side: BorderSide(color: semantic.successBorder),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -1491,9 +1545,9 @@ class _NotesScreenState extends State<NotesScreen> {
                       ),
                       const SizedBox(width: 4),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline_rounded,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                           size: 18,
                         ),
                         tooltip: 'Удалить из списка',

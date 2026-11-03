@@ -103,8 +103,14 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: cs.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
@@ -123,9 +129,9 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.primarySurface,
+                      color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primaryBorder),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
                     alignment: Alignment.center,
                     child: const Text('🛡️', style: TextStyle(fontSize: 22)),
@@ -135,27 +141,27 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Согласие на обработку ПДн',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: cs.onSurface,
                           ),
                         ),
                         const SizedBox(height: 3),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: cs.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
+                          child: Text(
                             '152-ФЗ РФ · Медицинские категории',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
+                              color: textSecondary,
                             ),
                           ),
                         ),
@@ -164,7 +170,7 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                   ),
                   if (widget.isDismissible)
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
+                      icon: Icon(Icons.close_rounded, size: 20, color: textMuted),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       onPressed: () => Navigator.of(context).pop(false),
@@ -178,20 +184,20 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
+                  color: semantic.successBg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                  border: Border.all(color: semantic.successBorder),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF16A34A)),
-                    SizedBox(width: 8),
+                    Icon(Icons.info_outline_rounded, size: 16, color: semantic.success),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'В соответствии со ст. 10 152-ФЗ обработка медицинских категорий (диагнозы, аллергии, назначения) осуществляется только с вашего согласия.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF166534),
+                          color: semantic.successText,
                           height: 1.35,
                         ),
                       ),
@@ -209,28 +215,28 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSubtle,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.gavel_rounded, size: 16, color: AppColors.primaryHover),
+                      Icon(Icons.gavel_rounded, size: 16, color: cs.primary),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Меры защиты и правовые основания',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: cs.onSurface,
                           ),
                         ),
                       ),
                       Icon(
                         _isExpandedLegal ? Icons.expand_less_rounded : Icons.expand_more_rounded,
                         size: 20,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ],
                   ),
@@ -242,9 +248,9 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cs.surface,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,11 +291,11 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
 
               // Mandatory Checkbox
               Material(
-                color: _mandatoryConsent ? AppColors.primarySurface : const Color(0xFFFFF1F2),
+                color: _mandatoryConsent ? cs.primaryContainer : semantic.dangerBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: _mandatoryConsent ? AppColors.primaryBorder : const Color(0xFFFECDD3),
+                    color: _mandatoryConsent ? cs.outlineVariant : semantic.dangerBorder,
                   ),
                 ),
                 child: CheckboxListTile(
@@ -298,7 +304,7 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                   onChanged: (val) {
                     setState(() => _mandatoryConsent = val ?? false);
                   },
-                  activeColor: AppColors.primary,
+                  activeColor: cs.primary,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   controlAffinity: ListTileControlAffinity.leading,
                   title: Row(
@@ -309,7 +315,7 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: _mandatoryConsent ? AppColors.primaryDeep : const Color(0xFF9F1239),
+                            color: _mandatoryConsent ? cs.onPrimaryContainer : semantic.dangerText,
                             height: 1.3,
                           ),
                         ),
@@ -318,8 +324,8 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
                           color: _mandatoryConsent
-                              ? AppColors.primary.withValues(alpha: 0.15)
-                              : const Color(0xFFFDA4AF),
+                              ? cs.primary.withValues(alpha: 0.15)
+                              : semantic.dangerBorder,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -327,17 +333,17 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
-                            color: _mandatoryConsent ? AppColors.primaryDeep : const Color(0xFF881337),
+                            color: _mandatoryConsent ? cs.onPrimaryContainer : semantic.dangerText,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  subtitle: const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       'Необходимо для составления графика приёма и CDS-контроля совместимости лекарств',
-                      style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 10, color: textMuted),
                     ),
                   ),
                 ),
@@ -347,10 +353,10 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
 
               // Optional Cloud Sync Checkbox
               Material(
-                color: _cloudSyncConsent ? AppColors.surfaceSubtle : Colors.white,
+                color: _cloudSyncConsent ? cs.surfaceContainerHighest : cs.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: cs.outlineVariant),
                 ),
                 child: CheckboxListTile(
                   key: const Key('privacy_cloud_checkbox'),
@@ -358,18 +364,18 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                   onChanged: (val) {
                     setState(() => _cloudSyncConsent = val ?? false);
                   },
-                  activeColor: AppColors.primary,
+                  activeColor: cs.primary,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   controlAffinity: ListTileControlAffinity.leading,
                   title: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Разрешаю облачную синхронизацию и семейный доступ к аптечке',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: cs.onSurface,
                             height: 1.3,
                           ),
                         ),
@@ -377,25 +383,25 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
+                          color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Опционально',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  subtitle: const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       'Синхронизация между устройствами семьи по зашифрованному каналу TLS 1.3',
-                      style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 10, color: textMuted),
                     ),
                   ),
                 ),
@@ -404,13 +410,13 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
               const SizedBox(height: 12),
 
               // Version / Regulatory stamp
-              const Center(
+              Center(
                 child: Text(
                   'Версия документа: v1.0-2026 · Редакция от 01.01.2026',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
               ),
@@ -428,8 +434,8 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                         child: OutlinedButton(
                           key: const Key('privacy_cancel_button'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: const BorderSide(color: AppColors.border),
+                            foregroundColor: textSecondary,
+                            side: BorderSide(color: cs.outlineVariant),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () => Navigator.of(context).pop(false),
@@ -446,17 +452,17 @@ class _PrivacyConsentDialogState extends State<PrivacyConsentDialog> {
                       child: ElevatedButton(
                         key: const Key('privacy_accept_button'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _mandatoryConsent ? AppColors.primary : const Color(0xFFCBD5E1),
-                          foregroundColor: Colors.white,
+                          backgroundColor: _mandatoryConsent ? cs.primary : cs.outlineVariant,
+                          foregroundColor: cs.onPrimary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: (_mandatoryConsent && !_isSaving) ? _handleAccept : null,
                         child: _isSaving
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                               )
                             : const Text(
                                 'Принять и продолжить',
@@ -488,19 +494,23 @@ class _SecurityBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 14, color: AppColors.primaryHover),
+        Icon(icon, size: 14, color: cs.primary),
         const SizedBox(width: 8),
         Expanded(
           child: Text.rich(
             TextSpan(
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.35),
+              style: TextStyle(fontSize: 11, color: textSecondary, height: 1.35),
               children: [
                 TextSpan(
                   text: '$title ',
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface),
                 ),
                 TextSpan(text: description),
               ],

@@ -4,6 +4,8 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
+enum _OnboardingBadgeType { info, warning, success }
+
 class OnboardingGuideDialog extends StatefulWidget {
   final StorageService? storageService;
 
@@ -35,8 +37,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
     _OnboardingCardData(
       icon: '🛡️',
       badge: '152-ФЗ РФ · AES-256 · Argon2id',
-      badgeColor: Color(0xFFE0F2FE),
-      badgeTextColor: Color(0xFF0369A1),
+      badgeType: _OnboardingBadgeType.info,
       title: 'Защищенное хранение данных семьи',
       subtitle: 'Медицинская тайна и защита 152-ФЗ',
       description:
@@ -50,8 +51,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
     _OnboardingCardData(
       icon: '⏳',
       badge: 'FEFO-Opened · Контроль вскрытия',
-      badgeColor: Color(0xFFFEF3C7),
-      badgeTextColor: Color(0xFFB45309),
+      badgeType: _OnboardingBadgeType.warning,
       title: 'Умный контроль сроков годности и вскрытых упаковок',
       subtitle: 'Интеллектуальная ротация FEFO-Opened',
       description:
@@ -65,8 +65,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
     _OnboardingCardData(
       icon: '🧬',
       badge: 'CDS-движок · ГРЛС Минздрава',
-      badgeColor: Color(0xFFCCFBF1),
-      badgeTextColor: Color(0xFF0F766E),
+      badgeType: _OnboardingBadgeType.success,
       title: 'Контроль совместимости и аллергий',
       subtitle: 'Клиническая система поддержки решений (CDS)',
       description:
@@ -115,8 +114,14 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.5);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.7);
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: cs.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
@@ -135,23 +140,23 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primarySurface,
+                        color: cs.primaryContainer,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primaryBorderLight),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Text(
                         'Знакомство · Шаг ${_currentPage + 1} из ${_cards.length}',
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryHover,
+                          color: cs.primary,
                         ),
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
+                    icon: Icon(Icons.close_rounded, size: 20, color: textMuted),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     onPressed: () => Navigator.of(context).pop(),
@@ -170,6 +175,12 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                   onPageChanged: (index) => setState(() => _currentPage = index),
                   itemBuilder: (context, index) {
                     final card = _cards[index];
+                    final (badgeBg, badgeText) = switch (card.badgeType) {
+                      _OnboardingBadgeType.info => (semantic.infoBg, semantic.infoText),
+                      _OnboardingBadgeType.warning => (semantic.warningBg, semantic.warningText),
+                      _OnboardingBadgeType.success => (semantic.successBg, semantic.successText),
+                    };
+
                     return SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -179,7 +190,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: card.badgeColor,
+                              color: badgeBg,
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
@@ -191,7 +202,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                             decoration: BoxDecoration(
-                              color: card.badgeColor,
+                              color: badgeBg,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -199,7 +210,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: card.badgeTextColor,
+                                color: badgeText,
                               ),
                             ),
                           ),
@@ -209,10 +220,10 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                           Text(
                             card.title,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                               height: 1.25,
                             ),
                           ),
@@ -222,10 +233,10 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                           Text(
                             card.subtitle,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primaryHover,
+                              color: cs.primary,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -234,9 +245,9 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                           Text(
                             card.description,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.textSecondary,
+                              color: textSecondary,
                               height: 1.45,
                             ),
                           ),
@@ -246,9 +257,9 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceSubtle,
+                              color: cs.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: cs.outlineVariant),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,19 +269,19 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.check_circle_rounded,
                                         size: 14,
-                                        color: AppColors.primary,
+                                        color: cs.primary,
                                       ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           bp,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.textPrimary,
+                                            color: cs.onSurface,
                                             height: 1.3,
                                           ),
                                         ),
@@ -301,7 +312,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                     width: isActive ? 22 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary : const Color(0xFFCBD5E1),
+                      color: isActive ? cs.primary : cs.outlineVariant,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   );
@@ -321,8 +332,8 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                         child: OutlinedButton(
                           key: const Key('onboarding_skip_button'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: const BorderSide(color: AppColors.border),
+                            foregroundColor: textSecondary,
+                            side: BorderSide(color: cs.outlineVariant),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: _completeOnboarding,
@@ -338,8 +349,8 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                         child: ElevatedButton(
                           key: const Key('onboarding_next_button'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: cs.primary,
+                            foregroundColor: cs.onPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -362,8 +373,8 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
                         child: ElevatedButton(
                           key: const Key('onboarding_finish_button'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: cs.primary,
+                            foregroundColor: cs.onPrimary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -393,8 +404,7 @@ class _OnboardingGuideDialogState extends State<OnboardingGuideDialog> {
 class _OnboardingCardData {
   final String icon;
   final String badge;
-  final Color badgeColor;
-  final Color badgeTextColor;
+  final _OnboardingBadgeType badgeType;
   final String title;
   final String subtitle;
   final String description;
@@ -403,8 +413,7 @@ class _OnboardingCardData {
   const _OnboardingCardData({
     required this.icon,
     required this.badge,
-    required this.badgeColor,
-    required this.badgeTextColor,
+    required this.badgeType,
     required this.title,
     required this.subtitle,
     required this.description,

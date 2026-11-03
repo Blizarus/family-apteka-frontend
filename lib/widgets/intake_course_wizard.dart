@@ -187,18 +187,6 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
@@ -290,6 +278,10 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     final state = context.watch<AppState>();
 
     return DraggableScrollableSheet(
@@ -298,9 +290,9 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
       maxChildSize: 0.96,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -311,7 +303,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.borderDarker,
+                    color: cs.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -329,27 +321,27 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                       children: [
                         Text(
                           'Шаг $_currentStep из 5'.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
-                            color: AppColors.primaryHover,
+                            color: cs.primary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           _getStepTitle(_currentStep),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: cs.onSurface,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20),
-                      color: AppColors.textMuted,
+                      color: textMuted,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -365,8 +357,8 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   child: LinearProgressIndicator(
                     value: _currentStep / 5.0,
                     minHeight: 4,
-                    backgroundColor: AppColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    backgroundColor: cs.outlineVariant,
+                    valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                   ),
                 ),
               ),
@@ -418,6 +410,11 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
   // STEP 1: Medicine Selection
   // -------------------------------------------------------------
   Widget _buildStep1MedicineSelection(AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final query = _searchController.text.trim().toLowerCase();
     final inStockMedicines = state.medicines.where((m) {
       if (query.isEmpty) return true;
@@ -431,9 +428,9 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         // Search bar
         Container(
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: cs.outlineVariant),
           ),
           child: TextField(
             controller: _searchController,
@@ -443,15 +440,15 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
             },
             decoration: InputDecoration(
               hintText: 'Поиск по названию или веществу...',
-              hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+              hintStyle: TextStyle(fontSize: 13, color: textMuted),
+              prefixIcon: Icon(Icons.search, size: 18, color: textMuted),
               suffixIcon: _isSearchingCatalog
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
                       child: SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
                       ),
                     )
                   : null,
@@ -474,13 +471,13 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
 
         // Selected preview
         if (_selectedMedicine != null) ...[
-          const Text(
+          Text(
             'ВЫБРАННЫЙ ПРЕПАРАТ:',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,
-              color: AppColors.textMuted,
+              color: textMuted,
             ),
           ),
           const SizedBox(height: 6),
@@ -489,23 +486,23 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         ],
 
         // In Stock list
-        const Text(
+        Text(
           'ИЗ ВАШЕЙ АПТЕЧКИ:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
 
         if (inStockMedicines.isEmpty && query.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'В аптечке пока нет лекарств.',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 12, color: textMuted),
             ),
           )
         else
@@ -523,13 +520,13 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         // Catalog Reference suggestions
         if (_catalogSuggestions.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'ИЗ СПРАВОЧНИКА ЛЕКАРСТВ (ГРЛС):',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,
-              color: AppColors.textMuted,
+              color: textMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -559,9 +556,9 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cs.surface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: cs.outlineVariant),
                 ),
                 child: Row(
                   children: [
@@ -573,25 +570,25 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                         children: [
                           Text(
                             ref.tradeName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                             ),
                           ),
                           Text(
                             '${ref.inn} • ${ref.dosageForm} (${ref.dosage})',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 11, color: textSecondary),
                           ),
                         ],
                       ),
                     ),
-                    const Text(
+                    Text(
                       'Выбрать',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: cs.primary,
                       ),
                     ),
                   ],
@@ -609,14 +606,18 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
     required bool isSelected,
     VoidCallback? onTap,
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: isSelected ? AppColors.primarySurface : Colors.white,
+        color: isSelected ? cs.primaryContainer : cs.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? cs.primary : cs.outlineVariant,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -630,7 +631,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : const Color(0xFFF1F5F9),
+                    color: isSelected ? cs.primary : cs.surfaceContainerHighest,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
@@ -648,7 +649,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isSelected ? AppColors.primaryDeep : AppColors.textPrimary,
+                          color: isSelected ? cs.onPrimaryContainer : cs.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -656,14 +657,14 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                         '${med.form} • В аптечке: ${med.remainingDisplay} шт.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: isSelected ? AppColors.primaryHover : AppColors.textSecondary,
+                          color: isSelected ? cs.primary : textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
                 if (isSelected)
-                  const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
+                  Icon(Icons.check_circle_rounded, color: cs.primary, size: 20),
               ],
             ),
           ),
@@ -676,6 +677,12 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
   // STEP 2: Patient Selector & Single Dose
   // -------------------------------------------------------------
   Widget _buildStep2PatientAndDosage(AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final med = _selectedMedicine!;
     final isLowStock = med.remaining < 5;
 
@@ -683,13 +690,13 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Patient selector
-        const Text(
+        Text(
           'КТО БУДЕТ ПРИНИМАТЬ:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
@@ -709,15 +716,15 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : Colors.white,
+                      color: isSelected ? cs.primary : cs.surface,
                       borderRadius: BorderRadius.circular(100),
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : AppColors.border,
+                        color: isSelected ? cs.primary : cs.outlineVariant,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.25),
+                                color: cs.shadow.withValues(alpha: 0.25),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               )
@@ -734,7 +741,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            color: isSelected ? cs.onPrimary : textSecondary,
                           ),
                         ),
                       ],
@@ -748,50 +755,50 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         const SizedBox(height: 20),
 
         // Dosage Stepper
-        const Text(
+        Text(
           'РАЗОВАЯ ДОЗА:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '${_formatDosage(_dosageQuantity)} ${med.form.toLowerCase()}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
               Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline_rounded, size: 24),
-                    color: _dosageQuantity > 0.5 ? AppColors.primary : AppColors.textMuted,
+                    color: _dosageQuantity > 0.5 ? cs.primary : textMuted,
                     onPressed: _dosageQuantity > 0.5
                         ? () => setState(() => _dosageQuantity -= 0.5)
                         : null,
                   ),
                   Text(
                     _formatDosage(_dosageQuantity),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline_rounded, size: 24),
-                    color: _dosageQuantity < 5.0 ? AppColors.primary : AppColors.textMuted,
+                    color: _dosageQuantity < 5.0 ? cs.primary : textMuted,
                     onPressed: _dosageQuantity < 5.0
                         ? () => setState(() => _dosageQuantity += 0.5)
                         : null,
@@ -814,11 +821,11 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                 labelStyle: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isChosen ? AppColors.primaryDeep : AppColors.textSecondary,
+                  color: isChosen ? cs.onPrimaryContainer : textSecondary,
                 ),
-                backgroundColor: isChosen ? AppColors.primaryBorderLight : Colors.white,
+                backgroundColor: isChosen ? cs.primaryContainer : cs.surface,
                 side: BorderSide(
-                  color: isChosen ? AppColors.primary : AppColors.border,
+                  color: isChosen ? cs.primary : cs.outlineVariant,
                 ),
                 onPressed: () => setState(() => _dosageQuantity = val),
               ),
@@ -831,10 +838,10 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isLowStock ? AppColors.statusExpiringBg : AppColors.statusOkBg,
+            color: isLowStock ? semantic.warningBg : semantic.successBg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isLowStock ? AppColors.statusExpiringBorder : const Color(0xFFA7F3D0),
+              color: isLowStock ? semantic.warningBorder : semantic.successBorder,
             ),
           ),
           child: Column(
@@ -852,7 +859,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: isLowStock ? AppColors.statusExpiringText : AppColors.statusOkText,
+                        color: isLowStock ? semantic.warningText : semantic.successText,
                       ),
                     ),
                   ),
@@ -862,10 +869,10 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryHover,
+                    backgroundColor: cs.surface,
+                    foregroundColor: cs.primary,
                     elevation: 0,
-                    side: const BorderSide(color: AppColors.border),
+                    side: BorderSide(color: cs.outlineVariant),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   onPressed: _isAddedToShoppingList
@@ -898,6 +905,11 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
   // STEP 3: Frequency & Food Relation
   // -------------------------------------------------------------
   Widget _buildStep3FrequencyAndFood(AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     final med = _selectedMedicine!;
     final officialDosageHint = med.instructions['dosage']?.toString();
 
@@ -919,13 +931,13 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Frequency chips
-        const Text(
+        Text(
           'ЧАСТОТА ПРИЁМА:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
@@ -940,12 +952,12 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: isSelected ? cs.onPrimary : cs.onSurface,
               ),
-              selectedColor: AppColors.primary,
-              backgroundColor: Colors.white,
+              selectedColor: cs.primary,
+              backgroundColor: cs.surface,
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? cs.primary : cs.outlineVariant,
               ),
               onSelected: (_) => _onFrequencyChanged(freq),
             );
@@ -954,13 +966,13 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         const SizedBox(height: 20),
 
         // Food Relation chips
-        const Text(
+        Text(
           'ОТНОШЕНИЕ К ПРИЁМУ ПИЩИ:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
@@ -975,12 +987,12 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: isSelected ? cs.onPrimary : cs.onSurface,
               ),
-              selectedColor: AppColors.primary,
-              backgroundColor: Colors.white,
+              selectedColor: cs.primary,
+              backgroundColor: cs.surface,
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? cs.primary : cs.outlineVariant,
               ),
               onSelected: (_) => setState(() => _selectedFoodRelation = opt),
             );
@@ -993,9 +1005,9 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
+              color: semantic.infoBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
+              border: Border.all(color: semantic.infoBorder),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1006,20 +1018,20 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Рекомендация из инструкции:',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF166534),
+                          color: semantic.infoText,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         officialDosageHint,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF15803D),
+                          color: semantic.infoText,
                           height: 1.35,
                         ),
                       ),
@@ -1037,16 +1049,20 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
   // STEP 4: Time Slots & Notifications
   // -------------------------------------------------------------
   Widget _buildStep4TimeSlots() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'ВРЕМЯ ПРИЁМА В ТЕЧЕНИЕ ДНЯ:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
@@ -1062,9 +1078,9 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cs.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.primary, width: 1.5),
+                border: Border.all(color: cs.primary, width: 1.5),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1073,14 +1089,14 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                     onTap: () => _pickTimeSlot(idx),
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                        Icon(Icons.access_time_rounded, size: 16, color: cs.primary),
                         const SizedBox(width: 6),
                         Text(
                           slot,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: cs.onSurface,
                           ),
                         ),
                       ],
@@ -1090,7 +1106,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                     const SizedBox(width: 8),
                     InkWell(
                       onTap: () => _removeTimeSlot(idx),
-                      child: const Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted),
+                      child: Icon(Icons.close_rounded, size: 16, color: textMuted),
                     ),
                   ],
                 ],
@@ -1103,8 +1119,8 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         // Button to add custom time slot
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
+            foregroundColor: cs.primary,
+            side: BorderSide(color: cs.primary),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: _addTimeSlot,
@@ -1117,31 +1133,31 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Text('🔔', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 8),
+                  const Text('🔔', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
                   Text(
                     'Напомнить за 15 минут',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                 ],
               ),
               Switch(
                 value: _remind15MinBefore,
-                activeTrackColor: AppColors.primaryLight,
-                activeThumbColor: AppColors.primary,
+                activeTrackColor: cs.primaryContainer,
+                activeThumbColor: cs.primary,
                 onChanged: (val) => setState(() => _remind15MinBefore = val),
               ),
             ],
@@ -1155,6 +1171,12 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
   // STEP 5: Duration & Summary
   // -------------------------------------------------------------
   Widget _buildStep5Summary(AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final med = _selectedMedicine!;
     final profile = state.profiles.firstWhere(
       (p) => p.id == _selectedProfileId,
@@ -1176,13 +1198,13 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Duration chips
-        const Text(
+        Text(
           'ДЛИТЕЛЬНОСТЬ КУРСА:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
@@ -1199,12 +1221,12 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: isSelected ? cs.onPrimary : cs.onSurface,
               ),
-              selectedColor: AppColors.primary,
-              backgroundColor: Colors.white,
+              selectedColor: cs.primary,
+              backgroundColor: cs.surface,
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? cs.primary : cs.outlineVariant,
               ),
               onSelected: (_) => setState(() => _durationDays = days),
             );
@@ -1213,22 +1235,22 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
         const SizedBox(height: 20),
 
         // Summary Card
-        const Text(
+        Text(
           'ИТОГОВОЕ НАЗНАЧЕНИЕ:',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            color: AppColors.textMuted,
+            color: textMuted,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primarySurface,
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primaryBorder),
+            border: Border.all(color: cs.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1240,40 +1262,40 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   Expanded(
                     child: Text(
                       'Пациент: ${profile.name}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDeep,
+                        color: cs.onPrimaryContainer,
                       ),
                     ),
                   ),
                 ],
               ),
-              const Divider(color: AppColors.primaryBorder, height: 16),
+              Divider(color: cs.outlineVariant, height: 16),
               Text(
                 '💊 Препарат: ${med.name}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.onPrimaryContainer),
               ),
               const SizedBox(height: 4),
               Text(
                 '🥄 Доза: ${_formatDosage(_dosageQuantity)} ${med.form.toLowerCase()} • $_selectedFoodRelation',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: textSecondary),
               ),
               const SizedBox(height: 4),
               Text(
                 '⏰ Время: ${_timeSlots.join(', ')} (${_remind15MinBefore ? "уведомление за 15 мин" : "без уведомления"})',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: textSecondary),
               ),
               const SizedBox(height: 4),
               Text(
                 '📅 Срок: ${_durationDays > 0 ? "$_durationDays дней" : "Постоянный приём"}',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: textSecondary),
               ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isEnough ? AppColors.statusOkBg : AppColors.statusExpiringBg,
+                  color: isEnough ? semantic.successBg : semantic.warningBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -1283,7 +1305,7 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isEnough ? AppColors.statusOkText : AppColors.statusExpiringText,
+                    color: isEnough ? semantic.successText : semantic.warningText,
                   ),
                 ),
               ),
@@ -1298,21 +1320,24 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
   // Bottom Action Bar
   // -------------------------------------------------------------
   Widget _buildBottomActionBar() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
     final canProceedStep1 = _selectedMedicine != null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
       ),
       child: Row(
         children: [
           if (_currentStep > 1) ...[
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.border),
+                foregroundColor: textSecondary,
+                side: BorderSide(color: cs.outlineVariant),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
@@ -1324,8 +1349,8 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
           Expanded(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1345,10 +1370,10 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                       }
                     },
               child: _isSubmitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                     )
                   : Text(
                       _currentStep == 5 ? 'Создать курс приёма' : 'Далее →',

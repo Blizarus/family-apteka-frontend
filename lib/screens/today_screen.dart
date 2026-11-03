@@ -19,20 +19,20 @@ class TodayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppDarkColors.background : AppColors.background;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'today_screen_add_course_fab',
-        backgroundColor: AppColors.primary,
+        backgroundColor: cs.primary,
         elevation: 3,
-        icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-        label: const Text(
+        icon: Icon(Icons.add_rounded, color: cs.onPrimary, size: 20),
+        label: Text(
           'Назначить курс',
           style: TextStyle(
-            color: Colors.white,
+            color: cs.onPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
@@ -41,9 +41,9 @@ class TodayScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: state.isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? Center(child: CircularProgressIndicator(color: cs.primary))
             : RefreshIndicator(
-                color: AppColors.primary,
+                color: cs.primary,
                 onRefresh: () => state.refreshData(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -72,6 +72,9 @@ class TodayScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
     final taken = state.takenIntakesCount;
     final total = state.totalIntakesCount;
 
@@ -111,20 +114,20 @@ class TodayScreen extends StatelessWidget {
             children: [
               Text(
                 todayTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
-                  color: AppColors.primaryHover,
+                  color: cs.primary,
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
+              Text(
                 'Расписание приёма',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
             ],
@@ -137,9 +140,9 @@ class TodayScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primarySurface,
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primaryBorder),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -148,8 +151,8 @@ class TodayScreen extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   '$taken / $total принято',
-                  style: const TextStyle(
-                    color: AppColors.primaryDeep,
+                  style: TextStyle(
+                    color: cs.onPrimaryContainer,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -160,7 +163,7 @@ class TodayScreen extends StatelessWidget {
         ),
         const SizedBox(width: 2),
         IconButton(
-          icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFF0D9488), size: 22),
+          icon: Icon(Icons.bar_chart_rounded, color: cs.primary, size: 22),
           tooltip: 'Отчёт для врача',
           onPressed: () => HistoryReportScreen.show(context),
         ),
@@ -169,8 +172,8 @@ class TodayScreen extends StatelessWidget {
           icon: Badge(
             isLabelVisible: state.unreadNotificationsCount > 0,
             label: Text('${state.unreadNotificationsCount}'),
-            backgroundColor: const Color(0xFFEF4444),
-            child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 22),
+            backgroundColor: semantic.danger,
+            child: Icon(Icons.notifications_outlined, color: cs.onSurface, size: 22),
           ),
           tooltip: 'Центр уведомлений',
           onPressed: () => NotificationCenterSheet.show(context),
@@ -180,6 +183,10 @@ class TodayScreen extends StatelessWidget {
   }
 
   Widget _buildPatientSelector(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
     final selectedProfile = state.selectedProfile;
     final hint = selectedProfile?.name ?? 'Вся семья';
 
@@ -189,13 +196,13 @@ class TodayScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'ПАЦИЕНТ:',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.6,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
             const SizedBox(width: 8),
@@ -205,10 +212,10 @@ class TodayScreen extends StatelessWidget {
                 textAlign: TextAlign.end,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primaryHover,
+                  color: cs.primary,
                 ),
               ),
             ),
@@ -229,15 +236,15 @@ class TodayScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
+                        color: isSelected ? cs.primary : cs.surface,
                         borderRadius: BorderRadius.circular(100),
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.border,
+                          color: isSelected ? cs.primary : cs.outlineVariant,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.25),
+                                  color: cs.shadow.withValues(alpha: 0.2),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 )
@@ -254,7 +261,7 @@ class TodayScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                              color: isSelected ? cs.onPrimary : textSecondary,
                             ),
                           ),
                         ],
@@ -271,18 +278,18 @@ class TodayScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
                     color: state.selectedProfileId == null
-                        ? AppColors.primary
-                        : Colors.white,
+                        ? cs.primary
+                        : cs.surface,
                     borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                       color: state.selectedProfileId == null
-                          ? AppColors.primary
-                          : AppColors.border,
+                          ? cs.primary
+                          : cs.outlineVariant,
                     ),
                     boxShadow: state.selectedProfileId == null
                         ? [
                             BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.25),
+                              color: cs.shadow.withValues(alpha: 0.2),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             )
@@ -300,8 +307,8 @@ class TodayScreen extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: state.selectedProfileId == null
-                              ? Colors.white
-                              : AppColors.textSecondary,
+                              ? cs.onPrimary
+                              : textSecondary,
                         ),
                       ),
                     ],
@@ -316,6 +323,9 @@ class TodayScreen extends StatelessWidget {
   }
 
   Widget _buildIntakeList(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
     final intakes = state.filteredIntakes;
 
     if (intakes.isEmpty) {
@@ -323,33 +333,33 @@ class TodayScreen extends StatelessWidget {
         margin: const EdgeInsets.only(top: 24),
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.border : AppColors.border),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: Column(
           children: [
             const Text('🎉', style: TextStyle(fontSize: 36)),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'На выбранный день приёмов нет!',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Все запланированные лекарства приняты или список пуст.',
-              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 11, color: textMuted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -393,13 +403,19 @@ class TodayScreen extends StatelessWidget {
     IntakeLog item,
     Profile? profile,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
@@ -407,13 +423,13 @@ class TodayScreen extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFFE6FFFA),
+              color: semantic.successBg,
               borderRadius: BorderRadius.circular(100),
             ),
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               Icons.check_rounded,
-              color: AppColors.primaryHover,
+              color: semantic.success,
               size: 18,
             ),
           ),
@@ -427,10 +443,10 @@ class TodayScreen extends StatelessWidget {
                     Flexible(
                       child: Text(
                         item.medicineName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
@@ -440,14 +456,14 @@ class TodayScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceSubtle,
+                          color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           profile.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 9,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                         ),
                       ),
@@ -457,9 +473,9 @@ class TodayScreen extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${item.time} • ${item.rule}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
               ],
@@ -468,12 +484,12 @@ class TodayScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primarySurface,
+              color: semantic.successBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
+            child: Text(
               '✓ Принято',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primaryDeep),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: semantic.successText),
             ),
           ),
         ],
@@ -488,13 +504,18 @@ class TodayScreen extends StatelessWidget {
     IntakeLog item,
     Profile? profile,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
@@ -502,13 +523,13 @@ class TodayScreen extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(100),
             ),
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               Icons.close_rounded,
-              color: Color(0xFF94A3B8),
+              color: textMuted,
               size: 18,
             ),
           ),
@@ -522,10 +543,10 @@ class TodayScreen extends StatelessWidget {
                     Flexible(
                       child: Text(
                         item.medicineName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF94A3B8),
+                          color: textMuted,
                         ),
                       ),
                     ),
@@ -534,12 +555,12 @@ class TodayScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceSubtle,
+                          color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           profile.name,
-                          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 9, color: textSecondary),
                         ),
                       ),
                     ],
@@ -548,9 +569,9 @@ class TodayScreen extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Пропущено: ${item.skippedReason ?? "Пользователем"}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: Color(0xFF94A3B8),
+                    color: textMuted,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -572,7 +593,7 @@ class TodayScreen extends StatelessWidget {
                     height: 12,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Принять', style: TextStyle(fontSize: 11, color: AppColors.primaryHover)),
+                : Text('Принять', style: TextStyle(fontSize: 11, color: cs.primary)),
           ),
         ],
       ),
@@ -586,16 +607,20 @@ class TodayScreen extends StatelessWidget {
     IntakeLog item,
     Profile? profile,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary, width: 2),
+        border: Border.all(color: cs.primary, width: 2),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
+            color: cs.shadow.withValues(alpha: 0.12),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -611,13 +636,13 @@ class TodayScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: cs.primary,
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
                   'СЕЙЧАС (${item.time})',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: cs.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
@@ -627,10 +652,10 @@ class TodayScreen extends StatelessWidget {
               if (state.selectedProfileId == null && profile != null)
                 Text(
                   '${profile.avatar} ${profile.name}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryHover,
+                    color: cs.primary,
                   ),
                 ),
             ],
@@ -647,18 +672,18 @@ class TodayScreen extends StatelessWidget {
                   children: [
                     Text(
                       item.medicineName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       item.rule,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ),
                   ],
@@ -673,9 +698,9 @@ class TodayScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -683,19 +708,19 @@ class TodayScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Курс: ${item.course}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Text(
                   'Остаток спишется: -${item.dosageQuantity > 0 ? item.dosageQuantity : 1} ${item.unit.isNotEmpty ? item.unit : "табл."}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryHover,
+                    color: cs.primary,
                   ),
                 ),
               ],
@@ -711,8 +736,8 @@ class TodayScreen extends StatelessWidget {
                 flex: 4,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -721,10 +746,10 @@ class TodayScreen extends StatelessWidget {
                       ? null
                       : () => _handleTakeIntake(context, state, item),
                   child: state.isIntakeProcessing(item.id)
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                         )
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -743,9 +768,9 @@ class TodayScreen extends StatelessWidget {
                 flex: 2,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceSubtle,
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    foregroundColor: textSecondary,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -770,9 +795,9 @@ class TodayScreen extends StatelessWidget {
                 flex: 3,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.background,
-                    foregroundColor: Colors.grey.shade700,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surface,
+                    foregroundColor: textSecondary,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -810,13 +835,18 @@ class TodayScreen extends StatelessWidget {
     IntakeLog item,
     Profile? profile,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.border : AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         children: [
@@ -826,16 +856,16 @@ class TodayScreen extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceSubtle,
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   item.time,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
               ),
@@ -849,10 +879,10 @@ class TodayScreen extends StatelessWidget {
                         Flexible(
                           child: Text(
                             item.medicineName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                             ),
                           ),
                         ),
@@ -861,14 +891,14 @@ class TodayScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceSubtle,
+                              color: cs.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               profile.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 9,
-                                color: AppColors.textSecondary,
+                                color: textSecondary,
                               ),
                             ),
                           ),
@@ -878,9 +908,9 @@ class TodayScreen extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       item.rule,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                   ],
@@ -898,8 +928,8 @@ class TodayScreen extends StatelessWidget {
                 flex: 4,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -908,10 +938,10 @@ class TodayScreen extends StatelessWidget {
                       ? null
                       : () => _handleTakeIntake(context, state, item),
                   child: state.isIntakeProcessing(item.id)
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                         )
                       : const Text('Принять', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                 ),
@@ -923,9 +953,9 @@ class TodayScreen extends StatelessWidget {
                 flex: 2,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceSubtle,
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    foregroundColor: textSecondary,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -947,9 +977,9 @@ class TodayScreen extends StatelessWidget {
                 flex: 3,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.background,
-                    foregroundColor: Colors.grey.shade700,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cs.surface,
+                    foregroundColor: textSecondary,
+                    side: BorderSide(color: cs.outlineVariant),
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),

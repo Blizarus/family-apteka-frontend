@@ -315,6 +315,12 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final state = context.watch<AppState>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
@@ -324,7 +330,7 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
       ),
       margin: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
+        color: cs.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -335,7 +341,7 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: cs.outlineVariant,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -348,31 +354,31 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 20),
+                  child: Icon(Icons.add_circle_outline, color: cs.primary, size: 20),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Добавить препарат',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: AppColors.textMuted),
+                  icon: Icon(Icons.close, color: textMuted),
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
 
           // Form Body
           Expanded(
@@ -380,34 +386,35 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               children: [
                 // 1. Storage Box Dropdown
-                const Text(
+                Text(
                   'АПТЕЧКА ХРАНЕНИЯ',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       value: _selectedBoxId,
                       isExpanded: true,
-                      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                      dropdownColor: cs.surface,
+                      icon: Icon(Icons.keyboard_arrow_down, color: textSecondary),
                       items: state.boxes.map((box) {
                         return DropdownMenuItem<int>(
                           value: box.id,
                           child: Text(
                             '${box.icon} ${box.name}',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                           ),
                         );
                       }).toList(),
@@ -423,13 +430,13 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'ПРЕПАРАТ И СПРАВОЧНИК',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.6,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                       ),
                     ),
                     Row(
@@ -437,7 +444,7 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                       children: [
                         Checkbox(
                           value: _isManualEntry,
-                          activeColor: AppColors.primary,
+                          activeColor: cs.primary,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                           onChanged: (val) {
@@ -460,12 +467,12 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                               }
                             });
                           },
-                          child: const Text(
+                          child: Text(
                             'Ввести вручную',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primaryHover,
+                              color: cs.primary,
                             ),
                           ),
                         ),
@@ -483,26 +490,26 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                         child: TextField(
                           controller: _searchController,
                           onChanged: _onSearchChanged,
-                          style: const TextStyle(fontSize: 13),
+                          style: TextStyle(fontSize: 13, color: cs.onSurface),
                           decoration: InputDecoration(
                             hintText: 'Поиск по справочнику (от 3 букв, напр. Ибу)...',
-                            hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                            hintStyle: TextStyle(fontSize: 12, color: textMuted),
                             isDense: true,
                             filled: true,
-                            fillColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surfaceSubtle : AppColors.surfaceSubtle,
-                            prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textMuted),
+                            fillColor: cs.surfaceContainerHighest,
+                            prefixIcon: Icon(Icons.search, size: 20, color: textMuted),
                             suffixIcon: _isSearching
-                                ? const Padding(
-                                    padding: EdgeInsets.all(12),
+                                ? Padding(
+                                    padding: const EdgeInsets.all(12),
                                     child: SizedBox(
                                       width: 14,
                                       height: 14,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
                                     ),
                                   )
                                 : _selectedRefMed != null
                                     ? IconButton(
-                                        icon: const Icon(Icons.clear, size: 16),
+                                        icon: Icon(Icons.clear, size: 16, color: textMuted),
                                         onPressed: () {
                                           setState(() {
                                             _selectedRefMed = null;
@@ -515,11 +522,15 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                                     : null,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: AppColors.border),
+                              borderSide: BorderSide(color: cs.outlineVariant),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: cs.outlineVariant),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: AppColors.primary),
+                              borderSide: BorderSide(color: cs.primary),
                             ),
                           ),
                         ),
@@ -532,14 +543,14 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                           height: 48,
                           width: 48,
                           decoration: BoxDecoration(
-                            color: AppColors.primarySurface,
+                            color: cs.primaryContainer,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.primaryBorder),
+                            border: Border.all(color: cs.outlineVariant),
                           ),
                           alignment: Alignment.center,
-                          child: const Icon(
+                          child: Icon(
                             Icons.qr_code_scanner_rounded,
-                            color: AppColors.primaryHover,
+                            color: cs.primary,
                             size: 22,
                           ),
                         ),
@@ -553,27 +564,27 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.statusInfoBg,
+                        color: cs.primaryContainer,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.primaryBorder),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.qr_code_2_rounded, size: 16, color: AppColors.primaryHover),
+                          Icon(Icons.qr_code_2_rounded, size: 16, color: cs.primary),
                           const SizedBox(width: 6),
                           Text(
                             'Штрихкод: $_scannedBarcode',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryHover,
+                              color: cs.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
                           InkWell(
                             onTap: () => setState(() => _scannedBarcode = null),
-                            child: const Icon(Icons.close_rounded, size: 14, color: AppColors.primaryHover),
+                            child: Icon(Icons.close_rounded, size: 14, color: cs.primary),
                           ),
                         ],
                       ),
@@ -585,12 +596,12 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                     Container(
                       margin: const EdgeInsets.only(top: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: cs.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: cs.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
+                            color: cs.shadow.withValues(alpha: 0.08),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -600,27 +611,27 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: _suggestions.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
+                        separatorBuilder: (_, _) => Divider(height: 1, color: cs.outlineVariant),
                         itemBuilder: (ctx, index) {
                           final item = _suggestions[index];
                           return ListTile(
                             dense: true,
                             title: Text(
                               item.tradeName,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface),
                             ),
                             subtitle: Text(
                               '${item.inn} • ${item.dosageForm} ${item.dosage} (${item.manufacturer})',
-                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 11, color: textSecondary),
                             ),
                             trailing: item.isPrescription
                                 ? Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFEE2E2),
+                                      color: semantic.dangerBg,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text('Rx', style: TextStyle(fontSize: 10, color: Color(0xFFB91C1C))),
+                                    child: Text('Rx', style: TextStyle(fontSize: 10, color: semantic.dangerText, fontWeight: FontWeight.w700)),
                                   )
                                 : null,
                             onTap: () => _selectReferenceMedicine(item),
@@ -635,24 +646,24 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.primarySurface,
+                        color: cs.primaryContainer,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.primaryBorder),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 16),
+                              Icon(Icons.check_circle_rounded, color: cs.primary, size: 16),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Выбрано: ${_selectedRefMed!.tradeName}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDeep,
+                                    color: cs.onPrimaryContainer,
                                   ),
                                 ),
                               ),
@@ -660,21 +671,21 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFEE2E2),
+                                    color: semantic.dangerBg,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text('По рецепту', style: TextStyle(fontSize: 9, color: Color(0xFFB91C1C), fontWeight: FontWeight.w700)),
+                                  child: Text('По рецепту', style: TextStyle(fontSize: 9, color: semantic.dangerText, fontWeight: FontWeight.w700)),
                                 ),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'МНН: ${_selectedRefMed!.inn} • Дозировка: ${_selectedRefMed!.dosage}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 11, color: textSecondary),
                           ),
                           Text(
                             'Форма: ${_selectedRefMed!.dosageForm} • Производитель: ${_selectedRefMed!.manufacturer}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                            style: TextStyle(fontSize: 11, color: textMuted),
                           ),
                         ],
                       ),
@@ -693,21 +704,25 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                       Expanded(
                         child: TextField(
                           controller: _customNameController,
-                          style: const TextStyle(fontSize: 13),
+                          style: TextStyle(fontSize: 13, color: cs.onSurface),
                           decoration: InputDecoration(
                             hintText: 'Торговое наименование препарата...',
-                            hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                            hintStyle: TextStyle(fontSize: 12, color: textMuted),
                             isDense: true,
                             filled: true,
-                            fillColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surfaceSubtle : AppColors.surfaceSubtle,
-                            prefixIcon: const Icon(Icons.edit_note, size: 20, color: AppColors.textMuted),
+                            fillColor: cs.surfaceContainerHighest,
+                            prefixIcon: Icon(Icons.edit_note, size: 20, color: textMuted),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: AppColors.border),
+                              borderSide: BorderSide(color: cs.outlineVariant),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: cs.outlineVariant),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: AppColors.primary),
+                              borderSide: BorderSide(color: cs.primary),
                             ),
                           ),
                         ),
@@ -720,14 +735,14 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                           height: 48,
                           width: 48,
                           decoration: BoxDecoration(
-                            color: AppColors.primarySurface,
+                            color: cs.primaryContainer,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.primaryBorder),
+                            border: Border.all(color: cs.outlineVariant),
                           ),
                           alignment: Alignment.center,
-                          child: const Icon(
+                          child: Icon(
                             Icons.qr_code_scanner_rounded,
-                            color: AppColors.primaryHover,
+                            color: cs.primary,
                             size: 22,
                           ),
                         ),
@@ -741,27 +756,27 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.statusInfoBg,
+                        color: cs.primaryContainer,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.primaryBorder),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.qr_code_2_rounded, size: 16, color: AppColors.primaryHover),
+                          Icon(Icons.qr_code_2_rounded, size: 16, color: cs.primary),
                           const SizedBox(width: 6),
                           Text(
                             'Штрихкод: $_scannedBarcode',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryHover,
+                              color: cs.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
                           InkWell(
                             onTap: () => setState(() => _scannedBarcode = null),
-                            child: const Icon(Icons.close_rounded, size: 14, color: AppColors.primaryHover),
+                            child: Icon(Icons.close_rounded, size: 14, color: cs.primary),
                           ),
                         ],
                       ),
@@ -781,31 +796,35 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'КОЛИЧЕСТВО',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _quantityController,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface),
                             decoration: InputDecoration(
                               isDense: true,
                               filled: true,
-                              fillColor: AppColors.background,
+                              fillColor: cs.surfaceContainerHighest,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppColors.border),
+                                borderSide: BorderSide(color: cs.outlineVariant),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: cs.outlineVariant),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppColors.primary),
+                                borderSide: BorderSide(color: cs.primary),
                               ),
                             ),
                           ),
@@ -820,34 +839,35 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'ЕДИНИЦА ИЗМЕРЕНИЯ',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: cs.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: cs.outlineVariant),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _selectedUnit,
                                 isExpanded: true,
-                                icon: const Icon(Icons.keyboard_arrow_down, size: 20, color: AppColors.textSecondary),
+                                dropdownColor: cs.surface,
+                                icon: Icon(Icons.keyboard_arrow_down, size: 20, color: textSecondary),
                                 items: _unitOptions.map((opt) {
                                   return DropdownMenuItem<String>(
                                     value: opt['value'],
                                     child: Text(
                                       opt['label']!,
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurface),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
@@ -866,13 +886,13 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                 const SizedBox(height: 14),
 
                 // 4. Expiration DatePicker
-                const Text(
+                Text(
                   'СРОК ГОДНОСТИ',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -882,26 +902,26 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_month_outlined, color: AppColors.primaryHover, size: 20),
+                        Icon(Icons.calendar_month_outlined, color: cs.primary, size: 20),
                         const SizedBox(width: 10),
                         Text(
                           '${_expirationDate.day.toString().padLeft(2, '0')}.${_expirationDate.month.toString().padLeft(2, '0')}.${_expirationDate.year}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: cs.onSurface,
                           ),
                         ),
                         const Spacer(),
-                        const Text(
+                        Text(
                           'Изменить',
-                          style: TextStyle(fontSize: 11, color: AppColors.primaryHover, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 11, color: cs.primary, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -912,18 +932,18 @@ class _AddMedicineSheetState extends State<AddMedicineSheet> {
                 // 5. Submit Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: _isSubmitting ? null : _submitForm,
                   child: _isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                         )
                       : const Text(
                           'Добавить в аптечку',

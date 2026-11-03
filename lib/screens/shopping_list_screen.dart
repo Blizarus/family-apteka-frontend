@@ -17,6 +17,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   bool _isPurchasedExpanded = false;
 
   void _shareShoppingList(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final activeItems = state.shoppingItems;
     final purchasedItems = state.purchasedItems;
 
@@ -71,18 +75,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: cs.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Text('📋', style: TextStyle(fontSize: 20)),
-            SizedBox(width: 8),
+            const Text('📋', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
             Text(
               'Список для отправки',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
           ],
@@ -91,26 +95,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Список скопирован в буфер обмена! Вы можете отправить его родственникам в Telegram, WhatsApp или SMS:',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: textSecondary),
             ),
             const SizedBox(height: 12),
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.surfaceSubtle,
+                color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: cs.outlineVariant),
               ),
               child: SingleChildScrollView(
                 child: Text(
                   shareText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
                     fontSize: 11,
-                    color: AppColors.textPrimary,
+                    color: cs.onSurface,
                   ),
                 ),
               ),
@@ -120,15 +124,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Закрыть',
-              style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primaryHover),
+              style: TextStyle(fontWeight: FontWeight.w600, color: cs.primary),
             ),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -149,6 +153,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   void _showAddItemDialog(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final nameCtrl = TextEditingController();
     final dosageCtrl = TextEditingController();
     int count = 1;
@@ -174,9 +183,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 maxHeight: MediaQuery.of(ctx).size.height * 0.85,
               ),
               margin: EdgeInsets.only(bottom: bottomPadding),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: SingleChildScrollView(
@@ -184,283 +193,284 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.borderDarker,
-                        borderRadius: BorderRadius.circular(2),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: cs.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Text('🛒', style: TextStyle(fontSize: 20)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Добавить в список покупок',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, size: 20, color: AppColors.textMuted),
-                        onPressed: () => Navigator.pop(sheetContext),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Medicine Name
-                  const Text(
-                    'НАИМЕНОВАНИЕ ПРЕПАРАТА',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: nameCtrl,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: 'Например: Нурофен 400мг',
-                      filled: true,
-                      fillColor: AppColors.surfaceSubtle,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Dosage & Quantity
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            const Text(
-                              'ДОЗИРОВКА / ФОРМА',
+                            const Text('🛒', style: TextStyle(fontSize: 20)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Добавить в список покупок',
                               style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: dosageCtrl,
-                              decoration: InputDecoration(
-                                hintText: 'Таблетки / Спрей',
-                                filled: true,
-                                fillColor: AppColors.surfaceSubtle,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: AppColors.border),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: AppColors.border),
-                                ),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: cs.onSurface,
                               ),
                             ),
                           ],
                         ),
+                        IconButton(
+                          icon: Icon(Icons.close, size: 20, color: textMuted),
+                          onPressed: () => Navigator.pop(sheetContext),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Medicine Name
+                    Text(
+                      'НАИМЕНОВАНИЕ ПРЕПАРАТА',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: textMuted,
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'КОЛ-ВО',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            height: 48,
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove, size: 16),
-                                  onPressed: count > 1
-                                      ? () => setSheetState(() => count--)
-                                      : null,
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: nameCtrl,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Например: Нурофен 400мг',
+                        filled: true,
+                        fillColor: cs.surfaceContainerHighest,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: cs.outlineVariant),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: cs.outlineVariant),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Dosage & Quantity
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ДОЗИРОВКА / ФОРМА',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                  color: textMuted,
                                 ),
-                                Text(
-                                  '$count',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: dosageCtrl,
+                                decoration: InputDecoration(
+                                  hintText: 'Таблетки / Спрей',
+                                  filled: true,
+                                  fillColor: cs.surfaceContainerHighest,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: cs.outlineVariant),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: cs.outlineVariant),
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.add, size: 16),
-                                  onPressed: () => setSheetState(() => count++),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // For who (Patient)
-                  const Text(
-                    'ДЛЯ КОГО:',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6,
-                      color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'КОЛ-ВО',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                                color: textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: cs.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: cs.outlineVariant),
+                              ),
+                              child: Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove, size: 16),
+                                    onPressed: count > 1
+                                        ? () => setSheetState(() => count--)
+                                        : null,
+                                  ),
+                                  Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                      color: cs.onSurface,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add, size: 16),
+                                    onPressed: () => setSheetState(() => count++),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: profileNames.map((name) {
-                      final isSel = selectedPatient == name;
-                      return ChoiceChip(
-                        label: Text(name),
-                        selected: isSel,
-                        onSelected: (val) {
-                          if (val) setSheetState(() => selectedPatient = name);
-                        },
-                        selectedColor: AppColors.primarySurface,
-                        backgroundColor: AppColors.surfaceSubtle,
-                        side: BorderSide(
-                          color: isSel ? AppColors.primary : AppColors.border,
-                        ),
-                        labelStyle: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                          color: isSel ? AppColors.primaryHover : AppColors.textSecondary,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  // Source of need
-                  const Text(
-                    'ПРИЧИНА ДОБАВЛЕНИЯ:',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      'Пополнение аптечки',
-                      'Из рецепта врача',
-                      'Не хватает на курс',
-                    ].map((src) {
-                      final isSel = selectedSource == src;
-                      return ChoiceChip(
-                        label: Text(src),
-                        selected: isSel,
-                        onSelected: (val) {
-                          if (val) setSheetState(() => selectedSource = src);
-                        },
-                        selectedColor: AppColors.primarySurface,
-                        backgroundColor: AppColors.surfaceSubtle,
-                        side: BorderSide(
-                          color: isSel ? AppColors.primary : AppColors.border,
-                        ),
-                        labelStyle: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                          color: isSel ? AppColors.primaryHover : AppColors.textSecondary,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                    // For who (Patient)
+                    Text(
+                      'ДЛЯ КОГО:',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: textMuted,
                       ),
-                      onPressed: () {
-                        final medName = nameCtrl.text.trim();
-                        if (medName.isEmpty) return;
-
-                        state.addToShoppingList(
-                          medName,
-                          quantity: count,
-                          dosage: dosageCtrl.text.trim(),
-                          patientName: selectedPatient == 'Общие'
-                              ? 'Общие запасы'
-                              : 'Для $selectedPatient',
-                          sourceDescription: selectedSource,
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: profileNames.map((name) {
+                        final isSel = selectedPatient == name;
+                        return ChoiceChip(
+                          label: Text(name),
+                          selected: isSel,
+                          onSelected: (val) {
+                            if (val) setSheetState(() => selectedPatient = name);
+                          },
+                          selectedColor: cs.primaryContainer,
+                          backgroundColor: cs.surfaceContainerHighest,
+                          side: BorderSide(
+                            color: isSel ? cs.primary : cs.outlineVariant,
+                          ),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                            color: isSel ? cs.onPrimaryContainer : textSecondary,
+                          ),
                         );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
 
-                        Navigator.pop(sheetContext);
-                        ToastHelper.show(
-                          context,
-                          message: '«$medName» добавлен в список покупок',
-                          icon: '🛒',
-                        );
-                      },
-                      child: const Text(
-                        'Сохранить в список',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                    // Source of need
+                    Text(
+                      'ПРИЧИНА ДОБАВЛЕНИЯ:',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: textMuted,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        'Пополнение аптечки',
+                        'Из рецепта врача',
+                        'Не хватает на курс',
+                      ].map((src) {
+                        final isSel = selectedSource == src;
+                        return ChoiceChip(
+                          label: Text(src),
+                          selected: isSel,
+                          onSelected: (val) {
+                            if (val) setSheetState(() => selectedSource = src);
+                          },
+                          selectedColor: cs.primaryContainer,
+                          backgroundColor: cs.surfaceContainerHighest,
+                          side: BorderSide(
+                            color: isSel ? cs.primary : cs.outlineVariant,
+                          ),
+                          labelStyle: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                            color: isSel ? cs.onPrimaryContainer : textSecondary,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Submit button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () {
+                          final medName = nameCtrl.text.trim();
+                          if (medName.isEmpty) return;
+
+                          state.addToShoppingList(
+                            medName,
+                            quantity: count,
+                            dosage: dosageCtrl.text.trim(),
+                            patientName: selectedPatient == 'Общие'
+                                ? 'Общие запасы'
+                                : 'Для $selectedPatient',
+                            sourceDescription: selectedSource,
+                          );
+
+                          Navigator.pop(sheetContext);
+                          ToastHelper.show(
+                            context,
+                            message: '«$medName» добавлен в список покупок',
+                            icon: '🛒',
+                          );
+                        },
+                        child: const Text(
+                          'Сохранить в список',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
+            );
           },
         );
       },
@@ -469,6 +479,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     final state = context.watch<AppState>();
     final activeItems = state.shoppingItems;
     final purchasedItems = state.purchasedItems;
@@ -483,40 +497,40 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cs.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: cs.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Список покупок в аптеку',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
             Text(
               activeItems.isEmpty
                   ? 'Все препараты в наличии'
                   : '${activeItems.length} поз. требуется купить',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined, size: 20, color: AppColors.primaryHover),
+            icon: Icon(Icons.share_outlined, size: 20, color: cs.primary),
             tooltip: 'Поделиться списком',
             onPressed: () => _shareShoppingList(context, state),
           ),
@@ -529,13 +543,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
               children: [
                 // Info Banner
-                _buildInfoBanner(),
+                _buildInfoBanner(context),
                 const SizedBox(height: 12),
 
                 // Grouped Active Items
                 if (activeItems.isNotEmpty)
                   ...grouped.entries.map((entry) {
-                    return _buildPatientGroup(state, entry.key, entry.value);
+                    return _buildPatientGroup(context, state, entry.key, entry.value);
                   })
                 else
                   _buildNoActiveItemsCard(context, state),
@@ -550,11 +564,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: const Border(top: BorderSide(color: AppColors.border)),
+          color: cs.surface,
+          border: Border(top: BorderSide(color: cs.outlineVariant)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: cs.shadow.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -3),
             ),
@@ -566,8 +580,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             height: 48,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -584,24 +598,27 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
-  Widget _buildInfoBanner() {
+  Widget _buildInfoBanner(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primarySurface,
+        color: cs.primaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBorderLight),
+        border: Border.all(color: cs.outlineVariant),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.swipe_outlined, size: 18, color: AppColors.primaryHover),
-          SizedBox(width: 10),
+          Icon(Icons.swipe_outlined, size: 18, color: cs.primary),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Свайп вправо — «Куплено!» (добавит в аптечку).\nСвайп влево — удалить позицию.',
               style: TextStyle(
                 fontSize: 11,
-                color: AppColors.primaryDeep,
+                color: cs.onPrimaryContainer,
                 height: 1.3,
               ),
             ),
@@ -612,16 +629,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildPatientGroup(
+    BuildContext context,
     AppState state,
     String patientName,
     List<ShoppingItem> items,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,45 +656,45 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 Container(
                   padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.person_pin_outlined,
                     size: 14,
-                    color: AppColors.primaryHover,
+                    color: cs.primary,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     patientName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSubtle,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${items.length} поз.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
 
           // Items inside group
           ...items.asMap().entries.map((entry) {
@@ -682,8 +704,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
             return Column(
               children: [
-                _buildDismissibleItem(state, item, idx),
-                if (!isLast) const Divider(height: 1, indent: 44, color: AppColors.border),
+                _buildDismissibleItem(context, state, item, idx),
+                if (!isLast) Divider(height: 1, indent: 44, color: cs.outlineVariant),
               ],
             );
           }),
@@ -693,25 +715,32 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildDismissibleItem(
+    BuildContext context,
     AppState state,
     ShoppingItem item,
     int index,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Dismissible(
       key: Key('shopping_item_${item.id}_${item.name}'),
       direction: DismissDirection.horizontal,
       background: Container(
-        color: AppColors.statusOkBg,
+        color: semantic.successBg,
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.shopping_cart_checkout_rounded, color: AppColors.statusOkDot, size: 22),
-            SizedBox(width: 8),
+            Icon(Icons.shopping_cart_checkout_rounded, color: semantic.success, size: 22),
+            const SizedBox(width: 8),
             Text(
               'Куплено!',
               style: TextStyle(
-                color: AppColors.statusOkText,
+                color: semantic.successText,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
@@ -720,22 +749,22 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ),
       ),
       secondaryBackground: Container(
-        color: AppColors.statusExpiredBg,
+        color: semantic.dangerBg,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
               'Удалить',
               style: TextStyle(
-                color: AppColors.statusExpiredText,
+                color: semantic.dangerText,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
             ),
-            SizedBox(width: 8),
-            Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+            const SizedBox(width: 8),
+            Icon(Icons.delete_outline_rounded, color: semantic.danger, size: 22),
           ],
         ),
       ),
@@ -750,7 +779,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           messenger.showSnackBar(
             SnackBar(
               behavior: SnackBarBehavior.floating,
-              backgroundColor: AppColors.textPrimary,
+              backgroundColor: cs.inverseSurface,
               duration: const Duration(seconds: 5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               content: Row(
@@ -759,14 +788,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   Expanded(
                     child: Text(
                       '«${item.name}» куплен и добавлен в аптечку!',
-                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                      style: TextStyle(fontSize: 12, color: cs.onInverseSurface),
                     ),
                   ),
                 ],
               ),
               action: SnackBarAction(
                 label: 'Отмена',
-                textColor: const Color(0xFF2DD4BF),
+                textColor: cs.primary,
                 onPressed: () {
                   if (purchased != null) {
                     state.unpurchaseShoppingItem(purchased);
@@ -786,16 +815,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           messenger.showSnackBar(
             SnackBar(
               behavior: SnackBarBehavior.floating,
-              backgroundColor: AppColors.textPrimary,
+              backgroundColor: cs.inverseSurface,
               duration: const Duration(seconds: 5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               content: Text(
                 '«${item.name}» удален из списка',
-                style: const TextStyle(fontSize: 12, color: Colors.white),
+                style: TextStyle(fontSize: 12, color: cs.onInverseSurface),
               ),
               action: SnackBarAction(
                 label: 'Отмена',
-                textColor: const Color(0xFF2DD4BF),
+                textColor: cs.primary,
                 onPressed: () {
                   if (removed != null) {
                     state.restoreShoppingItem(removed, index);
@@ -819,13 +848,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             messenger.showSnackBar(
               SnackBar(
                 behavior: SnackBarBehavior.floating,
-                backgroundColor: AppColors.textPrimary,
+                backgroundColor: cs.inverseSurface,
                 duration: const Duration(seconds: 4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                content: Text('«${item.name}» перемещен в купленные'),
+                content: Text('«${item.name}» перемещен в купленные', style: TextStyle(color: cs.onInverseSurface)),
                 action: SnackBarAction(
                   label: 'Отмена',
-                  textColor: const Color(0xFF2DD4BF),
+                  textColor: cs.primary,
                   onPressed: () {
                     if (purchased != null) {
                       state.unpurchaseShoppingItem(purchased);
@@ -840,7 +869,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.borderDarker, width: 1.5),
+              border: Border.all(color: cs.outline, width: 1.5),
             ),
             child: const Icon(Icons.circle_outlined, size: 16, color: Colors.transparent),
           ),
@@ -850,26 +879,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             Expanded(
               child: Text(
                 item.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: cs.onSurface,
                 ),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primarySurface,
+                color: cs.primaryContainer,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.primaryBorderLight),
+                border: Border.all(color: cs.outlineVariant),
               ),
               child: Text(
                 '${item.count} уп.',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primaryHover,
+                  color: cs.onPrimaryContainer,
                 ),
               ),
             ),
@@ -882,21 +911,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               const SizedBox(height: 2),
               Text(
                 item.dosage,
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 11, color: textSecondary),
               ),
             ],
             if (item.sourceDescription?.isNotEmpty == true) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.receipt_long_outlined, size: 11, color: AppColors.textMuted),
+                  Icon(Icons.receipt_long_outlined, size: 11, color: textMuted),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       item.sourceDescription!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textMuted,
+                        color: textMuted,
                         fontStyle: FontStyle.italic,
                       ),
                       maxLines: 1,
@@ -917,11 +946,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     AppState state,
     List<ShoppingItem> purchasedItems,
   ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         children: [
@@ -937,19 +971,19 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.statusOkBg,
+                      color: semantic.successBg,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Icon(Icons.check, size: 14, color: AppColors.statusOkDot),
+                    child: Icon(Icons.check, size: 14, color: semantic.success),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Куплено (${purchasedItems.length})',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: cs.onSurface,
                       ),
                     ),
                   ),
@@ -957,41 +991,41 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     _isPurchasedExpanded
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ],
               ),
             ),
           ),
           if (_isPurchasedExpanded) ...[
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: cs.outlineVariant),
             ...purchasedItems.map((item) {
               return ListTile(
                 dense: true,
-                leading: const Icon(
+                leading: Icon(
                   Icons.check_circle,
-                  color: AppColors.statusOkDot,
+                  color: semantic.success,
                   size: 20,
                 ),
                 title: Text(
                   item.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     decoration: TextDecoration.lineThrough,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 subtitle: item.dosage.isNotEmpty
                     ? Text(
                         item.dosage,
-                        style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                        style: TextStyle(fontSize: 10, color: textMuted),
                       )
                     : null,
                 trailing: TextButton(
                   onPressed: () => state.unpurchaseShoppingItem(item),
-                  child: const Text(
+                  child: Text(
                     'Вернуть',
-                    style: TextStyle(fontSize: 11, color: AppColors.primaryHover),
+                    style: TextStyle(fontSize: 11, color: cs.primary),
                   ),
                 ),
               );
@@ -1003,21 +1037,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildNoActiveItemsCard(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cs.outlineVariant),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.check_circle_outline, color: AppColors.statusOkDot, size: 24),
-          SizedBox(width: 12),
+          Icon(Icons.check_circle_outline, color: semantic.success, size: 24),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Все актуальные лекарства куплены! Новые появятся при назначениях врачей или нехватке таблеток на курс.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: textSecondary),
             ),
           ),
         ],
@@ -1026,6 +1065,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context, AppState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
@@ -1036,40 +1079,40 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primarySurface,
+                color: cs.primaryContainer,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primaryBorderLight, width: 2),
+                border: Border.all(color: cs.outlineVariant, width: 2),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shopping_cart_outlined,
                 size: 38,
-                color: AppColors.primary,
+                color: cs.primary,
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'Список покупок пуст',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Все необходимые медикаменты есть в аптечке.\nКрасные бейджи препаратов в разделе «Заметки» и напоминания о курсах помогут сформировать список покупок.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: textSecondary,
                 height: 1.4,
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
@@ -1087,15 +1130,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: cs.outlineVariant),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _showAddItemDialog(context, state),
-              icon: const Icon(Icons.add, size: 16, color: AppColors.textPrimary),
-              label: const Text(
+              icon: Icon(Icons.add, size: 16, color: cs.onSurface),
+              label: Text(
                 '+ Добавить вручную',
-                style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 12, color: cs.onSurface),
               ),
             ),
           ],

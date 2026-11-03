@@ -142,6 +142,8 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
   }
 
   Future<void> _pickBirthDate() async {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -150,11 +152,11 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
       lastDate: now,
       builder: (ctx, child) {
         return Theme(
-          data: Theme.of(ctx).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
+          data: theme.copyWith(
+            colorScheme: cs.copyWith(
+              primary: cs.primary,
+              onPrimary: cs.onPrimary,
+              onSurface: cs.onSurface,
             ),
           ),
           child: child!,
@@ -228,6 +230,12 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final isEditing = widget.profile != null;
 
@@ -236,9 +244,9 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
       margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -250,7 +258,7 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.borderDarker,
+                color: cs.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -265,7 +273,7 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text('👤', style: TextStyle(fontSize: 20)),
@@ -277,31 +285,31 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                     children: [
                       Text(
                         isEditing ? 'Редактирование профиля' : 'Новый член семьи',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: cs.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Медицинская карта и профиль',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
+                  icon: Icon(Icons.close_rounded, size: 20, color: textMuted),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
 
           // Form fields list
           Flexible(
@@ -311,32 +319,32 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 children: [
                   // 1. Full name
-                  const Text(
+                  Text(
                     'ИМЯ ИЛИ ПСЕВДОНИМ',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _nameController,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Например: Анна или Миша (Сын)',
-                      hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      hintStyle: TextStyle(fontSize: 12, color: textMuted),
                       filled: true,
-                      fillColor: AppColors.surfaceSubtle,
+                      fillColor: cs.surfaceContainerHighest,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: cs.outlineVariant),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: cs.outlineVariant),
                       ),
                     ),
                     validator: (val) {
@@ -350,13 +358,13 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                   const SizedBox(height: 16),
 
                   // 2. Role in family
-                  const Text(
+                  Text(
                     'РОЛЬ В СЕМЬЕ',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -371,15 +379,15 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                         onSelected: (val) {
                           if (val) setState(() => _selectedRole = r);
                         },
-                        selectedColor: AppColors.primarySurface,
-                        backgroundColor: AppColors.surfaceSubtle,
+                        selectedColor: cs.primaryContainer,
+                        backgroundColor: cs.surfaceContainerHighest,
                         side: BorderSide(
-                          color: isSel ? AppColors.primary : AppColors.border,
+                          color: isSel ? cs.primary : cs.outlineVariant,
                         ),
                         labelStyle: TextStyle(
                           fontSize: 11,
                           fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                          color: isSel ? AppColors.primaryHover : AppColors.textSecondary,
+                          color: isSel ? cs.primary : textSecondary,
                         ),
                       );
                     }).toList(),
@@ -388,13 +396,13 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                   const SizedBox(height: 16),
 
                   // 3. Date of birth
-                  const Text(
+                  Text(
                     'ДАТА РОЖДЕНИЯ',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
-                      color: AppColors.textMuted,
+                      color: textMuted,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -404,17 +412,17 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceSubtle,
+                        color: cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.calendar_today_outlined,
-                                  size: 16, color: AppColors.primaryHover),
+                              Icon(Icons.calendar_today_outlined,
+                                  size: 16, color: cs.primary),
                               const SizedBox(width: 8),
                               Text(
                                 _selectedBirthDate != null
@@ -426,14 +434,14 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                                       ? FontWeight.w700
                                       : FontWeight.w500,
                                   color: _selectedBirthDate != null
-                                      ? AppColors.textPrimary
-                                      : AppColors.textMuted,
+                                      ? cs.onSurface
+                                      : textMuted,
                                 ),
                               ),
                             ],
                           ),
-                          const Icon(Icons.arrow_forward_ios_rounded,
-                              size: 14, color: AppColors.textMuted),
+                          Icon(Icons.arrow_forward_ios_rounded,
+                              size: 14, color: textMuted),
                         ],
                       ),
                     ),
@@ -445,17 +453,17 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.statusExpiredBg.withValues(alpha: 0.5),
+                      color: semantic.dangerBg,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.statusExpiredBorder),
+                      border: Border.all(color: semantic.dangerBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.statusExpiredText),
-                            SizedBox(width: 6),
+                            Icon(Icons.warning_amber_rounded, size: 16, color: semantic.dangerText),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'АЛЛЕРГИИ И НЕПЕРЕНОСИМОСТИ (CDS)',
@@ -463,16 +471,16 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.6,
-                                  color: AppColors.statusExpiredText,
+                                  color: semantic.dangerText,
                                 ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Система автоматически предупредит при назначении опасных или несовместимых препаратов.',
-                          style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 10, color: textSecondary),
                         ),
                         const SizedBox(height: 10),
 
@@ -482,20 +490,20 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                             Expanded(
                               child: TextField(
                                 controller: _allergyInputController,
-                                style: const TextStyle(fontSize: 12),
+                                style: TextStyle(fontSize: 12, color: cs.onSurface),
                                 decoration: InputDecoration(
                                   hintText: '+ Добавить аллерген...',
-                                  hintStyle: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  hintStyle: TextStyle(fontSize: 11, color: textMuted),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: cs.surface,
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: AppColors.statusExpiredBorder),
+                                    borderSide: BorderSide(color: semantic.dangerBorder),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: AppColors.statusExpiredBorder),
+                                    borderSide: BorderSide(color: semantic.dangerBorder),
                                   ),
                                 ),
                                 onSubmitted: (val) => _addAllergy(val),
@@ -504,8 +512,8 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                             const SizedBox(width: 8),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.danger,
-                                foregroundColor: Colors.white,
+                                backgroundColor: semantic.danger,
+                                foregroundColor: cs.onError,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -524,8 +532,8 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                           children: _commonAllergies.map((a) {
                             return ActionChip(
                               label: Text('+ $a', style: const TextStyle(fontSize: 9)),
-                              backgroundColor: Colors.white,
-                              side: const BorderSide(color: AppColors.statusExpiredBorder),
+                              backgroundColor: cs.surface,
+                              side: BorderSide(color: semantic.dangerBorder),
                               padding: const EdgeInsets.symmetric(horizontal: 4),
                               onPressed: () => _addAllergy(a),
                             );
@@ -541,9 +549,9 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: cs.surface,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.danger, width: 1.2),
+                                  border: Border.all(color: semantic.danger, width: 1.2),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -551,16 +559,16 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                                     const Text('⚠️ ', style: TextStyle(fontSize: 9)),
                                     Text(
                                       allergy,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.statusExpiredText,
+                                        color: semantic.dangerText,
                                       ),
                                     ),
                                     const SizedBox(width: 4),
                                     InkWell(
                                       onTap: () => _removeAllergy(allergy),
-                                      child: const Icon(Icons.close, size: 14, color: AppColors.danger),
+                                      child: Icon(Icons.close, size: 14, color: semantic.danger),
                                     ),
                                   ],
                                 ),
@@ -578,17 +586,17 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.statusExpiringBg.withValues(alpha: 0.5),
+                      color: semantic.warningBg,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.statusExpiringBorder),
+                      border: Border.all(color: semantic.warningBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.monitor_heart_outlined, size: 16, color: AppColors.statusExpiringText),
-                            SizedBox(width: 6),
+                            Icon(Icons.monitor_heart_outlined, size: 16, color: semantic.warningText),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'ХРОНИЧЕСКИЕ ЗАБОЛЕВАНИЯ',
@@ -596,7 +604,7 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.6,
-                                  color: AppColors.statusExpiringText,
+                                  color: semantic.warningText,
                                 ),
                               ),
                             ),
@@ -608,20 +616,20 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                             Expanded(
                               child: TextField(
                                 controller: _chronicInputController,
-                                style: const TextStyle(fontSize: 12),
+                                style: TextStyle(fontSize: 12, color: cs.onSurface),
                                 decoration: InputDecoration(
                                   hintText: '+ Добавить заболевание...',
-                                  hintStyle: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  hintStyle: TextStyle(fontSize: 11, color: textMuted),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: cs.surface,
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: AppColors.statusExpiringBorder),
+                                    borderSide: BorderSide(color: semantic.warningBorder),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: AppColors.statusExpiringBorder),
+                                    borderSide: BorderSide(color: semantic.warningBorder),
                                   ),
                                 ),
                                 onSubmitted: (val) => _addChronic(val),
@@ -630,8 +638,8 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                             const SizedBox(width: 8),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.statusExpiringText,
-                                foregroundColor: Colors.white,
+                                backgroundColor: semantic.warning,
+                                foregroundColor: cs.onPrimary,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -650,8 +658,8 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                           children: _commonChronic.map((d) {
                             return ActionChip(
                               label: Text('+ $d', style: const TextStyle(fontSize: 9)),
-                              backgroundColor: Colors.white,
-                              side: const BorderSide(color: AppColors.statusExpiringBorder),
+                              backgroundColor: cs.surface,
+                              side: BorderSide(color: semantic.warningBorder),
                               padding: const EdgeInsets.symmetric(horizontal: 4),
                               onPressed: () => _addChronic(d),
                             );
@@ -667,9 +675,9 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: cs.surface,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.statusExpiringBorder, width: 1.2),
+                                  border: Border.all(color: semantic.warningBorder, width: 1.2),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -677,16 +685,16 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                                     const Text('🩺 ', style: TextStyle(fontSize: 9)),
                                     Text(
                                       disease,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.statusExpiringText,
+                                        color: semantic.warningText,
                                       ),
                                     ),
                                     const SizedBox(width: 4),
                                     InkWell(
                                       onTap: () => _removeChronic(disease),
-                                      child: const Icon(Icons.close, size: 14, color: AppColors.statusExpiringText),
+                                      child: Icon(Icons.close, size: 14, color: semantic.warningText),
                                     ),
                                   ],
                                 ),
@@ -706,8 +714,8 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                     height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -715,10 +723,10 @@ class _FamilyMemberFormSheetState extends State<FamilyMemberFormSheet> {
                       ),
                       onPressed: _isLoading ? null : _saveProfile,
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                             )
                           : const Text(
                               'Сохранить профиль',

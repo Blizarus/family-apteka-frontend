@@ -19,6 +19,11 @@ class NotificationCenterSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
     final state = context.watch<AppState>();
     final notifications = state.notifications;
 
@@ -26,9 +31,9 @@ class NotificationCenterSheet extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -39,7 +44,7 @@ class NotificationCenterSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: cs.outlineVariant,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -52,13 +57,13 @@ class NotificationCenterSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDFA), // Teal 50
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF99F6E4)),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.notifications_active_rounded,
-                    color: Color(0xFF0D9488),
+                    color: cs.primary,
                     size: 20,
                   ),
                 ),
@@ -69,12 +74,12 @@ class NotificationCenterSheet extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Центр уведомлений',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: cs.onSurface,
                             ),
                           ),
                           if (notifications.isNotEmpty) ...[
@@ -82,15 +87,15 @@ class NotificationCenterSheet extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFCCFBF1),
+                                color: cs.primaryContainer,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 '${notifications.length}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0D9488),
+                                  color: cs.primary,
                                 ),
                               ),
                             ),
@@ -98,12 +103,12 @@ class NotificationCenterSheet extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Сигналы о сроках годности и запасах',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -111,26 +116,26 @@ class NotificationCenterSheet extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
+                  icon: Icon(Icons.close_rounded, color: textMuted),
                   tooltip: 'Закрыть',
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: cs.outlineVariant),
 
           // List or Empty State
           Expanded(
             child: notifications.isEmpty
-                ? _buildEmptyState(context)
+                ? _buildEmptyState(context, cs, textMuted)
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     itemCount: notifications.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final item = notifications[index];
-                      return _buildNotificationCard(context, state, item);
+                      return _buildNotificationCard(context, state, item, cs, semantic, textMuted);
                     },
                   ),
           ),
@@ -139,7 +144,7 @@ class NotificationCenterSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, ColorScheme cs, Color textMuted) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -150,34 +155,34 @@ class NotificationCenterSheet extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FDFA),
+                color: cs.primaryContainer,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF99F6E4), width: 1.5),
+                border: Border.all(color: cs.outlineVariant, width: 1.5),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_circle_outline_rounded,
                 size: 38,
-                color: Color(0xFF0D9488),
+                color: cs.primary,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'У вас нет новых уведомлений. Всё под контролем!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
                 height: 1.3,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Все препараты в норме, просрочек нет и курсы лечения актуальны.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textMuted,
+                color: textMuted,
               ),
             ),
           ],
@@ -190,8 +195,12 @@ class NotificationCenterSheet extends StatelessWidget {
     BuildContext context,
     AppState state,
     NotificationItem item,
+    ColorScheme cs,
+    SemanticColors semantic,
+    Color textMuted,
   ) {
-    final styleInfo = _getTypeStyle(item.type);
+    final styleInfo = _getTypeStyle(item.type, cs, semantic);
+    final textSecondary = Theme.of(context).textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
 
     return Dismissible(
       key: ValueKey(item.id),
@@ -200,18 +209,18 @@ class NotificationCenterSheet extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFEF4444),
+          color: cs.error,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
-            Icon(Icons.delete_outline_rounded, color: Colors.white, size: 22),
-            SizedBox(width: 6),
+          children: [
+            Icon(Icons.delete_outline_rounded, color: cs.onError, size: 22),
+            const SizedBox(width: 6),
             Text(
               'Удалить',
               style: TextStyle(
-                color: Colors.white,
+                color: cs.onError,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
@@ -236,7 +245,7 @@ class NotificationCenterSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cs.surface,
                 shape: BoxShape.circle,
                 border: Border.all(color: styleInfo.borderColor),
               ),
@@ -266,10 +275,10 @@ class NotificationCenterSheet extends StatelessWidget {
                       ),
                       Text(
                         _formatTime(item.createdAt),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
@@ -277,10 +286,10 @@ class NotificationCenterSheet extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     item.message,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                       height: 1.35,
                     ),
                   ),
@@ -292,7 +301,7 @@ class NotificationCenterSheet extends StatelessWidget {
               iconSize: 18,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
+              icon: Icon(Icons.close_rounded, color: textMuted),
               tooltip: 'Удалить',
               onPressed: () {
                 state.deleteNotification(item.id);
@@ -323,42 +332,42 @@ class NotificationCenterSheet extends StatelessWidget {
     }
   }
 
-  _NotificationStyle _getTypeStyle(String type) {
+  _NotificationStyle _getTypeStyle(String type, ColorScheme cs, SemanticColors semantic) {
     switch (type) {
       case 'expiry_critical':
       case 'opened_expired':
-        return const _NotificationStyle(
+        return _NotificationStyle(
           icon: Icons.warning_amber_rounded,
-          iconColor: Color(0xFFDC2626),
-          titleColor: Color(0xFF991B1B),
-          backgroundColor: Color(0xFFFEF2F2),
-          borderColor: Color(0xFFFECACA),
+          iconColor: semantic.danger,
+          titleColor: semantic.dangerText,
+          backgroundColor: semantic.dangerBg,
+          borderColor: semantic.dangerBorder,
         );
       case 'expiry_warning_7d':
       case 'expiry_warning_30d':
-        return const _NotificationStyle(
+        return _NotificationStyle(
           icon: Icons.access_time_filled_rounded,
-          iconColor: Color(0xFFD97706),
-          titleColor: Color(0xFF92400E),
-          backgroundColor: Color(0xFFFFFBEB),
-          borderColor: Color(0xFFFDE68A),
+          iconColor: semantic.warning,
+          titleColor: semantic.warningText,
+          backgroundColor: semantic.warningBg,
+          borderColor: semantic.warningBorder,
         );
       case 'low_stock':
-        return const _NotificationStyle(
+        return _NotificationStyle(
           icon: Icons.inventory_2_outlined,
-          iconColor: Color(0xFF2563EB),
-          titleColor: Color(0xFF1E40AF),
-          backgroundColor: Color(0xFFEFF6FF),
-          borderColor: Color(0xFFBFDBFE),
+          iconColor: semantic.info,
+          titleColor: semantic.infoText,
+          backgroundColor: semantic.infoBg,
+          borderColor: semantic.infoBorder,
         );
       case 'intake_reminder':
       default:
-        return const _NotificationStyle(
+        return _NotificationStyle(
           icon: Icons.medication_rounded,
-          iconColor: Color(0xFF0D9488),
-          titleColor: Color(0xFF115E59),
-          backgroundColor: Color(0xFFF0FDFA),
-          borderColor: Color(0xFF99F6E4),
+          iconColor: cs.primary,
+          titleColor: cs.primary,
+          backgroundColor: cs.primaryContainer,
+          borderColor: cs.outlineVariant,
         );
     }
   }
