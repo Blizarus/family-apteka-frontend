@@ -1,20 +1,25 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 import '../models/medical_note.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import 'toast_helper.dart';
 
 class AddNoteSheet extends StatefulWidget {
-  const AddNoteSheet({super.key});
+  final SpeechToText? speechToText;
 
-  static Future<void> show(BuildContext context) {
+  const AddNoteSheet({super.key, this.speechToText});
+
+  static Future<void> show(BuildContext context, {SpeechToText? speechToText}) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const AddNoteSheet(),
+      builder: (ctx) => AddNoteSheet(speechToText: speechToText),
     );
   }
 
@@ -40,22 +45,19 @@ class _AddNoteSheetState extends State<AddNoteSheet>
     'Гастроэнтеролог',
   ];
 
-  // Voice dictation simulation state
+  // Speech-to-text recording state
+  late final SpeechToText _speech;
+  bool _speechInitialized = false;
   bool _isRecording = false;
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   late AnimationController _waveformController;
-
-  final List<String> _sampleDictations = [
-    'Амоксиклав 500 мг 2 раза в день 7 дней, полоскание ромашкой, Нурофен 400 мг при температуре выше 38.5, Гексорал спрей 2 раза в день.',
-    'Омепразол 20 мг утром за 30 минут до еды 14 дней, Лоперамид при расстройстве стула, щадящая диета.',
-    'Кардиомагнил 75 мг вечером после ужина длительно, контроль артериального давления утром и вечером.',
-  ];
-  int _dictationSampleIndex = 0;
+  String _baseTextBeforeDictation = '';
 
   @override
   void initState() {
     super.initState();
+    _speech = widget.speechToText ?? SpeechToText();
     _waveformController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -69,52 +71,149 @@ class _AddNoteSheetState extends State<AddNoteSheet>
     _doctorController.dispose();
     _diagnosisController.dispose();
     _contentController.dispose();
+    try {
+      if (_speech.isListening) {
+        _speech.stop();
+      }
+    } catch (_) {}
     super.dispose();
   }
 
-  void _toggleDictation() {
+  Future<void> _toggleDictation() async {
     if (_isRecording) {
-      _stopDictation();
+      await _stopDictation(showSuccessToast: true);
     } else {
-      _startDictation();
+      await _startDictation();
     }
   }
 
-  void _startDictation() {
-    setState(() {
-      _isRecording = true;
-      _recordingSeconds = 0;
-    });
-    _waveformController.repeat(reverse: true);
+  Future<void> _startDictation() async {
+    try {
+      if (!_speechInitialized) {
+        final available = await _speech.initialize(
+          onError: _onSpeechError,
+          onStatus: _onSpeechStatus,
+        );
+        _speechInitialized = available;
+        if (!available) {
+          if (mounted) {
+            ToastHelper.show(
+              context,
+              message: 'Микрофон недоступен: предоставьте разрешение в настройках или введите текст вручную',
+              icon: '🎙️',
+              isError: true,
+            );
+          }
+          return;
+        }
+      }
 
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      setState(() => _recordingSeconds++);
+      _baseTextBeforeDictation = _contentController.text.trim();
+      setState(() {
+        _isRecording = true;
+        _recordingSeconds = 0;
+      });
+      _waveformController.repeat(reverse: true);
+
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) return;
+        setState(() => _recordingSeconds++);
+      });
+
+      String? targetLocaleId;
+      try {
+        final systemLoc = await _speech.systemLocale();
+        final locales = await _speech.locales();
+        final hasRu = locales.any((l) => l.localeId.toLowerCase().startsWith('ru'));
+        if (hasRu) {
+          targetLocaleId = locales.firstWhere((l) => l.localeId.toLowerCase().startsWith('ru')).localeId;
+        } else if (systemLoc != null) {
+          targetLocaleId = systemLoc.localeId;
+        }
+      } catch (_) {}
+
+      await _speech.listen(
+        onResult: _onSpeechResult,
+        listenOptions: SpeechListenOptions(
+          localeId: targetLocaleId,
+          partialResults: true,
+          cancelOnError: false,
+          listenMode: ListenMode.dictation,
+        ),
+      );
+    } catch (e) {
+      await _stopDictation(showSuccessToast: false);
+      if (mounted) {
+        ToastHelper.show(
+          context,
+          message: 'Ошибка запуска распознавания речи: $e',
+          icon: '⚠️',
+          isError: true,
+        );
+      }
+    }
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    if (!mounted) return;
+    final words = result.recognizedWords.trim();
+    if (words.isEmpty) return;
+
+    setState(() {
+      if (_baseTextBeforeDictation.isEmpty) {
+        _contentController.text = words;
+      } else {
+        _contentController.text = '$_baseTextBeforeDictation\n$words';
+      }
+      _contentController.selection = TextSelection.collapsed(
+        offset: _contentController.text.length,
+      );
     });
   }
 
-  void _stopDictation() {
+  void _onSpeechStatus(String status) {
+    if (!mounted) return;
+    if (status == 'notListening' || status == 'done') {
+      if (_isRecording) {
+        _stopDictation(showSuccessToast: false);
+      }
+    }
+  }
+
+  void _onSpeechError(SpeechRecognitionError error) {
+    if (!mounted) return;
+    _stopDictation(showSuccessToast: false);
+    ToastHelper.show(
+      context,
+      message: 'Ошибка распознавания: ${error.errorMsg}',
+      icon: '⚠️',
+      isError: true,
+    );
+  }
+
+  Future<void> _stopDictation({bool showSuccessToast = true}) async {
     _recordingTimer?.cancel();
     _waveformController.stop();
 
-    // Pick speech sample and insert/append to content
-    final sample = _sampleDictations[_dictationSampleIndex % _sampleDictations.length];
-    _dictationSampleIndex++;
+    try {
+      if (_speech.isListening) {
+        await _speech.stop();
+      }
+    } catch (_) {}
 
+    if (!mounted) return;
     setState(() {
       _isRecording = false;
-      if (_contentController.text.trim().isEmpty) {
-        _contentController.text = sample;
-      } else {
-        _contentController.text = '${_contentController.text.trim()}\n$sample';
-      }
     });
 
-    ToastHelper.show(
-      context,
-      message: 'Речь врача успешно распознана и расшифрована!',
-      icon: '🎙️',
-    );
+    if (showSuccessToast && _contentController.text.trim().isNotEmpty) {
+      ToastHelper.show(
+        context,
+        message: 'Речь врача успешно распознана и расшифрована!',
+        icon: '🎙️',
+      );
+    }
   }
 
   void _saveNote() {
@@ -439,7 +538,7 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              onPressed: _stopDictation,
+                              onPressed: () => _stopDictation(showSuccessToast: true),
                               icon: const Icon(Icons.stop, size: 14),
                               label: const Text('Стоп', style: TextStyle(fontSize: 11)),
                             ),
@@ -509,7 +608,7 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _isRecording ? semantic.danger : cs.primaryContainer,
+                            color: _isRecording ? semantic.danger : cs.surfaceContainerHighest,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: _isRecording ? semantic.danger : cs.outlineVariant,
@@ -518,7 +617,7 @@ class _AddNoteSheetState extends State<AddNoteSheet>
                           child: Icon(
                             _isRecording ? Icons.mic_off : Icons.mic,
                             size: 20,
-                            color: _isRecording ? cs.onError : cs.primary,
+                            color: _isRecording ? cs.onError : cs.onSurfaceVariant,
                           ),
                         ),
                       ),

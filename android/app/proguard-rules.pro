@@ -23,6 +23,8 @@
 -keep class io.flutter.plugins.imagepicker.** { *; }
 -keep class dev.fluttercommunity.plus.device_info.** { *; }
 
+# Speech to Text
+-keep class com.csdcorp.speech_to_text.** { *; }
+
 # Play Core Deferred Components suppress
 -dontwarn com.google.android.play.core.**
-

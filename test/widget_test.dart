@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
@@ -12,6 +14,61 @@ import 'package:frontend/screens/notes_screen.dart';
 import 'package:frontend/widgets/expandable_calendar.dart';
 import 'package:frontend/widgets/intake_course_wizard.dart';
 import 'package:frontend/widgets/quick_intake_sheet.dart';
+
+void setupSpeechToTextMock() {
+  const channel = MethodChannel('plugin.csdcorp.com/speech_to_text');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall call) async {
+    switch (call.method) {
+      case 'initialize':
+        return true;
+      case 'has_permission':
+        return true;
+      case 'has_on_device_support':
+        return true;
+      case 'locales':
+        return ['ru_RU:Русский'];
+      case 'listen':
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+          'plugin.csdcorp.com/speech_to_text',
+          const StandardMethodCodec().encodeMethodCall(
+            const MethodCall('notifyStatus', 'listening'),
+          ),
+          (_) {},
+        );
+        final resultJson = jsonEncode({
+          'alternates': [
+            {
+              'recognizedWords': 'Амоксиклав 500 мг 2 раза в день 7 дней',
+              'recognizedPhrases': ['Амоксиклав 500 мг 2 раза в день 7 дней'],
+              'confidence': 0.95,
+            }
+          ],
+          'resultType': 2,
+        });
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+          'plugin.csdcorp.com/speech_to_text',
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall('textRecognition', resultJson),
+          ),
+          (_) {},
+        );
+        return true;
+      case 'stop':
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+          'plugin.csdcorp.com/speech_to_text',
+          const StandardMethodCodec().encodeMethodCall(
+            const MethodCall('notifyStatus', 'notListening'),
+          ),
+          (_) {},
+        );
+        return null;
+      case 'cancel':
+        return null;
+      default:
+        return null;
+    }
+  });
+}
 
 Widget createTestApp(ApiService apiService) {
   return MultiProvider(
@@ -38,6 +95,12 @@ Future<void> loginTestUser(WidgetTester tester) async {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    setupSpeechToTextMock();
+  });
+
   testWidgets('Screen 1 Today: verifies intakes, snooze and skip dialog', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(600, 1000);
     tester.view.devicePixelRatio = 1.0;
@@ -203,7 +266,7 @@ void main() {
     // Close sheet
     Navigator.of(tester.element(find.byType(AddNoteSheet))).pop();
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 4));
   });
 
   testWidgets('Screen 3 Notes: swipe right archives, undo SnackBar restores, cross-linked purchase turns badge green', (WidgetTester tester) async {
