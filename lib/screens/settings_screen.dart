@@ -903,8 +903,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           side: BorderSide(color: cs.outlineVariant),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           onPressed: () {
-                            _serverUrlController.text = 'http://bluzaus.ru.swtest.ru/api';
-                            apiService.updateBaseUrl('http://bluzaus.ru.swtest.ru/api');
+                            _serverUrlController.text = 'https://bluzaus.ru.swtest.ru/api';
+                            apiService.updateBaseUrl('https://bluzaus.ru.swtest.ru/api');
                           },
                         ),
                       ],

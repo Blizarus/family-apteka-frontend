@@ -165,7 +165,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(mirrorChipFinder);
     await tester.pump();
-    expect(find.text('http://bluzaus.ru.swtest.ru/api'), findsOneWidget);
+    expect(find.text('https://bluzaus.ru.swtest.ru/api'), findsOneWidget);
 
     // Test connection check
     final checkButtonFinder = find.text('Проверить связь с сервером');
