@@ -779,99 +779,12 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
   }
 
   Future<void> _showOpenBottleDialog(Medicine medicine, ColorScheme cs, SemanticColors semantic) async {
-    final controller = TextEditingController(text: '30');
-    final formKey = GlobalKey<FormState>();
-    final textMuted = Theme.of(context).textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
-
-    final confirmed = await showDialog<bool>(
+    final days = await showDialog<int>(
       context: context,
-      builder: (dialogCtx) {
-        return AlertDialog(
-          backgroundColor: cs.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.inventory_2_outlined, color: cs.primary, size: 22),
-              const SizedBox(width: 8),
-              Text(
-                'Вскрыть упаковку',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface),
-              ),
-            ],
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Препарат: ${medicine.name}',
-                  style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Сколько дней годен после вскрытия?',
-                  style: TextStyle(fontSize: 12, color: textMuted),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  autofocus: false,
-                  style: TextStyle(color: cs.onSurface, fontSize: 13),
-                  decoration: InputDecoration(
-                    suffixText: 'дн.',
-                    hintText: '30',
-                    hintStyle: TextStyle(color: textMuted),
-                    filled: true,
-                    fillColor: cs.surfaceContainerHighest,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: cs.outlineVariant),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: cs.primary, width: 1.5),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  ),
-                  validator: (val) {
-                    final numVal = int.tryParse(val?.trim() ?? '');
-                    if (numVal == null || numVal <= 0) {
-                      return 'Введите положительное число дней';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(false),
-              child: Text('Отмена', style: TextStyle(color: textMuted)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: cs.primary,
-                foregroundColor: cs.onPrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  Navigator.of(dialogCtx).pop(true);
-                }
-              },
-              child: const Text('Вскрыть'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => _OpenBottleDialog(medicine: medicine),
     );
 
-    if (confirmed == true && mounted) {
-      final days = int.tryParse(controller.text.trim()) ?? 30;
+    if (days != null && mounted) {
       try {
         await context.read<AppState>().openMedicine(medicine.id, daysAfterOpening: days);
         if (mounted) {
@@ -883,5 +796,121 @@ class _MedicineDetailsSheetState extends State<MedicineDetailsSheet> {
         }
       }
     }
+  }
+}
+
+class _OpenBottleDialog extends StatefulWidget {
+  final Medicine medicine;
+
+  const _OpenBottleDialog({required this.medicine});
+
+  @override
+  State<_OpenBottleDialog> createState() => _OpenBottleDialogState();
+}
+
+class _OpenBottleDialogState extends State<_OpenBottleDialog> {
+  late final TextEditingController _daysController;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _daysController = TextEditingController(text: '30');
+  }
+
+  @override
+  void dispose() {
+    _daysController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
+    return AlertDialog(
+      backgroundColor: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(Icons.inventory_2_outlined, color: cs.primary, size: 22),
+          const SizedBox(width: 8),
+          Text(
+            'Вскрыть упаковку',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface),
+          ),
+        ],
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Препарат: ${widget.medicine.name}',
+              style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Сколько дней годен после вскрытия?',
+              style: TextStyle(fontSize: 12, color: textMuted),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _daysController,
+              keyboardType: TextInputType.number,
+              autofocus: false,
+              style: TextStyle(color: cs.onSurface, fontSize: 13),
+              decoration: InputDecoration(
+                suffixText: 'дн.',
+                hintText: '30',
+                hintStyle: TextStyle(color: textMuted),
+                filled: true,
+                fillColor: cs.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: cs.outlineVariant),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: cs.primary, width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              validator: (val) {
+                final numVal = int.tryParse(val?.trim() ?? '');
+                if (numVal == null || numVal <= 0) {
+                  return 'Введите положительное число дней';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: Text('Отмена', style: TextStyle(color: textMuted)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () {
+            if (_formKey.currentState?.validate() ?? false) {
+              final days = int.tryParse(_daysController.text.trim()) ?? 30;
+              Navigator.of(context).pop(days);
+            }
+          },
+          child: const Text('Вскрыть'),
+        ),
+      ],
+    );
   }
 }

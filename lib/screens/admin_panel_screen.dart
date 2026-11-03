@@ -193,388 +193,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   }
 
   void _showAddMedicineDialog() {
-    final formKey = GlobalKey<FormState>();
-    final tradeNameController = TextEditingController();
-    final innController = TextEditingController();
-    final barcodeController = TextEditingController();
-    final dosageController = TextEditingController();
-    final manufacturerController = TextEditingController(text: 'ОАО Фармстандарт');
-    final countryController = TextEditingController(text: 'Россия');
-    final packSizeController = TextEditingController(text: '20');
-    String selectedForm = 'Таблетки';
-    bool isPrescription = false;
-
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
-    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
-
     showDialog<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          return AlertDialog(
-            backgroundColor: cs.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                const Text('💊', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Добавить препарат в ГРЛС',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
-                  ),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 480,
-              child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Эталонная запись реестра лекарственных средств (ЛР 2)',
-                        style: TextStyle(fontSize: 11, color: textMuted),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Торговое наименование
-                      TextFormField(
-                        controller: tradeNameController,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
-                        decoration: InputDecoration(
-                          labelText: 'Торговое наименование *',
-                          labelStyle: TextStyle(color: textMuted),
-                          hintText: 'Например, Парацетамол-Ультра',
-                          hintStyle: TextStyle(color: textMuted),
-                          isDense: true,
-                          filled: true,
-                          fillColor: cs.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.outlineVariant),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.outlineVariant),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.primary),
-                          ),
-                        ),
-                        validator: (val) =>
-                            (val == null || val.trim().isEmpty) ? 'Обязательное поле' : null,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // МНН
-                      TextFormField(
-                        controller: innController,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
-                        decoration: InputDecoration(
-                          labelText: 'МНН (Действующее вещество) *',
-                          labelStyle: TextStyle(color: textMuted),
-                          hintText: 'Например, Парацетамол',
-                          hintStyle: TextStyle(color: textMuted),
-                          isDense: true,
-                          filled: true,
-                          fillColor: cs.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.outlineVariant),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.outlineVariant),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.primary),
-                          ),
-                        ),
-                        validator: (val) =>
-                            (val == null || val.trim().isEmpty) ? 'Обязательное поле' : null,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Штрихкод
-                      TextFormField(
-                        controller: barcodeController,
-                        keyboardType: TextInputType.number,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
-                        decoration: InputDecoration(
-                          labelText: 'Штрихкод / EAN-13 *',
-                          labelStyle: TextStyle(color: textMuted),
-                          hintText: '4601234567890',
-                          hintStyle: TextStyle(color: textMuted),
-                          prefixIcon: Icon(Icons.qr_code_rounded, size: 18, color: textMuted),
-                          isDense: true,
-                          filled: true,
-                          fillColor: cs.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.outlineVariant),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.outlineVariant),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: cs.primary),
-                          ),
-                        ),
-                        validator: (val) =>
-                            (val == null || val.trim().isEmpty) ? 'Укажите штрихкод' : null,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Форма выпуска и Дозировка в строку
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedForm,
-                              dropdownColor: cs.surface,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: cs.onSurface),
-                              decoration: InputDecoration(
-                                labelText: 'Форма выпуска',
-                                labelStyle: TextStyle(color: textMuted),
-                                isDense: true,
-                                filled: true,
-                                fillColor: cs.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'Таблетки', child: Text('Таблетки')),
-                                DropdownMenuItem(value: 'Капсулы', child: Text('Капсулы')),
-                                DropdownMenuItem(value: 'Спрей', child: Text('Спрей')),
-                                DropdownMenuItem(value: 'Сироп', child: Text('Сироп')),
-                                DropdownMenuItem(value: 'Мазь', child: Text('Мазь')),
-                                DropdownMenuItem(value: 'Ампулы', child: Text('Ампулы')),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setDialogState(() => selectedForm = val);
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextFormField(
-                              controller: dosageController,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
-                              decoration: InputDecoration(
-                                labelText: 'Дозировка *',
-                                labelStyle: TextStyle(color: textMuted),
-                                hintText: '500 мг',
-                                hintStyle: TextStyle(color: textMuted),
-                                isDense: true,
-                                filled: true,
-                                fillColor: cs.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.primary),
-                                ),
-                              ),
-                              validator: (val) =>
-                                  (val == null || val.trim().isEmpty) ? 'Укажите дозу' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Производитель и Страна
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: manufacturerController,
-                              style: TextStyle(fontSize: 13, color: cs.onSurface),
-                              decoration: InputDecoration(
-                                labelText: 'Производитель',
-                                labelStyle: TextStyle(color: textMuted),
-                                isDense: true,
-                                filled: true,
-                                fillColor: cs.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.primary),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextFormField(
-                              controller: countryController,
-                              style: TextStyle(fontSize: 13, color: cs.onSurface),
-                              decoration: InputDecoration(
-                                labelText: 'Страна',
-                                labelStyle: TextStyle(color: textMuted),
-                                isDense: true,
-                                filled: true,
-                                fillColor: cs.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.primary),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Количество в упаковке и Рецептурный статус
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: packSizeController,
-                              keyboardType: TextInputType.number,
-                              style: TextStyle(fontSize: 13, color: cs.onSurface),
-                              decoration: InputDecoration(
-                                labelText: 'Упаковка (ед.)',
-                                labelStyle: TextStyle(color: textMuted),
-                                isDense: true,
-                                filled: true,
-                                fillColor: cs.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.outlineVariant),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: cs.primary),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: CheckboxListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text('По рецепту', style: TextStyle(fontSize: 12, color: cs.onSurface)),
-                              value: isPrescription,
-                              activeColor: cs.primary,
-                              onChanged: (val) {
-                                setDialogState(() => isPrescription = val ?? false);
-                              },
-                              controlAffinity: ListTileControlAffinity.leading,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('Отмена', style: TextStyle(color: textSecondary)),
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: cs.onPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () async {
-                  if (!formKey.currentState!.validate()) return;
-
-                  final payload = {
-                    'trade_name': tradeNameController.text.trim(),
-                    'inn': innController.text.trim(),
-                    'barcode': barcodeController.text.trim(),
-                    'dosage_form': selectedForm,
-                    'dosage': dosageController.text.trim(),
-                    'manufacturer': manufacturerController.text.trim().isNotEmpty
-                        ? manufacturerController.text.trim()
-                        : 'ОАО Фармстандарт',
-                    'country': countryController.text.trim().isNotEmpty
-                        ? countryController.text.trim()
-                        : 'Россия',
-                    'pack_size': int.tryParse(packSizeController.text.trim()) ?? 20,
-                    'is_prescription': isPrescription,
-                  };
-
-                  final state = context.read<AppState>();
-                  try {
-                    await state.addReferenceMedicine(payload);
-                    if (!dialogCtx.mounted) return;
-                    Navigator.pop(ctx);
-                    if (!mounted) return;
-                    ToastHelper.show(
-                      context,
-                      message: 'Препарат успешно добавлен в справочник ГРЛС',
-                      icon: '💊',
-                    );
-                    _loadReferenceMedicines(_medSearchController.text.trim());
-                  } catch (e) {
-                    if (!mounted) return;
-                    ToastHelper.show(
-                      context,
-                      message: 'Ошибка добавления препарата: $e',
-                      icon: '⚠️',
-                      isError: true,
-                    );
-                  }
-                },
-                icon: const Icon(Icons.check_rounded, size: 16),
-                label: const Text('Сохранить в ГРЛС'),
-              ),
-            ],
-          );
+      builder: (_) => _AddReferenceMedicineDialog(
+        onSaved: () {
+          if (mounted) {
+            _loadReferenceMedicines(_medSearchController.text.trim());
+          }
         },
       ),
     );
@@ -1204,6 +829,423 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AddReferenceMedicineDialog extends StatefulWidget {
+  final VoidCallback onSaved;
+
+  const _AddReferenceMedicineDialog({required this.onSaved});
+
+  @override
+  State<_AddReferenceMedicineDialog> createState() => _AddReferenceMedicineDialogState();
+}
+
+class _AddReferenceMedicineDialogState extends State<_AddReferenceMedicineDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _tradeNameController;
+  late final TextEditingController _innController;
+  late final TextEditingController _barcodeController;
+  late final TextEditingController _dosageController;
+  late final TextEditingController _manufacturerController;
+  late final TextEditingController _countryController;
+  late final TextEditingController _packSizeController;
+
+  String _selectedForm = 'Таблетки';
+  bool _isPrescription = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tradeNameController = TextEditingController();
+    _innController = TextEditingController();
+    _barcodeController = TextEditingController();
+    _dosageController = TextEditingController();
+    _manufacturerController = TextEditingController(text: 'ОАО Фармстандарт');
+    _countryController = TextEditingController(text: 'Россия');
+    _packSizeController = TextEditingController(text: '20');
+  }
+
+  @override
+  void dispose() {
+    _tradeNameController.dispose();
+    _innController.dispose();
+    _barcodeController.dispose();
+    _dosageController.dispose();
+    _manufacturerController.dispose();
+    _countryController.dispose();
+    _packSizeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+
+    return AlertDialog(
+      backgroundColor: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          const Text('💊', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Добавить препарат в ГРЛС',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Эталонная запись реестра лекарственных средств (ЛР 2)',
+                  style: TextStyle(fontSize: 11, color: textMuted),
+                ),
+                const SizedBox(height: 14),
+
+                // Торговое наименование
+                TextFormField(
+                  controller: _tradeNameController,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Торговое наименование *',
+                    labelStyle: TextStyle(color: textMuted),
+                    hintText: 'Например, Парацетамол-Ультра',
+                    hintStyle: TextStyle(color: textMuted),
+                    isDense: true,
+                    filled: true,
+                    fillColor: cs.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.primary),
+                    ),
+                  ),
+                  validator: (val) =>
+                      (val == null || val.trim().isEmpty) ? 'Обязательное поле' : null,
+                ),
+                const SizedBox(height: 12),
+
+                // МНН
+                TextFormField(
+                  controller: _innController,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'МНН (Действующее вещество) *',
+                    labelStyle: TextStyle(color: textMuted),
+                    hintText: 'Например, Парацетамол',
+                    hintStyle: TextStyle(color: textMuted),
+                    isDense: true,
+                    filled: true,
+                    fillColor: cs.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.primary),
+                    ),
+                  ),
+                  validator: (val) =>
+                      (val == null || val.trim().isEmpty) ? 'Обязательное поле' : null,
+                ),
+                const SizedBox(height: 12),
+
+                // Штрихкод
+                TextFormField(
+                  controller: _barcodeController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Штрихкод / EAN-13 *',
+                    labelStyle: TextStyle(color: textMuted),
+                    hintText: '4601234567890',
+                    hintStyle: TextStyle(color: textMuted),
+                    prefixIcon: Icon(Icons.qr_code_rounded, size: 18, color: textMuted),
+                    isDense: true,
+                    filled: true,
+                    fillColor: cs.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: cs.primary),
+                    ),
+                  ),
+                  validator: (val) =>
+                      (val == null || val.trim().isEmpty) ? 'Укажите штрихкод' : null,
+                ),
+                const SizedBox(height: 12),
+
+                // Форма выпуска и Дозировка в строку
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _selectedForm,
+                        dropdownColor: cs.surface,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface),
+                        decoration: InputDecoration(
+                          labelText: 'Форма выпуска',
+                          labelStyle: TextStyle(color: textMuted),
+                          isDense: true,
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Таблетки', child: Text('Таблетки')),
+                          DropdownMenuItem(value: 'Капсулы', child: Text('Капсулы')),
+                          DropdownMenuItem(value: 'Спрей', child: Text('Спрей')),
+                          DropdownMenuItem(value: 'Сироп', child: Text('Сироп')),
+                          DropdownMenuItem(value: 'Мазь', child: Text('Мазь')),
+                          DropdownMenuItem(value: 'Ампулы', child: Text('Ампулы')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedForm = val);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _dosageController,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
+                        decoration: InputDecoration(
+                          labelText: 'Дозировка *',
+                          labelStyle: TextStyle(color: textMuted),
+                          hintText: '500 мг',
+                          hintStyle: TextStyle(color: textMuted),
+                          isDense: true,
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
+                        ),
+                        validator: (val) =>
+                            (val == null || val.trim().isEmpty) ? 'Укажите дозу' : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Производитель и Страна
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _manufacturerController,
+                        style: TextStyle(fontSize: 13, color: cs.onSurface),
+                        decoration: InputDecoration(
+                          labelText: 'Производитель',
+                          labelStyle: TextStyle(color: textMuted),
+                          isDense: true,
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _countryController,
+                        style: TextStyle(fontSize: 13, color: cs.onSurface),
+                        decoration: InputDecoration(
+                          labelText: 'Страна',
+                          labelStyle: TextStyle(color: textMuted),
+                          isDense: true,
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Количество в упаковке и Рецептурный статус
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _packSizeController,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(fontSize: 13, color: cs.onSurface),
+                        decoration: InputDecoration(
+                          labelText: 'Упаковка (ед.)',
+                          labelStyle: TextStyle(color: textMuted),
+                          isDense: true,
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: cs.primary),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('По рецепту', style: TextStyle(fontSize: 12, color: cs.onSurface)),
+                        value: _isPrescription,
+                        activeColor: cs.primary,
+                        onChanged: (val) {
+                          setState(() => _isPrescription = val ?? false);
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Отмена', style: TextStyle(color: textSecondary)),
+        ),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () async {
+            if (!_formKey.currentState!.validate()) return;
+
+            final payload = {
+              'trade_name': _tradeNameController.text.trim(),
+              'inn': _innController.text.trim(),
+              'barcode': _barcodeController.text.trim(),
+              'dosage_form': _selectedForm,
+              'dosage': _dosageController.text.trim(),
+              'manufacturer': _manufacturerController.text.trim().isNotEmpty
+                  ? _manufacturerController.text.trim()
+                  : 'ОАО Фармстандарт',
+              'country': _countryController.text.trim().isNotEmpty
+                  ? _countryController.text.trim()
+                  : 'Россия',
+              'pack_size': int.tryParse(_packSizeController.text.trim()) ?? 20,
+              'is_prescription': _isPrescription,
+            };
+
+            final state = context.read<AppState>();
+            try {
+              await state.addReferenceMedicine(payload);
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              ToastHelper.show(
+                context,
+                message: 'Препарат успешно добавлен в справочник ГРЛС',
+                icon: '💊',
+              );
+              widget.onSaved();
+            } catch (e) {
+              if (!context.mounted) return;
+              ToastHelper.show(
+                context,
+                message: 'Ошибка добавления препарата: $e',
+                icon: '⚠️',
+                isError: true,
+              );
+            }
+          },
+          icon: const Icon(Icons.check_rounded, size: 16),
+          label: const Text('Сохранить в ГРЛС'),
+        ),
+      ],
     );
   }
 }

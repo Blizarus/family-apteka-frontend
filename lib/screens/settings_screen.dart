@@ -209,149 +209,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showChangePasswordDialog(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
-
-    final currentPassController = TextEditingController();
-    final newPassController = TextEditingController();
-    final confirmPassController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    bool isSubmitting = false;
-    bool obscureCurrent = true;
-    bool obscureNew = true;
-
     showDialog<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: cs.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Icon(Icons.password_rounded, color: cs.primary, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  'Смена пароля',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
-                ),
-              ],
-            ),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Хеширование Argon2id обеспечивает криптостойкую защиту мастер-пароля.',
-                      style: TextStyle(fontSize: 11, color: textMuted, height: 1.3),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      key: const Key('change_password_current_input'),
-                      controller: currentPassController,
-                      obscureText: obscureCurrent,
-                      decoration: InputDecoration(
-                        labelText: 'Текущий пароль',
-                        labelStyle: const TextStyle(fontSize: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility, size: 18),
-                          onPressed: () => setDialogState(() => obscureCurrent = !obscureCurrent),
-                        ),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Введите текущий пароль' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      key: const Key('change_password_new_input'),
-                      controller: newPassController,
-                      obscureText: obscureNew,
-                      decoration: InputDecoration(
-                        labelText: 'Новый пароль',
-                        labelStyle: const TextStyle(fontSize: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 18),
-                          onPressed: () => setDialogState(() => obscureNew = !obscureNew),
-                        ),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Введите новый пароль';
-                        if (val.length < 8) return 'Минимум 8 символов';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      key: const Key('change_password_confirm_input'),
-                      controller: confirmPassController,
-                      obscureText: obscureNew,
-                      decoration: InputDecoration(
-                        labelText: 'Подтверждение нового пароля',
-                        labelStyle: const TextStyle(fontSize: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) {
-                        if (val != newPassController.text) return 'Пароли не совпадают';
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
-                child: Text('Отмена', style: TextStyle(color: textMuted)),
-              ),
-              ElevatedButton(
-                key: const Key('change_password_submit_btn'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: cs.onPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: isSubmitting
-                    ? null
-                    : () async {
-                        if (!formKey.currentState!.validate()) return;
-                        setDialogState(() => isSubmitting = true);
-                        final appState = context.read<AppState>();
-                        final result = await appState.updatePassword(
-                          currentPassword: currentPassController.text.trim(),
-                          newPassword: newPassController.text.trim(),
-                          newPasswordConfirmation: confirmPassController.text.trim(),
-                        );
-                        if (!context.mounted) return;
-                        setDialogState(() => isSubmitting = false);
-                        if (result['success'] == true) {
-                          Navigator.pop(ctx);
-                          ToastHelper.show(
-                            context,
-                            message: 'Пароль успешно обновлен!',
-                            icon: '🔑',
-                          );
-                        } else {
-                          ToastHelper.show(
-                            context,
-                            message: result['message'] ?? 'Ошибка обновления пароля',
-                            isError: true,
-                          );
-                        }
-                      },
-                child: isSubmitting
-                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
-                    : const Text('Обновить'),
-              ),
-            ],
-          );
-        },
-      ),
+      builder: (_) => const _ChangePasswordDialog(),
     );
   }
 
@@ -487,125 +347,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
-    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
-
-    final passwordController = TextEditingController();
-    bool isSubmitting = false;
-
     showDialog<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: cs.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: semantic.danger, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Удаление аккаунта',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: semantic.danger),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: semantic.dangerBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: semantic.dangerBorder),
-                    ),
-                    child: Text(
-                      'Право на забвение (ст. 21 152-ФЗ РФ):\n'
-                      'Все связанные персональные данные (профили семьи, медицинские заметки, курсы приёма и личные аптечки) будут безвозвратно уничтожены, а токены доступа аннулированы.',
-                      style: TextStyle(fontSize: 11, color: semantic.dangerText, height: 1.4),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Для подтверждения удаления введите текущий пароль:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurface),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    key: const Key('delete_account_password_input'),
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      hintText: 'Текущий пароль',
-                      hintStyle: TextStyle(fontSize: 12, color: textMuted),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: cs.outlineVariant),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
-                child: Text('Отмена', style: TextStyle(color: textMuted)),
-              ),
-              ElevatedButton(
-                key: const Key('delete_account_confirm_btn'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: semantic.danger,
-                  foregroundColor: cs.onError,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: isSubmitting
-                    ? null
-                    : () async {
-                        final pass = passwordController.text.trim();
-                        if (pass.isEmpty) {
-                          ToastHelper.show(context, message: 'Введите пароль', isError: true);
-                          return;
-                        }
-                        setDialogState(() => isSubmitting = true);
-                        final appState = context.read<AppState>();
-                        final result = await appState.destroyAccount(currentPassword: pass);
-                        if (!context.mounted) return;
-                        setDialogState(() => isSubmitting = false);
-                        if (result['success'] == true) {
-                          Navigator.pop(ctx);
-                          ToastHelper.show(
-                            context,
-                            message: 'Аккаунт и персональные данные успешно удалены.',
-                            icon: '🗑️',
-                          );
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                            (route) => false,
-                          );
-                        } else {
-                          ToastHelper.show(
-                            context,
-                            message: result['message'] ?? 'Неверный пароль',
-                            isError: true,
-                          );
-                        }
-                      },
-                child: isSubmitting
-                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onError))
-                    : const Text('Удалить данные навсегда'),
-              ),
-            ],
-          );
-        },
-      ),
+      builder: (_) => const _DeleteAccountConfirmDialog(),
     );
   }
 
@@ -1516,6 +1260,310 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  late final TextEditingController _currentPassController;
+  late final TextEditingController _newPassController;
+  late final TextEditingController _confirmPassController;
+  final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPassController = TextEditingController();
+    _newPassController = TextEditingController();
+    _confirmPassController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _currentPassController.dispose();
+    _newPassController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
+    return AlertDialog(
+      backgroundColor: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Icon(Icons.password_rounded, color: cs.primary, size: 22),
+          const SizedBox(width: 8),
+          Text(
+            'Смена пароля',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
+          ),
+        ],
+      ),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Хеширование Argon2id обеспечивает криптостойкую защиту мастер-пароля.',
+                style: TextStyle(fontSize: 11, color: textMuted, height: 1.3),
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                key: const Key('change_password_current_input'),
+                controller: _currentPassController,
+                obscureText: _obscureCurrent,
+                decoration: InputDecoration(
+                  labelText: 'Текущий пароль',
+                  labelStyle: const TextStyle(fontSize: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureCurrent ? Icons.visibility_off : Icons.visibility, size: 18),
+                    onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                  ),
+                ),
+                validator: (val) => (val == null || val.isEmpty) ? 'Введите текущий пароль' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('change_password_new_input'),
+                controller: _newPassController,
+                obscureText: _obscureNew,
+                decoration: InputDecoration(
+                  labelText: 'Новый пароль',
+                  labelStyle: const TextStyle(fontSize: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureNew ? Icons.visibility_off : Icons.visibility, size: 18),
+                    onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Введите новый пароль';
+                  if (val.length < 8) return 'Минимум 8 символов';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('change_password_confirm_input'),
+                controller: _confirmPassController,
+                obscureText: _obscureNew,
+                decoration: InputDecoration(
+                  labelText: 'Подтверждение нового пароля',
+                  labelStyle: const TextStyle(fontSize: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                validator: (val) {
+                  if (val != _newPassController.text) return 'Пароли не совпадают';
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+          child: Text('Отмена', style: TextStyle(color: textMuted)),
+        ),
+        ElevatedButton(
+          key: const Key('change_password_submit_btn'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: _isSubmitting
+              ? null
+              : () async {
+                  if (!_formKey.currentState!.validate()) return;
+                  setState(() => _isSubmitting = true);
+                  final appState = context.read<AppState>();
+                  final result = await appState.updatePassword(
+                    currentPassword: _currentPassController.text.trim(),
+                    newPassword: _newPassController.text.trim(),
+                    newPasswordConfirmation: _confirmPassController.text.trim(),
+                  );
+                  if (!context.mounted) return;
+                  setState(() => _isSubmitting = false);
+                  if (result['success'] == true) {
+                    Navigator.pop(context);
+                    ToastHelper.show(
+                      context,
+                      message: 'Пароль успешно обновлен!',
+                      icon: '🔑',
+                    );
+                  } else {
+                    ToastHelper.show(
+                      context,
+                      message: result['message'] ?? 'Ошибка обновления пароля',
+                      isError: true,
+                    );
+                  }
+                },
+          child: _isSubmitting
+              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
+              : const Text('Обновить'),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeleteAccountConfirmDialog extends StatefulWidget {
+  const _DeleteAccountConfirmDialog();
+
+  @override
+  State<_DeleteAccountConfirmDialog> createState() => _DeleteAccountConfirmDialogState();
+}
+
+class _DeleteAccountConfirmDialogState extends State<_DeleteAccountConfirmDialog> {
+  late final TextEditingController _passwordController;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
+    return AlertDialog(
+      backgroundColor: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: semantic.danger, size: 24),
+          const SizedBox(width: 8),
+          Text(
+            'Удаление аккаунта',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: semantic.danger),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: semantic.dangerBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: semantic.dangerBorder),
+              ),
+              child: Text(
+                'Право на забвение (ст. 21 152-ФЗ РФ):\n'
+                'Все связанные персональные данные (профили семьи, медицинские заметки, курсы приёма и личные аптечки) будут безвозвратно уничтожены, а токены доступа аннулированы.',
+                style: TextStyle(fontSize: 11, color: semantic.dangerText, height: 1.4),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Для подтверждения удаления введите текущий пароль:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurface),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('delete_account_password_input'),
+              controller: _passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'Текущий пароль',
+                hintStyle: TextStyle(fontSize: 12, color: textMuted),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: cs.outlineVariant),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+          child: Text('Отмена', style: TextStyle(color: textMuted)),
+        ),
+        ElevatedButton(
+          key: const Key('delete_account_confirm_btn'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: semantic.danger,
+            foregroundColor: cs.onError,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: _isSubmitting
+              ? null
+              : () async {
+                  final pass = _passwordController.text.trim();
+                  if (pass.isEmpty) {
+                    ToastHelper.show(context, message: 'Введите пароль', isError: true);
+                    return;
+                  }
+                  setState(() => _isSubmitting = true);
+                  final appState = context.read<AppState>();
+                  final result = await appState.destroyAccount(currentPassword: pass);
+                  if (!context.mounted) return;
+                  setState(() => _isSubmitting = false);
+                  if (result['success'] == true) {
+                    Navigator.pop(context);
+                    ToastHelper.show(
+                      context,
+                      message: 'Аккаунт и персональные данные успешно удалены.',
+                      icon: '🗑️',
+                    );
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  } else {
+                    ToastHelper.show(
+                      context,
+                      message: result['message'] ?? 'Неверный пароль',
+                      isError: true,
+                    );
+                  }
+                },
+          child: _isSubmitting
+              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onError))
+              : const Text('Удалить данные навсегда'),
+        ),
+      ],
     );
   }
 }

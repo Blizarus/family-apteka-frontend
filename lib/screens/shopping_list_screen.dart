@@ -153,327 +153,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   void _showAddItemDialog(BuildContext context, AppState state) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
-    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
-
-    final nameCtrl = TextEditingController();
-    final dosageCtrl = TextEditingController();
-    int count = 1;
-
-    final profileNames = <String>['Общие'];
-    for (final p in state.profiles) {
-      profileNames.add(p.name);
-    }
-    String selectedPatient = profileNames.first;
-    String selectedSource = 'Пополнение аптечки';
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            final bottomPadding = MediaQuery.of(ctx).viewInsets.bottom;
-
-            return Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-              ),
-              margin: EdgeInsets.only(bottom: bottomPadding),
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: cs.outlineVariant,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Text('🛒', style: TextStyle(fontSize: 20)),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Добавить в список покупок',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close, size: 20, color: textMuted),
-                          onPressed: () => Navigator.pop(sheetContext),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Medicine Name
-                    Text(
-                      'НАИМЕНОВАНИЕ ПРЕПАРАТА',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: nameCtrl,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Например: Нурофен 400мг',
-                        filled: true,
-                        fillColor: cs.surfaceContainerHighest,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: cs.outlineVariant),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: cs.outlineVariant),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Dosage & Quantity
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ДОЗИРОВКА / ФОРМА',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.6,
-                                  color: textMuted,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              TextField(
-                                controller: dosageCtrl,
-                                decoration: InputDecoration(
-                                  hintText: 'Таблетки / Спрей',
-                                  filled: true,
-                                  fillColor: cs.surfaceContainerHighest,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: cs.outlineVariant),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: cs.outlineVariant),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'КОЛ-ВО',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                                color: textMuted,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                color: cs.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: cs.outlineVariant),
-                              ),
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove, size: 16),
-                                    onPressed: count > 1
-                                        ? () => setSheetState(() => count--)
-                                        : null,
-                                  ),
-                                  Text(
-                                    '$count',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 14,
-                                      color: cs.onSurface,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add, size: 16),
-                                    onPressed: () => setSheetState(() => count++),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // For who (Patient)
-                    Text(
-                      'ДЛЯ КОГО:',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: profileNames.map((name) {
-                        final isSel = selectedPatient == name;
-                        return ChoiceChip(
-                          label: Text(name),
-                          selected: isSel,
-                          onSelected: (val) {
-                            if (val) setSheetState(() => selectedPatient = name);
-                          },
-                          selectedColor: cs.primaryContainer,
-                          backgroundColor: cs.surfaceContainerHighest,
-                          side: BorderSide(
-                            color: isSel ? cs.primary : cs.outlineVariant,
-                          ),
-                          labelStyle: TextStyle(
-                            fontSize: 11,
-                            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                            color: isSel ? cs.onPrimaryContainer : textSecondary,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Source of need
-                    Text(
-                      'ПРИЧИНА ДОБАВЛЕНИЯ:',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        'Пополнение аптечки',
-                        'Из рецепта врача',
-                        'Не хватает на курс',
-                      ].map((src) {
-                        final isSel = selectedSource == src;
-                        return ChoiceChip(
-                          label: Text(src),
-                          selected: isSel,
-                          onSelected: (val) {
-                            if (val) setSheetState(() => selectedSource = src);
-                          },
-                          selectedColor: cs.primaryContainer,
-                          backgroundColor: cs.surfaceContainerHighest,
-                          side: BorderSide(
-                            color: isSel ? cs.primary : cs.outlineVariant,
-                          ),
-                          labelStyle: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                            color: isSel ? cs.onPrimaryContainer : textSecondary,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Submit button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: cs.primary,
-                          foregroundColor: cs.onPrimary,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        onPressed: () {
-                          final medName = nameCtrl.text.trim();
-                          if (medName.isEmpty) return;
-
-                          state.addToShoppingList(
-                            medName,
-                            quantity: count,
-                            dosage: dosageCtrl.text.trim(),
-                            patientName: selectedPatient == 'Общие'
-                                ? 'Общие запасы'
-                                : 'Для $selectedPatient',
-                            sourceDescription: selectedSource,
-                          );
-
-                          Navigator.pop(sheetContext);
-                          ToastHelper.show(
-                            context,
-                            message: '«$medName» добавлен в список покупок',
-                            icon: '🛒',
-                          );
-                        },
-                        child: const Text(
-                          'Сохранить в список',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (sheetContext) => _AddShoppingItemDialog(state: state),
     );
   }
 
@@ -1139,6 +823,348 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               label: Text(
                 '+ Добавить вручную',
                 style: TextStyle(fontSize: 12, color: cs.onSurface),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddShoppingItemDialog extends StatefulWidget {
+  final AppState state;
+
+  const _AddShoppingItemDialog({required this.state});
+
+  @override
+  State<_AddShoppingItemDialog> createState() => _AddShoppingItemDialogState();
+}
+
+class _AddShoppingItemDialogState extends State<_AddShoppingItemDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _dosageController;
+  int _count = 1;
+
+  late final List<String> _profileNames;
+  late String _selectedPatient;
+  String _selectedSource = 'Пополнение аптечки';
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _dosageController = TextEditingController();
+
+    _profileNames = <String>['Общие'];
+    for (final p in widget.state.profiles) {
+      _profileNames.add(p.name);
+    }
+    _selectedPatient = _profileNames.first;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _dosageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      margin: EdgeInsets.only(bottom: bottomPadding),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Text('🛒', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Добавить в список покупок',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, size: 20, color: textMuted),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Medicine Name
+            Text(
+              'НАИМЕНОВАНИЕ ПРЕПАРАТА',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: textMuted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Например: Нурофен 400мг',
+                filled: true,
+                fillColor: cs.surfaceContainerHighest,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: cs.outlineVariant),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: cs.outlineVariant),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Dosage & Quantity
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ДОЗИРОВКА / ФОРМА',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _dosageController,
+                        decoration: InputDecoration(
+                          hintText: 'Таблетки / Спрей',
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest,
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: cs.outlineVariant),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'КОЛ-ВО',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: cs.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove, size: 16),
+                            onPressed: _count > 1
+                                ? () => setState(() => _count--)
+                                : null,
+                          ),
+                          Text(
+                            '$_count',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add, size: 16),
+                            onPressed: () => setState(() => _count++),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // For who (Patient)
+            Text(
+              'ДЛЯ КОГО:',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: textMuted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _profileNames.map((name) {
+                final isSel = _selectedPatient == name;
+                return ChoiceChip(
+                  label: Text(name),
+                  selected: isSel,
+                  onSelected: (val) {
+                    if (val) setState(() => _selectedPatient = name);
+                  },
+                  selectedColor: cs.primaryContainer,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  side: BorderSide(
+                    color: isSel ? cs.primary : cs.outlineVariant,
+                  ),
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                    color: isSel ? cs.onPrimaryContainer : textSecondary,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+
+            // Source of need
+            Text(
+              'ПРИЧИНА ДОБАВЛЕНИЯ:',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: textMuted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                'Пополнение аптечки',
+                'Из рецепта врача',
+                'Не хватает на курс',
+              ].map((src) {
+                final isSel = _selectedSource == src;
+                return ChoiceChip(
+                  label: Text(src),
+                  selected: isSel,
+                  onSelected: (val) {
+                    if (val) setState(() => _selectedSource = src);
+                  },
+                  selectedColor: cs.primaryContainer,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  side: BorderSide(
+                    color: isSel ? cs.primary : cs.outlineVariant,
+                  ),
+                  labelStyle: TextStyle(
+                    fontSize: 10,
+                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                    color: isSel ? cs.onPrimaryContainer : textSecondary,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+
+            // Submit button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () {
+                  final medName = _nameController.text.trim();
+                  if (medName.isEmpty) return;
+
+                  widget.state.addToShoppingList(
+                    medName,
+                    quantity: _count,
+                    dosage: _dosageController.text.trim(),
+                    patientName: _selectedPatient == 'Общие'
+                        ? 'Общие запасы'
+                        : 'Для $_selectedPatient',
+                    sourceDescription: _selectedSource,
+                  );
+
+                  Navigator.pop(context);
+                  ToastHelper.show(
+                    context,
+                    message: '«$medName» добавлен в список покупок',
+                    icon: '🛒',
+                  );
+                },
+                child: const Text(
+                  'Сохранить в список',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],
