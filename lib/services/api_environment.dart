@@ -21,7 +21,7 @@ class ApiEnvironment {
   static const ApiEnvironment production = ApiEnvironment(
     type: EnvironmentType.production,
     name: 'Боевой сервер (Production)',
-    baseUrl: 'http://e340043kek.temp.swtest.ru/api',
+    baseUrl: 'https://e340043kek.temp.swtest.ru/api',
     description: 'Удаленный сервер SpaceWeb (MySQL 8.0, 19 миграций)',
   );
 

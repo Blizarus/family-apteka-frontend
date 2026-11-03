@@ -218,7 +218,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                     side: BorderSide(color: cs.outline),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
-                      _urlController.text = 'http://e340043kek.temp.swtest.ru/api';
+                      _urlController.text = 'https://e340043kek.temp.swtest.ru/api';
                     },
                   ),
                   ActionChip(

@@ -893,8 +893,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           side: BorderSide(color: cs.outlineVariant),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           onPressed: () {
-                            _serverUrlController.text = 'http://e340043kek.temp.swtest.ru/api';
-                            apiService.updateBaseUrl('http://e340043kek.temp.swtest.ru/api');
+                            _serverUrlController.text = 'https://e340043kek.temp.swtest.ru/api';
+                            apiService.updateBaseUrl('https://e340043kek.temp.swtest.ru/api');
                           },
                         ),
                         ActionChip(
