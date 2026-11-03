@@ -46,7 +46,7 @@ class ApiService {
 
   static const String defaultBaseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://e340043kek.temp.swtest.ru/api',
+    defaultValue: 'http://e340043kek.temp.swtest.ru/api',
   );
 
   String get baseUrl => dio.options.baseUrl;
