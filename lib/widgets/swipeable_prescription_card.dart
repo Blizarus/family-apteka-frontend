@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme/app_theme.dart';
 
 /// Кастомный виджет свайпа карточки назначения без использования Dismissible.
 /// Реализован на базе GestureDetector с onHorizontalDragUpdate для гармоничной
@@ -74,17 +75,14 @@ class _SwipeablePrescriptionCardState extends State<SwipeablePrescriptionCard>
     final swipedLeft = _dragOffset <= -threshold;
 
     if (swipedRight) {
-      // Свайп вправо: фиксация действия архивации и моментальный показ Undo SnackBar
       widget.onArchive();
       setState(() {
         _dragOffset = 0.0;
         _hasTriggeredHaptic = false;
       });
     } else if (swipedLeft) {
-      // Свайп влево: пружинный отскок назад и вызов диалога подтверждения удаления
       _springBack(onComplete: widget.onDelete);
     } else {
-      // Не достигнут порог: плавный пружинный возврат (Curves.elasticOut)
       _springBack();
     }
   }
@@ -106,19 +104,15 @@ class _SwipeablePrescriptionCardState extends State<SwipeablePrescriptionCard>
     _springController.forward(from: 0.0);
   }
 
-
   @override
   Widget build(BuildContext context) {
     final isSwipingRight = _dragOffset > 0;
-
-    // Плавный расчет прогресса для прозрачности фонового действия
     final progress = (_dragOffset.abs() / threshold).clamp(0.0, 1.0);
-
-    // Смягченная ротация листа: deltaX * 0.02 (максимум ±5 градусов)
     final deg = (_dragOffset * 0.02).clamp(-5.0, 5.0);
     final rotationRad = deg * (math.pi / 180.0);
 
-    // Оборачиваем в RepaintBoundary для изолированного слоя перерисовки и идеальных 60/120 FPS
+    final semantics = Theme.of(context).extension<SemanticColors>() ?? SemanticColors.light;
+
     return RepaintBoundary(
       child: Stack(
         clipBehavior: Clip.none,
@@ -129,9 +123,7 @@ class _SwipeablePrescriptionCardState extends State<SwipeablePrescriptionCard>
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(
-                  color: isSwipingRight
-                      ? const Color(0xFFCCFBF1) // Бирюзовый #CCFBF1 при свайпе вправо
-                      : const Color(0xFFFFE4E6), // Розовый #FFE4E6 при свайпе влево
+                  color: isSwipingRight ? semantics.successBg : semantics.dangerBg,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -140,7 +132,7 @@ class _SwipeablePrescriptionCardState extends State<SwipeablePrescriptionCard>
                 child: Opacity(
                   opacity: progress,
                   child: isSwipingRight
-                      ? const Row(
+                      ? Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
@@ -148,31 +140,31 @@ class _SwipeablePrescriptionCardState extends State<SwipeablePrescriptionCard>
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF0D9488),
+                                color: semantics.success,
                               ),
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               'В архив',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F766E),
+                                color: semantics.successText,
                               ),
                             ),
                           ],
                         )
-                      : const Row(
+                      : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('🗑️', style: TextStyle(fontSize: 18)),
-                            SizedBox(width: 8),
+                            const Text('🗑️', style: TextStyle(fontSize: 18)),
+                            const SizedBox(width: 8),
                             Text(
                               'Удалить',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFFBE123C),
+                                color: semantics.dangerText,
                               ),
                             ),
                           ],

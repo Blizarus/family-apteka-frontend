@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'services/api_service.dart';
+import 'services/api_service.dart';
+
 import 'services/storage_service.dart';
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
@@ -76,8 +77,8 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+            body: Center(
+              child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
             ),
           );
         }

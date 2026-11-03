@@ -12,7 +12,14 @@ class ExpandableCalendar extends StatefulWidget {
 }
 
 class _ExpandableCalendarState extends State<ExpandableCalendar> {
+  bool _isExpanded = false;
+  late DateTime _displayMonth;
+  late final PageController _pageController;
+
   static const int _kInitialPage = 1000;
+  late final DateTime _baseMonday;
+
+  static const List<String> _weekdays = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
   static const List<String> _months = [
     'Январь',
     'Февраль',
@@ -27,20 +34,15 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
     'Ноябрь',
     'Декабрь'
   ];
-  static const List<String> _weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
-  late final PageController _pageController;
-  late final DateTime _baseMonday;
-  late DateTime _displayMonth;
-  bool _isExpanded = false;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _baseMonday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-    _pageController = PageController(initialPage: _kInitialPage);
     _displayMonth = DateTime(now.year, now.month, 1);
+    final daysToMonday = (now.weekday - DateTime.monday) % 7;
+    _baseMonday = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysToMonday));
+    _pageController = PageController(initialPage: _kInitialPage);
   }
 
   @override
@@ -49,34 +51,37 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
     super.dispose();
   }
 
-  void _scrollToToday(AppState state) {
-    final now = DateTime.now();
-    state.selectCalendarDate(now);
-    setState(() {
-      _displayMonth = DateTime(now.year, now.month, 1);
-    });
-    if (_pageController.hasClients) {
-      _pageController.animateToPage(
-        _kInitialPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
   void _toggleExpanded() {
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
-        final selected = context.read<AppState>().selectedDate;
-        _displayMonth = DateTime(selected.year, selected.month, 1);
+        final state = context.read<AppState>();
+        _displayMonth = DateTime(state.selectedDate.year, state.selectedDate.month, 1);
       }
     });
+  }
+
+  void _scrollToToday(AppState state) {
+    final now = DateTime.now();
+    state.selectCalendarDate(now);
+    if (_isExpanded) {
+      setState(() {
+        _displayMonth = DateTime(now.year, now.month, 1);
+      });
+    } else {
+      _pageController.animateToPage(
+        _kInitialPage,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final selectedDate = state.selectedDate;
     final now = DateTime.now();
     final isTodaySelected = selectedDate.year == now.year &&
@@ -97,12 +102,12 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeInOutCubic,
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.surface : Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.border : AppColors.border),
+          border: Border.all(color: colorScheme.outlineVariant),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: colorScheme.shadow.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -131,6 +136,8 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
   }
 
   Widget _buildControlBar(AppState state, bool isTodaySelected) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final displayDate = _isExpanded ? _displayMonth : state.selectedDate;
     final monthYearText =
         '${_months[displayDate.month - 1]} ${displayDate.year}'.toUpperCase();
@@ -142,7 +149,7 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
             icon: const Icon(Icons.chevron_left_rounded, size: 20),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            color: AppColors.textPrimary,
+            color: colorScheme.onSurface,
             onPressed: () {
               setState(() {
                 _displayMonth =
@@ -154,7 +161,7 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
             icon: const Icon(Icons.chevron_right_rounded, size: 20),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            color: AppColors.textPrimary,
+            color: colorScheme.onSurface,
             onPressed: () {
               setState(() {
                 _displayMonth =
@@ -166,11 +173,11 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
           Expanded(
             child: Text(
               monthYearText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.4,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -183,14 +190,14 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
             child: Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: theme.scaffoldBackgroundColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: colorScheme.outlineVariant),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.keyboard_arrow_up_rounded,
                 size: 16,
-                color: AppColors.textSecondary,
+                color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -209,13 +216,13 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: isTodaySelected
-                  ? AppColors.primarySurface
-                  : AppColors.background,
+                  ? colorScheme.primaryContainer
+                  : theme.scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(100),
               border: Border.all(
                 color: isTodaySelected
-                    ? AppColors.primaryBorder
-                    : AppColors.border,
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant,
               ),
             ),
             child: Text(
@@ -224,8 +231,8 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: isTodaySelected
-                    ? AppColors.primaryDeep
-                    : AppColors.textSecondary,
+                    ? colorScheme.onPrimaryContainer
+                    : (theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
             ),
           ),
@@ -233,11 +240,11 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
 
         Text(
           monthYearText,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
-            color: AppColors.primaryHover,
+            color: colorScheme.secondary,
           ),
         ),
 
@@ -248,14 +255,14 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
           child: Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: theme.scaffoldBackgroundColor,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 16,
-              color: AppColors.textSecondary,
+              color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -296,6 +303,8 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
     required bool isSelected,
     required bool isToday,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final weekdayLabel = _weekdays[dayDate.weekday - 1];
     final dayIntakes = state.getIntakesForDate(dayDate);
 
@@ -308,18 +317,18 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
           padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary
-                : (isToday ? AppColors.primarySurface : Colors.transparent),
+                ? colorScheme.primary
+                : (isToday ? colorScheme.primaryContainer : Colors.transparent),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
-                  ? AppColors.primary
-                  : (isToday ? AppColors.primaryBorder : AppColors.border),
+                  ? colorScheme.primary
+                  : (isToday ? colorScheme.primary : colorScheme.outlineVariant),
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
+                      color: colorScheme.primary.withValues(alpha: 0.25),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     )
@@ -335,8 +344,8 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: isSelected
-                      ? AppColors.primaryBorderLight
-                      : (isToday ? AppColors.primaryDeep : AppColors.textMuted),
+                      ? colorScheme.onPrimary
+                      : (isToday ? colorScheme.onPrimaryContainer : (theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5))),
                 ),
               ),
               const SizedBox(height: 2),
@@ -346,12 +355,11 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                   color: isSelected
-                      ? Colors.white
-                      : (isToday ? AppColors.primaryDeep : AppColors.textPrimary),
+                      ? colorScheme.onPrimary
+                      : (isToday ? colorScheme.onPrimaryContainer : colorScheme.onSurface),
                 ),
               ),
               const SizedBox(height: 4),
-              // Up to 3 indicator dots
               _buildIntakeDots(dayIntakes, isSelected),
             ],
           ),
@@ -365,6 +373,9 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
       return const SizedBox(height: 5);
     }
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantics = theme.extension<SemanticColors>() ?? SemanticColors.light;
     final shownIntakes = dayIntakes.take(3).toList();
 
     return Row(
@@ -374,16 +385,16 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
         BoxBorder? border;
 
         if (log.isTaken) {
-          dotColor = isSelected ? Colors.white : const Color(0xFF10B981); // Green
+          dotColor = isSelected ? colorScheme.onPrimary : semantics.success;
         } else if (log.isSkipped) {
-          dotColor = isSelected ? const Color(0xFFFECDD3) : Colors.white;
+          dotColor = isSelected ? semantics.dangerBorder : colorScheme.surface;
           border = Border.all(
-            color: isSelected ? Colors.white : AppColors.accentCoral,
+            color: isSelected ? colorScheme.onPrimary : semantics.danger,
             width: 1.2,
           );
         } else {
           // Scheduled
-          dotColor = isSelected ? Colors.white.withValues(alpha: 0.6) : const Color(0xFFCBD5E1);
+          dotColor = isSelected ? colorScheme.onPrimary.withValues(alpha: 0.6) : colorScheme.outline;
         }
 
         return Container(
@@ -401,6 +412,9 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
   }
 
   Widget _buildMonthGrid(AppState state) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final firstDayOfMonth = DateTime(_displayMonth.year, _displayMonth.month, 1);
     final daysInMonth =
         DateTime(_displayMonth.year, _displayMonth.month + 1, 0).day;
@@ -417,10 +431,10 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
               child: Center(
                 child: Text(
                   w,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted,
+                    color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -456,11 +470,11 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
                       height: 32,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary
-                            : (isToday ? AppColors.primarySurface : Colors.transparent),
+                            ? colorScheme.primary
+                            : (isToday ? colorScheme.primaryContainer : Colors.transparent),
                         borderRadius: BorderRadius.circular(8),
                         border: isToday && !isSelected
-                            ? Border.all(color: AppColors.primaryBorder)
+                            ? Border.all(color: colorScheme.primary)
                             : null,
                       ),
                       child: Column(
@@ -473,10 +487,10 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
                               fontWeight:
                                   isSelected || isToday ? FontWeight.w800 : FontWeight.w600,
                               color: isSelected
-                                  ? Colors.white
+                                  ? colorScheme.onPrimary
                                   : (isToday
-                                      ? AppColors.primaryDeep
-                                      : AppColors.textPrimary),
+                                      ? colorScheme.onPrimaryContainer
+                                      : colorScheme.onSurface),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -499,17 +513,21 @@ class _ExpandableCalendarState extends State<ExpandableCalendar> {
       return const SizedBox(height: 3.5);
     }
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantics = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
     final takenCount = intakes.where((i) => i.isTaken).length;
     final total = intakes.length;
     final ratio = takenCount / total;
 
     Color color;
     if (ratio == 1.0) {
-      color = isSelected ? Colors.white : const Color(0xFF10B981); // 100% green
+      color = isSelected ? colorScheme.onPrimary : semantics.success;
     } else if (ratio >= 0.5) {
-      color = isSelected ? const Color(0xFFFDE68A) : const Color(0xFFF59E0B); // Amber
+      color = isSelected ? semantics.warningBorder : semantics.warning;
     } else {
-      color = isSelected ? const Color(0xFFFECDD3) : AppColors.accentCoral; // Coral
+      color = isSelected ? semantics.dangerBorder : semantics.danger;
     }
 
     return Container(

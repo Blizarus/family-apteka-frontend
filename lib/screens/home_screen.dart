@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/notification_center_sheet.dart';
 import 'today_screen.dart';
 import 'medicine_box_screen.dart';
@@ -14,10 +13,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Семейная Аптечка'),
         actions: [
@@ -28,7 +28,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Badge(
                   isLabelVisible: unreadCount > 0,
                   label: Text('$unreadCount'),
-                  backgroundColor: const Color(0xFFEF4444),
+                  backgroundColor: colorScheme.error,
                   child: const Icon(Icons.notifications_outlined),
                 ),
                 tooltip: 'Уведомления',
@@ -53,35 +53,39 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNavigationBar(BuildContext context, AppState state) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppDarkColors.surface : Colors.white,
-        border: Border(top: BorderSide(color: isDark ? AppDarkColors.border : AppColors.border, width: 1)),
+        color: colorScheme.surface,
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant, width: 1)),
       ),
       padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(
+            context: context,
             icon: Icons.event_note_rounded,
             label: 'Сегодня',
             isSelected: state.activeTabIndex == 0,
             onTap: () => state.setTab(0),
           ),
           _buildNavItem(
+            context: context,
             icon: Icons.medication_rounded,
             label: 'Аптечка',
             isSelected: state.activeTabIndex == 1,
             onTap: () => state.setTab(1),
           ),
           _buildNavItem(
+            context: context,
             icon: Icons.receipt_long_rounded,
             label: 'Заметки',
             isSelected: state.activeTabIndex == 2,
             onTap: () => state.setTab(2),
           ),
           _buildNavItem(
+            context: context,
             icon: Icons.people_alt_rounded,
             label: 'Семья',
             isSelected: state.activeTabIndex == 3,
@@ -93,11 +97,16 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final unselectedColor = theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5);
+
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -112,7 +121,7 @@ class HomeScreen extends StatelessWidget {
                 height: 3,
                 width: isSelected ? 20 : 0,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  color: isSelected ? colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -120,7 +129,7 @@ class HomeScreen extends StatelessWidget {
               Icon(
                 icon,
                 size: 22,
-                color: isSelected ? AppColors.primary : AppColors.textMuted,
+                color: isSelected ? colorScheme.primary : unselectedColor,
               ),
               const SizedBox(height: 3),
               Text(
@@ -130,7 +139,7 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : AppColors.textMuted,
+                  color: isSelected ? colorScheme.primary : unselectedColor,
                 ),
               ),
             ],

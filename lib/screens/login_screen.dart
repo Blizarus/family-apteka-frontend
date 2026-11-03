@@ -244,17 +244,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppDarkColors.background : AppColors.background;
-    final surface = isDark ? AppDarkColors.surface : Colors.white;
-    final surfaceSubtle = isDark ? AppDarkColors.surfaceSubtle : AppColors.background;
-    final border = isDark ? AppDarkColors.border : AppColors.border;
-    final textPrimary = isDark ? AppDarkColors.textPrimary : AppColors.textPrimary;
-    final textSecondary = isDark ? AppDarkColors.textSecondary : AppColors.textSecondary;
-    final textMuted = isDark ? AppDarkColors.textMuted : AppColors.textMuted;
-    final primarySurface = isDark ? AppDarkColors.primarySurface : AppColors.primarySurface;
-    final primaryBorder = isDark ? AppDarkColors.primaryBorder : AppColors.primaryBorder;
-    final selectorBg = isDark ? AppDarkColors.surfaceSubtle : const Color(0xFFE2E8F0);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final semantic = theme.extension<SemanticColors>() ?? SemanticColors.light;
+    final bg = theme.scaffoldBackgroundColor;
+    final surface = cs.surface;
+    final surfaceSubtle = cs.surfaceContainerHighest;
+    final border = cs.outlineVariant;
+    final textPrimary = cs.onSurface;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.7);
+    final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.5);
+    final primaryColor = cs.primary;
+    final primarySurface = cs.primaryContainer;
+    final primaryBorder = cs.outline;
+    final selectorBg = surfaceSubtle;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -287,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 border: Border.all(color: primaryBorder),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    color: primaryColor.withValues(alpha: 0.15),
                                     blurRadius: 16,
                                     offset: const Offset(0, 4),
                                   ),
@@ -352,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   boxShadow: !_isRegisterMode
                                       ? [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.05),
+                                            color: cs.shadow.withValues(alpha: 0.05),
                                             blurRadius: 6,
                                             offset: const Offset(0, 2),
                                           )
@@ -367,7 +370,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: !_isRegisterMode
                                         ? FontWeight.w700
                                         : FontWeight.w600,
-                                    color: !_isRegisterMode ? AppColors.primary : textSecondary,
+                                    color: !_isRegisterMode ? primaryColor : textSecondary,
                                   ),
                                 ),
                               ),
@@ -390,7 +393,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   boxShadow: _isRegisterMode
                                       ? [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.05),
+                                            color: cs.shadow.withValues(alpha: 0.05),
                                             blurRadius: 6,
                                             offset: const Offset(0, 2),
                                           )
@@ -405,7 +408,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: _isRegisterMode
                                         ? FontWeight.w700
                                         : FontWeight.w600,
-                                    color: _isRegisterMode ? AppColors.primary : textSecondary,
+                                    color: _isRegisterMode ? primaryColor : textSecondary,
                                   ),
                                 ),
                               ),
@@ -425,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: Border.all(color: border),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
+                            color: cs.shadow.withValues(alpha: 0.03),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -459,20 +462,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   isDense: true,
                                   border: InputBorder.none,
                                   prefixIcon: Icon(
                                     Icons.person_outline_rounded,
-                                    color: AppColors.primaryHover,
+                                    color: primaryColor,
                                     size: 18,
                                   ),
                                   hintText: 'Иван Марков',
                                   hintStyle: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.textMuted,
+                                    color: textMuted,
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 13,
                                   ),
@@ -507,20 +510,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 isDense: true,
                                 border: InputBorder.none,
                                 prefixIcon: Icon(
                                   Icons.mail_outline_rounded,
-                                  color: AppColors.primaryHover,
+                                  color: primaryColor,
                                   size: 18,
                                 ),
                                 hintText: 'example@family.test',
                                 hintStyle: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textMuted,
+                                  color: textMuted,
                                 ),
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 13,
                                 ),
@@ -559,9 +562,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               decoration: InputDecoration(
                                 isDense: true,
                                 border: InputBorder.none,
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.lock_outline_rounded,
-                                  color: AppColors.primaryHover,
+                                  color: primaryColor,
                                   size: 18,
                                 ),
                                 suffixIcon: IconButton(
@@ -570,7 +573,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
                                     size: 18,
-                                    color: AppColors.textMuted,
+                                    color: textMuted,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -579,9 +582,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
                                 ),
                                 hintText: '••••••••',
-                                hintStyle: const TextStyle(
+                                hintStyle: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textMuted,
+                                  color: textMuted,
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -621,9 +624,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: InputDecoration(
                                   isDense: true,
                                   border: InputBorder.none,
-                                  prefixIcon: const Icon(
+                                  prefixIcon: Icon(
                                     Icons.lock_reset_rounded,
-                                    color: AppColors.primaryHover,
+                                    color: primaryColor,
                                     size: 18,
                                   ),
                                   suffixIcon: IconButton(
@@ -632,7 +635,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
                                       size: 18,
-                                      color: AppColors.textMuted,
+                                      color: textMuted,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -642,9 +645,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                   ),
                                   hintText: '••••••••',
-                                  hintStyle: const TextStyle(
+                                  hintStyle: TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.textMuted,
+                                    color: textMuted,
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -660,13 +663,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: _termsAccepted
-                                    ? AppColors.primarySurface
-                                    : const Color(0xFFFFF1F2), // subtle red warning if unchecked
+                                    ? primarySurface
+                                    : semantic.dangerBg,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: _termsAccepted
-                                      ? AppColors.primaryBorder
-                                      : const Color(0xFFFECDD3),
+                                      ? primaryBorder
+                                      : semantic.dangerBorder,
                                 ),
                               ),
                               child: Row(
@@ -677,7 +680,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 24,
                                     child: Checkbox(
                                       value: _termsAccepted,
-                                      activeColor: AppColors.primary,
+                                      activeColor: primaryColor,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(6),
                                       ),
@@ -701,8 +704,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                               color: _termsAccepted
-                                                  ? AppColors.primaryDeep
-                                                  : const Color(0xFF9F1239),
+                                                  ? cs.onPrimaryContainer
+                                                  : semantic.dangerText,
                                               height: 1.3,
                                             ),
                                           ),
@@ -710,17 +713,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                         const SizedBox(height: 4),
                                         InkWell(
                                           onTap: () => _show152FZInfoModal(context),
-                                          child: const Wrap(
+                                          child: Wrap(
                                             crossAxisAlignment: WrapCrossAlignment.center,
                                             children: [
-                                              Text('🔒', style: TextStyle(fontSize: 10)),
-                                              SizedBox(width: 4),
+                                              const Text('🔒', style: TextStyle(fontSize: 10)),
+                                              const SizedBox(width: 4),
                                               Text(
                                                 'Подробнее о криптозащите и 152-ФЗ',
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.w600,
-                                                  color: AppColors.primary,
+                                                  color: primaryColor,
                                                   decoration: TextDecoration.underline,
                                                 ),
                                               ),
@@ -751,8 +754,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       children: [
                                         Row(
                                           children: [
-                                            Text('🔄', style: TextStyle(fontSize: 12)),
-                                            SizedBox(width: 6),
+                                            const Text('🔄', style: TextStyle(fontSize: 12)),
+                                            const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
                                                 'Облачная синхронизация',
@@ -780,8 +783,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   Switch(
                                     value: _syncEnabled,
-                                    activeThumbColor: AppColors.primary,
-                                    activeTrackColor: AppColors.primaryBorderLight,
+                                    activeThumbColor: primaryColor,
                                     onChanged: (val) {
                                       setState(() => _syncEnabled = val);
                                     },
@@ -800,9 +802,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: (_isRegisterMode && !_termsAccepted)
-                                    ? const Color(0xFFCBD5E1)
-                                    : AppColors.primary,
-                                foregroundColor: Colors.white,
+                                    ? cs.outlineVariant
+                                    : primaryColor,
+                                foregroundColor: cs.onPrimary,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -821,12 +823,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                         })
                                       : _handleLogin),
                               child: _isLoading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        color: Colors.white,
+                                        color: cs.onPrimary,
                                       ),
                                     )
                                   : Text(
@@ -849,7 +851,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         backgroundColor: surface,
-                        foregroundColor: isDark ? AppDarkColors.primary : AppColors.primaryDeep,
+                        foregroundColor: primaryColor,
                         side: BorderSide(color: primaryBorder),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -873,8 +875,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: surface,
-                          foregroundColor: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
-                          side: BorderSide(color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE)),
+                          foregroundColor: semantic.info,
+                          side: BorderSide(color: semantic.infoBorder),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -928,7 +930,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             border: Border.all(color: border),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
+                                color: cs.shadow.withValues(alpha: 0.03),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -943,8 +945,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : Icons.dns_rounded,
                                 size: 14,
                                 color: context.watch<ApiService>().isMockMode
-                                    ? Colors.amber.shade700
-                                    : AppColors.primary,
+                                    ? semantic.warning
+                                    : primaryColor,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -958,10 +960,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Icon(
+                              Icon(
                                 Icons.settings_outlined,
                                 size: 13,
-                                color: AppColors.textMuted,
+                                color: textMuted,
                               ),
                             ],
                           ),
@@ -981,7 +983,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Desktop Preview Frame
         return Scaffold(
-          backgroundColor: const Color(0xFF0F172A), // Slate 900
+          backgroundColor: cs.surfaceContainerHighest,
           body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -1000,18 +1002,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ? 'Семейная Аптечка (Регистрация 152-ФЗ)'
                                 : 'Семейная Аптечка (Вход)',
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Health-Tech Minimal',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: textMuted,
                             fontSize: 11,
                           ),
                         ),
@@ -1025,10 +1027,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: bg,
                       borderRadius: BorderRadius.circular(44),
-                      border: Border.all(color: const Color(0xFF334155), width: 8),
+                      border: Border.all(color: border, width: 8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: cs.shadow.withValues(alpha: 0.2),
                           blurRadius: 40,
                           offset: const Offset(0, 20),
                         ),

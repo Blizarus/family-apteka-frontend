@@ -47,8 +47,11 @@ class _SkipReasonDialogState extends State<SkipReasonDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantics = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
     return AlertDialog(
-      backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
@@ -59,19 +62,19 @@ class _SkipReasonDialogState extends State<SkipReasonDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.12),
+              color: semantics.warningBg,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+            child: Icon(Icons.info_outline, color: semantics.warning, size: 20),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Пропуск приёма',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -84,9 +87,9 @@ class _SkipReasonDialogState extends State<SkipReasonDialog> {
           children: [
             Text(
               'Укажите причину пропуска для препарата «${widget.medicineName}». Запись сохранится в истории для лечащего врача.',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
                 height: 1.4,
               ),
             ),
@@ -102,28 +105,22 @@ class _SkipReasonDialogState extends State<SkipReasonDialog> {
                   });
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                   child: Row(
                     children: [
-                      Container(
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.border,
-                            width: isSelected ? 5 : 2,
-                          ),
-                        ),
+                      Icon(
+                        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                        size: 18,
+                        color: isSelected ? colorScheme.primary : colorScheme.outline,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           reason,
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                            fontSize: 13,
+                            color: isSelected ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.8),
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -133,25 +130,12 @@ class _SkipReasonDialogState extends State<SkipReasonDialog> {
               );
             }),
             if (_selectedReason == 'Другая причина') ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               TextField(
                 controller: _customReasonController,
-                maxLines: 2,
-                style: const TextStyle(fontSize: 12),
-                decoration: InputDecoration(
-                  hintText: 'Опишите причину пропуска...',
-                  hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  isDense: true,
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
+                decoration: const InputDecoration(
+                  hintText: 'Укажите причину...',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ],
@@ -160,36 +144,25 @@ class _SkipReasonDialogState extends State<SkipReasonDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(null),
-          child: const Text(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
             'Отмена',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-            ),
+            style: TextStyle(color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7)),
           ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange.shade700,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: () {
-            String result = _selectedReason;
-            if (_selectedReason == 'Другая причина') {
-              final custom = _customReasonController.text.trim();
-              result = custom.isNotEmpty ? custom : 'Другая причина';
-            }
-            Navigator.of(context).pop(result);
+            final reason = _selectedReason == 'Другая причина' && _customReasonController.text.trim().isNotEmpty
+                ? _customReasonController.text.trim()
+                : _selectedReason;
+            Navigator.of(context).pop(reason);
           },
-          child: const Text(
-            'Подтвердить',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-          ),
+          child: const Text('Подтвердить пропуск'),
         ),
       ],
     );

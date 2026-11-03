@@ -111,37 +111,33 @@ class _BiometricPromptDialogState extends State<BiometricPromptDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantics = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Emerald circular icon container
+            // Circular icon container
             Container(
               width: 84,
               height: 84,
               decoration: BoxDecoration(
-                color: AppColors.statusOkBg,
+                color: semantics.successBg,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFA7F3D0), width: 2.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x2210B981),
-                    blurRadius: 18,
-                    spreadRadius: 3,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+                border: Border.all(color: semantics.successBorder, width: 2.5),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
                   Icons.fingerprint_rounded,
                   size: 50,
-                  color: AppColors.statusOkDot,
+                  color: semantics.success,
                 ),
               ),
             ),
@@ -151,10 +147,10 @@ class _BiometricPromptDialogState extends State<BiometricPromptDialog> {
             Text(
               widget.title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
                 letterSpacing: -0.3,
               ),
             ),
@@ -164,10 +160,10 @@ class _BiometricPromptDialogState extends State<BiometricPromptDialog> {
             Text(
               widget.localizedReason,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.45,
-                color: AppColors.textSecondary,
+                color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
 
@@ -178,21 +174,21 @@ class _BiometricPromptDialogState extends State<BiometricPromptDialog> {
                 key: const Key('biometric_error_banner'),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.statusExpiredBg,
+                  color: semantics.dangerBg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.statusExpiredBorder),
+                  border: Border.all(color: semantics.dangerBorder),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline_rounded, size: 18, color: AppColors.statusExpiredText),
+                    Icon(Icons.error_outline_rounded, size: 18, color: semantics.danger),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _errorMessage!,
                         key: const Key('biometric_error_text'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.statusExpiredText,
+                          color: semantics.dangerText,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -204,58 +200,46 @@ class _BiometricPromptDialogState extends State<BiometricPromptDialog> {
 
             const SizedBox(height: 24),
 
-            // Confirm biometric button
+            // Action Buttons
             SizedBox(
               width: double.infinity,
-              height: 46,
+              height: 48,
               child: ElevatedButton.icon(
                 key: const Key('biometric_confirm_button'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                 ),
                 onPressed: _isAuthenticating ? null : _handleAuthenticate,
                 icon: _isAuthenticating
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary),
                       )
-                    : const Icon(Icons.fingerprint_rounded, size: 20),
+                    : const Icon(Icons.fingerprint_rounded, size: 22),
                 label: Text(
-                  _isAuthenticating ? 'Проверка...' : 'Подтвердить отпечаток',
+                  _isAuthenticating ? 'Проверка...' : 'Сканировать биометрию',
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
 
-            // Fallback password button
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: OutlinedButton.icon(
-                key: const Key('biometric_password_fallback_button'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: _handlePasswordFallback,
-                icon: const Icon(Icons.password_rounded, size: 18, color: AppColors.textMuted),
-                label: const Text(
-                  'Вход по паролю',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
+            const SizedBox(height: 8),
+
+            // Fallback to password button
+            TextButton(
+              key: const Key('biometric_password_fallback_button'),
+              onPressed: _handlePasswordFallback,
+              style: TextButton.styleFrom(
+                foregroundColor: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              ),
+              child: const Text(
+                'Войти по паролю аккаунта',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
           ],

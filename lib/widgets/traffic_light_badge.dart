@@ -8,25 +8,26 @@ class TrafficLightBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final semantics = Theme.of(context).extension<SemanticColors>() ?? SemanticColors.light;
     Color bg;
     Color textColor;
     String label;
 
     switch (status) {
       case 'expiring':
-        bg = AppColors.statusExpiringBg;
-        textColor = AppColors.statusExpiringText;
+        bg = semantics.warningBg;
+        textColor = semantics.warningText;
         label = 'Скоро истечет';
         break;
       case 'expired':
-        bg = AppColors.statusExpiredBg;
-        textColor = AppColors.statusExpiredText;
+        bg = semantics.dangerBg;
+        textColor = semantics.dangerText;
         label = 'Просрочено!';
         break;
       case 'ok':
       default:
-        bg = AppColors.statusOkBg;
-        textColor = AppColors.statusOkText;
+        bg = semantics.successBg;
+        textColor = semantics.successText;
         label = 'В норме';
         break;
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class ToastHelper {
   static void showSuccess(BuildContext context, String message) {
@@ -18,9 +19,14 @@ class ToastHelper {
   }) {
     ScaffoldMessenger.of(context).clearSnackBars();
 
-    final bgColor = isError ? const Color(0xFF991B1B) : const Color(0xFF0F172A);
-    final borderColor = isError ? const Color(0xFFDC2626) : const Color(0xFF334155);
-    final iconColor = isError ? const Color(0xFFFCA5A5) : const Color(0xFF2DD4BF);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantics = theme.extension<SemanticColors>() ?? SemanticColors.light;
+
+    final bgColor = isError ? semantics.dangerBg : colorScheme.surface;
+    final borderColor = isError ? semantics.dangerBorder : colorScheme.outlineVariant;
+    final iconColor = isError ? semantics.danger : colorScheme.primary;
+    final textColor = isError ? semantics.dangerText : colorScheme.onSurface;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -37,7 +43,7 @@ class ToastHelper {
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: colorScheme.shadow.withValues(alpha: 0.15),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -57,8 +63,8 @@ class ToastHelper {
               Expanded(
                 child: Text(
                   message,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

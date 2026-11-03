@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/services/api_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('Live Laravel API Integration Test', () {
     late ApiService apiService;
 

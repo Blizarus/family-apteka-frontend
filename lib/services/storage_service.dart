@@ -14,7 +14,6 @@ class StorageService {
   static const String _keyBiometricEnabled = 'biometric_auth_enabled';
   static const String _keyPushEnabled = 'push_notifications_enabled';
 
-  static const String _keyAuthToken = 'app_auth_token_secure_backup';
 
   SharedPreferences? _prefs;
   bool _initAttempted = false;
@@ -251,31 +250,5 @@ class StorageService {
       return prefs.getBool(_keyPushEnabled) ?? false;
     }
     return (_inMemoryFallback[_keyPushEnabled] as bool?) ?? false;
-  }
-
-  // Auth Token Persistence Backup
-  Future<void> saveAuthToken(String token) async {
-    final prefs = await _getSafePrefs();
-    if (prefs != null) {
-      await prefs.setString(_keyAuthToken, token);
-    } else {
-      _inMemoryFallback[_keyAuthToken] = token;
-    }
-  }
-
-  Future<String?> getAuthToken() async {
-    final prefs = await _getSafePrefs();
-    if (prefs != null) {
-      return prefs.getString(_keyAuthToken);
-    }
-    return _inMemoryFallback[_keyAuthToken] as String?;
-  }
-
-  Future<void> clearAuthToken() async {
-    final prefs = await _getSafePrefs();
-    if (prefs != null) {
-      await prefs.remove(_keyAuthToken);
-    }
-    _inMemoryFallback.remove(_keyAuthToken);
   }
 }

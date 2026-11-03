@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
-import '../theme/app_theme.dart';
 import 'create_medicine_box_sheet.dart';
 import 'toast_helper.dart';
 
@@ -19,11 +18,13 @@ class BoxSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
@@ -37,18 +38,18 @@ class BoxSelectorSheet extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          const Text(
+          Text(
             'ВЫБЕРИТЕ ХРАНИЛИЩЕ',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: AppColors.textMuted,
+              color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 12),
@@ -75,10 +76,10 @@ class BoxSelectorSheet extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primarySurface : Colors.transparent,
+                    color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSelected ? AppColors.primaryBorder : AppColors.border,
+                      color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -88,8 +89,9 @@ class BoxSelectorSheet extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceSubtle,
+                          color: colorScheme.surface,
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: colorScheme.outlineVariant),
                         ),
                         alignment: Alignment.center,
                         child: Text(box.icon, style: const TextStyle(fontSize: 18)),
@@ -105,16 +107,16 @@ class BoxSelectorSheet extends StatelessWidget {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: isSelected
-                                    ? AppColors.primaryDeep
-                                    : AppColors.textPrimary,
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               box.location,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.textMuted,
+                                color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -123,15 +125,16 @@ class BoxSelectorSheet extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : AppColors.surfaceSubtle,
+                          color: isSelected ? colorScheme.primary : colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: colorScheme.outlineVariant),
                         ),
                         child: Text(
                           '${box.count} шт.',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -142,7 +145,7 @@ class BoxSelectorSheet extends StatelessWidget {
             },
           ),
           const SizedBox(height: 12),
-          const Divider(color: AppColors.border),
+          Divider(color: colorScheme.outlineVariant),
           const SizedBox(height: 8),
           InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -156,16 +159,16 @@ class BoxSelectorSheet extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.add, size: 18, color: AppColors.primary),
-                  SizedBox(width: 8),
+                  Icon(Icons.add, size: 18, color: colorScheme.primary),
+                  const SizedBox(width: 8),
                   Text(
                     'Создать новую аптечку',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: colorScheme.primary,
                     ),
                   ),
                 ],

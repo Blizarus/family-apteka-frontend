@@ -13,29 +13,32 @@ class SafetyAlertBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final semantics = Theme.of(context).extension<SemanticColors>() ?? SemanticColors.light;
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (isLoading) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.surfaceSubtle,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
-        child: const Row(
+        child: Row(
           children: [
             SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.primary,
+                color: colorScheme.primary,
               ),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Клинический аудит совместимости и аллергий (CDS)...',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodyMedium?.color),
               ),
             ),
           ],
@@ -69,18 +72,18 @@ class SafetyAlertBanner extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0FDF4),
+          color: semantics.successBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFBBF7D0)),
+          border: Border.all(color: semantics.successBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 18),
-                SizedBox(width: 8),
+                Icon(Icons.verified_rounded, color: semantics.success, size: 18),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,13 +93,13 @@ class SafetyAlertBanner extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF15803D),
+                          color: semantics.successText,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         'Аллергий на активные и вспомогательные вещества, а также дублирования не обнаружено.',
-                        style: TextStyle(fontSize: 10, color: Color(0xFF166534)),
+                        style: TextStyle(fontSize: 10, color: semantics.successText),
                       ),
                     ],
                   ),
@@ -106,9 +109,9 @@ class SafetyAlertBanner extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               disclaimer,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 9.5,
-                color: Color(0xFF15803D),
+                color: semantics.successText,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -122,28 +125,28 @@ class SafetyAlertBanner extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFBEB),
+          color: semantics.warningBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+          border: Border.all(color: semantics.warningBorder, width: 1.2),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.help_outline_rounded,
-                  color: Color(0xFFD97706),
+                  color: semantics.warning,
                   size: 18,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Данные неполные: проверить не удалось, обратитесь к врачу или провизору',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFFB45309),
+                      color: semantics.warningText,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -158,13 +161,13 @@ class SafetyAlertBanner extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('? ', style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.w700)),
+                      Text('? ', style: TextStyle(color: semantics.warningText, fontWeight: FontWeight.w700)),
                       Expanded(
                         child: Text(
                           reason,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10.5,
-                            color: Color(0xFF92400E),
+                            color: semantics.warningText,
                             height: 1.3,
                             fontWeight: FontWeight.w500,
                           ),
@@ -178,9 +181,9 @@ class SafetyAlertBanner extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               disclaimer,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 9.5,
-                color: Color(0xFF92400E),
+                color: semantics.warningText,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -190,11 +193,10 @@ class SafetyAlertBanner extends StatelessWidget {
     }
 
     // 3. ИСХОД CONFLICT
-    final bgColor = hasCritical ? const Color(0xFFFEF2F2) : const Color(0xFFFFF7ED);
-    final borderColor = hasCritical ? const Color(0xFFFECACA) : const Color(0xFFFFEDD5);
-    final iconColor = hasCritical ? const Color(0xFFDC2626) : const Color(0xFFEA580C);
-    final titleColor = hasCritical ? const Color(0xFFB91C1C) : const Color(0xFFC2410C);
-    final textColor = hasCritical ? const Color(0xFF991B1B) : const Color(0xFF9A3412);
+    final bgColor = hasCritical ? semantics.dangerBg : semantics.warningBg;
+    final borderColor = hasCritical ? semantics.dangerBorder : semantics.warningBorder;
+    final iconColor = hasCritical ? semantics.danger : semantics.warning;
+    final textColor = hasCritical ? semantics.dangerText : semantics.warningText;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -222,7 +224,7 @@ class SafetyAlertBanner extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: titleColor,
+                    color: textColor,
                     letterSpacing: 0.2,
                   ),
                 ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
-import '../theme/app_theme.dart';
 import 'today_screen.dart';
 import 'medicine_box_screen.dart';
 import 'notes_screen.dart';
@@ -13,16 +12,15 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    // Responsive shell: on wide screens, center a phone mockup container (Health-Tech Minimal),
-    // on narrow screens (e.g. mobile), use full screen.
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 520;
 
-        final isDark = Theme.of(context).brightness == Brightness.dark;
         Widget appContent = Scaffold(
-          backgroundColor: isDark ? AppDarkColors.background : AppColors.background,
+          backgroundColor: theme.scaffoldBackgroundColor,
           body: IndexedStack(
             index: state.activeTabIndex,
             children: const [
@@ -41,7 +39,7 @@ class MainScreen extends StatelessWidget {
 
         // Desktop Preview Mockup matching app_prototype.html
         return Scaffold(
-          backgroundColor: const Color(0xFF0F172A), // Slate 900
+          backgroundColor: colorScheme.surface,
           body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -63,17 +61,17 @@ class MainScreen extends StatelessWidget {
                                 width: 8,
                                 height: 8,
                                 margin: const EdgeInsets.only(right: 8),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF2DD4BF),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              const Flexible(
+                              Flexible(
                                 child: Text(
                                   'Семейная Аптечка',
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: colorScheme.onSurface,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -83,10 +81,10 @@ class MainScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Health-Tech Minimal',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
                             fontSize: 11,
                           ),
                         ),
@@ -100,12 +98,12 @@ class MainScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 840,
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: theme.scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(44),
-                      border: Border.all(color: const Color(0xFF334155), width: 8),
+                      border: Border.all(color: colorScheme.outlineVariant, width: 8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: colorScheme.shadow.withValues(alpha: 0.15),
                           blurRadius: 40,
                           offset: const Offset(0, 20),
                         ),
@@ -116,9 +114,9 @@ class MainScreen extends StatelessWidget {
                       children: [
                         // Simulated Status Bar
                         Container(
-                          color: AppColors.background,
+                          color: theme.scaffoldBackgroundColor,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
@@ -126,7 +124,7 @@ class MainScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textSecondary,
+                                  color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
                                 ),
                               ),
                               Row(
@@ -136,16 +134,16 @@ class MainScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.textMuted,
+                                      color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
                                     ),
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     '100%',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.textSecondary,
+                                      color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
@@ -168,35 +166,39 @@ class MainScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNavigationBar(BuildContext context, AppState state) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppDarkColors.surface : Colors.white,
-        border: Border(top: BorderSide(color: isDark ? AppDarkColors.border : AppColors.border, width: 1)),
+        color: colorScheme.surface,
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant, width: 1)),
       ),
       padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(
+            context: context,
             icon: Icons.event_note_rounded,
             label: 'Сегодня',
             isSelected: state.activeTabIndex == 0,
             onTap: () => state.setTab(0),
           ),
           _buildNavItem(
+            context: context,
             icon: Icons.medication_rounded,
             label: 'Аптечка',
             isSelected: state.activeTabIndex == 1,
             onTap: () => state.setTab(1),
           ),
           _buildNavItem(
+            context: context,
             icon: Icons.receipt_long_rounded,
             label: 'Заметки',
             isSelected: state.activeTabIndex == 2,
             onTap: () => state.setTab(2),
           ),
           _buildNavItem(
+            context: context,
             icon: Icons.people_alt_rounded,
             label: 'Семья',
             isSelected: state.activeTabIndex == 3,
@@ -208,11 +210,16 @@ class MainScreen extends StatelessWidget {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final unselectedColor = theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5);
+
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -227,7 +234,7 @@ class MainScreen extends StatelessWidget {
                 height: 3,
                 width: isSelected ? 20 : 0,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  color: isSelected ? colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -235,7 +242,7 @@ class MainScreen extends StatelessWidget {
               Icon(
                 icon,
                 size: 22,
-                color: isSelected ? AppColors.primary : AppColors.textMuted,
+                color: isSelected ? colorScheme.primary : unselectedColor,
               ),
               const SizedBox(height: 3),
               Text(
@@ -245,7 +252,7 @@ class MainScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : AppColors.textMuted,
+                  color: isSelected ? colorScheme.primary : unselectedColor,
                 ),
               ),
             ],

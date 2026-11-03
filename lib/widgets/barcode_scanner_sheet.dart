@@ -1,7 +1,14 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../theme/app_theme.dart';
+
+const bool kScannerDebug = bool.fromEnvironment('SCANNER_DEBUG', defaultValue: false);
 
 class BarcodeScannerSheet extends StatefulWidget {
   const BarcodeScannerSheet({super.key});
@@ -33,6 +40,14 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
   bool _isTorchOn = false;
   bool _hasDetected = false;
   bool _isRetrying = false;
+  bool _isTimedOut = false;
+  bool _showDebugHud = kScannerDebug;
+
+  Timer? _timeoutTimer;
+  Timer? _secondsTimer;
+  int _secondsElapsed = 0;
+  MobileScannerException? _lastError;
+  String _deviceInfo = 'Определение устройства...';
 
   @override
   void initState() {
@@ -47,6 +62,52 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+
+    _secondsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _secondsElapsed++);
+      }
+    });
+
+    _startTimeoutWatcher();
+    _fetchDeviceInfo();
+  }
+
+  Future<void> _fetchDeviceInfo() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        if (mounted) {
+          setState(() {
+            _deviceInfo = '${info.manufacturer.toUpperCase()} ${info.model} (Android ${info.version.release}, API ${info.version.sdkInt})';
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _deviceInfo = '${Platform.operatingSystem} (${Platform.operatingSystemVersion})';
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _deviceInfo = 'Android ${Platform.operatingSystemVersion}';
+        });
+      }
+    }
+  }
+
+  void _startTimeoutWatcher() {
+    _timeoutTimer?.cancel();
+    _isTimedOut = false;
+    _timeoutTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && !_controller.value.isRunning && !_hasDetected) {
+        setState(() {
+          _isTimedOut = true;
+        });
+      }
+    });
   }
 
   @override
@@ -59,6 +120,8 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _timeoutTimer?.cancel();
+    _secondsTimer?.cancel();
     _laserAnimationController.dispose();
     _controller.dispose();
     _manualCodeController.dispose();
@@ -67,13 +130,22 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
 
   Future<void> _retryCamera() async {
     if (_isRetrying || !mounted) return;
-    setState(() => _isRetrying = true);
+    setState(() {
+      _isRetrying = true;
+      _isTimedOut = false;
+      _secondsElapsed = 0;
+    });
+    _startTimeoutWatcher();
     try {
       await _controller.stop();
     } catch (_) {}
     try {
       await _controller.start();
-    } catch (_) {}
+    } catch (e) {
+      if (e is MobileScannerException) {
+        _lastError = e;
+      }
+    }
     if (mounted) {
       setState(() => _isRetrying = false);
     }
@@ -99,6 +171,38 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
     }
   }
 
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
+      final capture = await _controller.analyzeImage(image.path);
+      final barcode = capture?.barcodes.firstOrNull?.rawValue;
+      if (barcode != null && barcode.trim().isNotEmpty) {
+        _submitManualCode(barcode.trim());
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Штрихкод на выбранном фото не обнаружен. Попробуйте другое фото или введите код вручную.'),
+              backgroundColor: Color(0xFFDC2626),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка анализа изображения: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _toggleTorch() async {
     try {
       await _controller.toggleTorch();
@@ -118,7 +222,7 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
     final scanWindowSize = size.width * 0.72;
 
     return Container(
-      height: size.height * 0.88,
+      height: size.height * 0.90,
       decoration: const BoxDecoration(
         color: Color(0xFF0F172A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -132,17 +236,34 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
               controller: _controller,
               onDetect: _onDetect,
               errorBuilder: (context, error, child) {
-                return _buildCameraErrorView(error);
+                _lastError = error;
+                return _buildCameraFallbackView(error: error);
               },
             ),
           ),
 
-          // 2. Targeting Overlay with Laser
-          Positioned.fill(
-            child: _buildScannerOverlay(scanWindowSize),
-          ),
+          // Fallback overlay when 8s timeout triggers without camera feed
+          if (_isTimedOut && !_controller.value.isRunning)
+            Positioned.fill(
+              child: _buildCameraFallbackView(isTimeout: true),
+            ),
 
-          // 3. Top Action Bar: Close, Title, Torch, Flip
+          // 2. Targeting Overlay with Laser (visible only when camera is running)
+          if (!_isTimedOut && _lastError == null)
+            Positioned.fill(
+              child: _buildScannerOverlay(scanWindowSize),
+            ),
+
+          // 3. Diagnostic HUD (when SCANNER_DEBUG=true or toggled)
+          if (_showDebugHud)
+            Positioned(
+              top: 60,
+              left: 12,
+              right: 12,
+              child: _buildDiagnosticHud(),
+            ),
+
+          // 4. Top Action Bar: Close, Title, Controls
           Positioned(
             top: 12,
             left: 16,
@@ -183,41 +304,60 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
                   ),
                 ),
 
-                // Controls: Flashlight & Camera Switch
+                // Controls: Torch, Switch, Gallery, Debug toggle
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
+                      icon: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 20),
+                      style: IconButton.styleFrom(backgroundColor: Colors.black45),
+                      tooltip: 'Выбрать фото из галереи',
+                      onPressed: _pickImageFromGallery,
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
                       icon: Icon(
                         _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
                         color: _isTorchOn ? const Color(0xFFFDE047) : Colors.white,
-                        size: 22,
+                        size: 20,
                       ),
                       style: IconButton.styleFrom(backgroundColor: Colors.black45),
                       onPressed: _toggleTorch,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white, size: 22),
+                      icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white, size: 20),
                       style: IconButton.styleFrom(backgroundColor: Colors.black45),
                       onPressed: _switchCamera,
                     ),
+                    if (kDebugMode || kScannerDebug) ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: Icon(
+                          Icons.bug_report_rounded,
+                          color: _showDebugHud ? const Color(0xFF2DD4BF) : Colors.white38,
+                          size: 20,
+                        ),
+                        style: IconButton.styleFrom(backgroundColor: Colors.black45),
+                        onPressed: () => setState(() => _showDebugHud = !_showDebugHud),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
 
-          // 4. Bottom Hint & Quick test buttons
+          // 5. Bottom Hint & Quick test buttons
           Positioned(
-            bottom: 24,
+            bottom: 20,
             left: 20,
             right: 20,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(16),
@@ -233,7 +373,7 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // Fallback Quick Barcode (EAN-13 Ибупрофен) for instant testing / web
                 TextButton.icon(
@@ -261,6 +401,85 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
     );
   }
 
+  Widget _buildDiagnosticHud() {
+    final state = _controller.value;
+    final hasPerm = _lastError?.errorCode != MobileScannerErrorCode.permissionDenied;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF2DD4BF), width: 1.2),
+        boxShadow: const [
+          BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.developer_mode_rounded, size: 16, color: Color(0xFF2DD4BF)),
+              const SizedBox(width: 6),
+              const Text(
+                'SCANNER_DEBUG DIAGNOSTICS',
+                style: TextStyle(color: Color(0xFF2DD4BF), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+              ),
+              const Spacer(),
+              Text(
+                '${_secondsElapsed}s',
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white24, height: 12),
+          _buildDiagRow('Device / OS:', _deviceInfo),
+          _buildDiagRow('isInitialized:', '${state.isInitialized}'),
+          _buildDiagRow('isRunning:', '${state.isRunning}'),
+          _buildDiagRow('hasPermission:', hasPerm ? 'YES (Granted)' : 'NO (Denied/Pending)'),
+          _buildDiagRow('Timeout 8s:', _isTimedOut ? 'TRIGGERED (Fallback active)' : 'OK (< 8s)'),
+          _buildDiagRow(
+            'Last Error:',
+            _lastError != null
+                ? '${_lastError!.errorCode.name} (${_lastError!.errorDetails?.message ?? "no message"})'
+                : 'None',
+            isWarning: _lastError != null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiagRow(String label, String value, {bool isWarning = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 105,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isWarning ? const Color(0xFFFBBF24) : Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScannerOverlay(double windowSize) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -269,7 +488,6 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
 
         return Stack(
           children: [
-            // Darkened border areas around scan window
             Positioned(
               left: left,
               top: top,
@@ -277,13 +495,10 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
               height: windowSize,
               child: Stack(
                 children: [
-                  // Corner target accents
                   CustomPaint(
                     size: Size(windowSize, windowSize),
                     painter: _TargetFramePainter(color: AppColors.primaryLight),
                   ),
-
-                  // Animated glowing laser sweep line
                   AnimatedBuilder(
                     animation: _laserAnimationController,
                     builder: (context, child) {
@@ -317,8 +532,35 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
     );
   }
 
-  Widget _buildCameraErrorView(MobileScannerException error) {
-    final bool isPermission = error.errorCode == MobileScannerErrorCode.permissionDenied;
+  Widget _buildCameraFallbackView({MobileScannerException? error, bool isTimeout = false}) {
+    final bool isPermission = error?.errorCode == MobileScannerErrorCode.permissionDenied;
+
+    String title;
+    String reason;
+    IconData icon;
+    Color iconColor;
+
+    if (isPermission) {
+      title = 'Требуется доступ к камере';
+      reason = 'Предоставьте разрешение на использование камеры в системных настройках телефона для сканирования штрихкодов.';
+      icon = Icons.videocam_off_rounded;
+      iconColor = const Color(0xFFFBBF24);
+    } else if (isTimeout) {
+      title = 'Камера не ответила за 8 секунд';
+      reason = 'Инициализация сенсора камеры превысила тайм-аут (камера занята другим приложением или сенсор медленно запускается). Выберите другой способ:';
+      icon = Icons.timer_off_rounded;
+      iconColor = const Color(0xFFF97316);
+    } else if (error != null) {
+      title = 'Ошибка запуска камеры';
+      reason = 'Код ошибки: ${error.errorCode.name}. ${error.errorDetails?.message ?? "Повторите попытку или выберите изображение из галереи."}';
+      icon = Icons.error_outline_rounded;
+      iconColor = const Color(0xFFEF4444);
+    } else {
+      title = 'Камера подключается...';
+      reason = 'Ожидание ответа аппаратного сенсора камеры. Вы можете ввести штрихкод вручную или загрузить фото:';
+      icon = Icons.camera_alt_outlined;
+      iconColor = const Color(0xFF2DD4BF);
+    }
 
     return Container(
       color: const Color(0xFF0F172A),
@@ -331,18 +573,14 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isPermission ? const Color(0xFFF59E0B).withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.08),
+                color: iconColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                isPermission ? Icons.videocam_off_rounded : Icons.camera_alt_outlined,
-                size: 44,
-                color: isPermission ? const Color(0xFFFBBF24) : const Color(0xFF2DD4BF),
-              ),
+              child: Icon(icon, size: 44, color: iconColor),
             ),
             const SizedBox(height: 14),
             Text(
-              isPermission ? 'Требуется доступ к камере' : 'Камера инициализируется...',
+              title,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
@@ -352,35 +590,50 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
             ),
             const SizedBox(height: 6),
             Text(
-              isPermission
-                  ? 'Предоставьте разрешение для автоматического считывания штрихкодов и DataMatrix кодов «Честный Знак»'
-                  : 'Повторите попытку или введите считанный штрихкод вручную ниже',
+              reason,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: const TextStyle(fontSize: 12, color: Colors.white70, height: 1.3),
             ),
             const SizedBox(height: 16),
 
-            // Retry / Request Permission Button
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isPermission ? const Color(0xFF0D9488) : const Color(0xFF1E293B),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: Color(0xFF2DD4BF), width: 1.2),
+            // Action Buttons
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                // 1. Retry / Request Permission
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D9488),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _isRetrying ? null : _retryCamera,
+                  icon: _isRetrying
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Icon(isPermission ? Icons.lock_open_rounded : Icons.refresh_rounded, size: 16),
+                  label: Text(_isRetrying ? 'Подключение...' : (isPermission ? 'Разрешить доступ' : 'Повторить попытку')),
                 ),
-                elevation: 0,
-              ),
-              onPressed: _isRetrying ? null : _retryCamera,
-              icon: _isRetrying
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Icon(isPermission ? Icons.lock_open_rounded : Icons.refresh_rounded, size: 18),
-              label: Text(
-                _isRetrying ? 'Подключение камеры...' : (isPermission ? 'Разрешить доступ к камере' : 'Повторить попытку'),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              ),
+
+                // 2. Pick photo from gallery
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E293B),
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFF2DD4BF), width: 1.2),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _pickImageFromGallery,
+                  icon: const Icon(Icons.photo_library_outlined, size: 16, color: Color(0xFF2DD4BF)),
+                  label: const Text('Выбрать фото'),
+                ),
+              ],
             ),
+
             const SizedBox(height: 20),
             const Divider(color: Colors.white12, height: 1),
             const SizedBox(height: 14),
@@ -393,66 +646,66 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
                 color: Colors.white54,
               ),
             ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
-          // Manual code entry
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _manualCodeController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: '4601234567890',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.1),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white24),
+            // Manual code entry
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _manualCodeController,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: '4601234567890',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.1),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF2DD4BF)),
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF2DD4BF)),
-                    ),
+                    onSubmitted: _submitManualCode,
                   ),
-                  onSubmitted: _submitManualCode,
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => _submitManualCode(),
+                  child: const Text('Применить', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-                onPressed: () => _submitManualCode(),
-                child: const Text('Применить', style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-          // Quick preset buttons
-          Wrap(
-            spacing: 8,
-            children: [
-              ActionChip(
-                backgroundColor: Colors.white12,
-                label: const Text('Ибупрофен (4601234567890)', style: TextStyle(color: Colors.white, fontSize: 11)),
-                onPressed: () => _submitManualCode('4601234567890'),
-              ),
-              ActionChip(
-                backgroundColor: Colors.white12,
-                label: const Text('Амоксициллин (4607008123456)', style: TextStyle(color: Colors.white, fontSize: 11)),
-                onPressed: () => _submitManualCode('4607008123456'),
-              ),
-            ],
-          ),
-        ],
-      ),
+            // Quick preset buttons
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  backgroundColor: Colors.white12,
+                  label: const Text('Ибупрофен (4601234567890)', style: TextStyle(color: Colors.white, fontSize: 11)),
+                  onPressed: () => _submitManualCode('4601234567890'),
+                ),
+                ActionChip(
+                  backgroundColor: Colors.white12,
+                  label: const Text('Амоксициллин (4607008123456)', style: TextStyle(color: Colors.white, fontSize: 11)),
+                  onPressed: () => _submitManualCode('4607008123456'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 
 enum OutOfStockDialogResult {
   cancel,
@@ -46,14 +45,16 @@ class OutOfStockConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return AlertDialog(
-      backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      title: const Row(
+      title: Row(
         children: [
           Expanded(
             child: Text(
@@ -61,7 +62,7 @@ class OutOfStockConfirmationDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -72,11 +73,11 @@ class OutOfStockConfirmationDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'В аптечке недостаточно таблеток для списания остатка. Вы приняли лекарство (поделились / из другой упаковки)?',
               style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
                 height: 1.4,
               ),
             ),
@@ -85,21 +86,21 @@ class OutOfStockConfirmationDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceSubtle,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: colorScheme.outlineVariant),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.medication_rounded, size: 16, color: AppColors.primary),
+                    Icon(Icons.medication_rounded, size: 16, color: colorScheme.primary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         medicineName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -121,12 +122,15 @@ class OutOfStockConfirmationDialog extends StatelessWidget {
                 onCancel?.call();
                 Navigator.of(context).pop(OutOfStockDialogResult.cancel);
               },
-              child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text(
+                'Отмена',
+                style: TextStyle(color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7)),
+              ),
             ),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
+                foregroundColor: colorScheme.primary,
+                side: BorderSide(color: colorScheme.primary),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () {
@@ -137,8 +141,8 @@ class OutOfStockConfirmationDialog extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () {

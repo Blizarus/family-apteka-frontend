@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../models/medicine.dart';
 import '../models/medicine_box.dart';
 import '../providers/app_state.dart';
-import '../theme/app_theme.dart';
 import 'toast_helper.dart';
 
 class MoveMedicineSheet extends StatefulWidget {
@@ -59,6 +58,9 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final currentBox = state.boxes.cast<MedicineBox?>().firstWhere(
           (b) => b?.id == widget.medicine.boxId,
           orElse: () => null,
@@ -69,9 +71,9 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -84,7 +86,7 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 8),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -98,12 +100,12 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.drive_file_move_outlined,
-                    color: AppColors.primary,
+                    color: colorScheme.primary,
                     size: 20,
                   ),
                 ),
@@ -112,20 +114,20 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Перемещение препарата',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Препарат: ${widget.medicine.name}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -136,34 +138,34 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  icon: const Icon(Icons.close, color: AppColors.textMuted),
+                  icon: Icon(Icons.close, color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5)),
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: colorScheme.outlineVariant),
 
           // Current Box indicator
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
             child: Row(
               children: [
-                const Text(
+                Text(
                   'ТЕКУЩЕЕ ХРАНИЛИЩЕ: ',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 Text(
                   currentBox != null ? '${currentBox.icon} ${currentBox.name}' : 'Аптечка #${widget.medicine.boxId}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -171,15 +173,15 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
           ),
 
           // Title for target boxes
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 10, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
             child: Text(
               'ВЫБЕРИТЕ ЦЕЛЕВУЮ АПТЕЧКУ',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
-                color: AppColors.textMuted,
+                color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -190,9 +192,9 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                 ? Container(
                     padding: const EdgeInsets.all(24),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'Нет других доступных аптечек для перемещения',
-                      style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 13, color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5)),
                     ),
                   )
                 : ListView.separated(
@@ -212,10 +214,10 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primarySurface : Colors.transparent,
+                            color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isSelected ? AppColors.primaryBorder : AppColors.border,
+                              color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -225,8 +227,9 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                                 width: 38,
                                 height: 38,
                                 decoration: BoxDecoration(
-                                  color: AppColors.surfaceSubtle,
+                                  color: colorScheme.surface,
                                   borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: colorScheme.outlineVariant),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(box.icon, style: const TextStyle(fontSize: 20)),
@@ -241,10 +244,10 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                                         Flexible(
                                           child: Text(
                                             box.name,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
+                                              color: colorScheme.onSurface,
                                             ),
                                           ),
                                         ),
@@ -252,15 +255,16 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: AppColors.surfaceSubtle,
+                                            color: colorScheme.surface,
                                             borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: colorScheme.outlineVariant),
                                           ),
                                           child: Text(
                                             _formatBoxType(box.boxType),
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w600,
-                                              color: AppColors.textSecondary,
+                                              color: theme.textTheme.bodyMedium?.color ?? colorScheme.onSurface.withValues(alpha: 0.7),
                                             ),
                                           ),
                                         ),
@@ -270,9 +274,9 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                                       const SizedBox(height: 2),
                                       Text(
                                         box.location,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11,
-                                          color: AppColors.textMuted,
+                                          color: theme.textTheme.bodySmall?.color ?? colorScheme.onSurface.withValues(alpha: 0.5),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -283,7 +287,7 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                               ),
                               Icon(
                                 isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                                color: isSelected ? AppColors.primary : AppColors.textMuted,
+                                color: isSelected ? colorScheme.primary : (theme.textTheme.bodySmall?.color ?? colorScheme.outline),
                                 size: 20,
                               ),
                             ],
@@ -299,8 +303,8 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -334,10 +338,10 @@ class _MoveMedicineSheetState extends State<MoveMedicineSheet> {
                       }
                     },
               child: _isSubmitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2),
                     )
                   : const Text(
                       'Переместить препарат',
