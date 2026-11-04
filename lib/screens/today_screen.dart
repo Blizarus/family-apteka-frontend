@@ -11,6 +11,10 @@ import '../widgets/toast_helper.dart';
 import '../widgets/notification_center_sheet.dart';
 import '../widgets/out_of_stock_dialog.dart';
 import '../services/api_service.dart';
+import '../services/api_error_handler.dart';
+import '../utils/medication_safety_helper.dart';
+import '../widgets/cds_badge.dart';
+import '../widgets/course_management_sheet.dart';
 import 'history_report_screen.dart';
 
 class TodayScreen extends StatelessWidget {
@@ -619,6 +623,12 @@ class TodayScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+    final cdsAlert = MedicationSafetyHelper.evaluateSafety(
+      log: item,
+      allLogs: state.intakes,
+      medicines: state.medicines,
+      profile: profile,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -669,6 +679,12 @@ class TodayScreen extends StatelessWidget {
                 ),
             ],
           ),
+
+          // CDS Warning Badge (Микро-спринт 11)
+          if (cdsAlert != null) ...[
+            const SizedBox(height: 8),
+            CdsBadge(alert: cdsAlert),
+          ],
           const SizedBox(height: 10),
 
           // Medicine Name + pill emoji
@@ -715,17 +731,36 @@ class TodayScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    'Курс: ${item.course}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: textSecondary,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () => CourseManagementSheet.show(
+                      context,
+                      courseId: item.intakeCourseId ?? item.id,
+                      courseTitle: item.course,
+                      currentLog: item,
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.tune_rounded, size: 12, color: cs.primary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Курс: ${item.course}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: cs.primary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Text(
-                  'Остаток спишется: -${item.dosageQuantity > 0 ? item.dosageQuantity : 1} ${item.unit.isNotEmpty ? item.unit : "табл."}',
+                  'К списанию: ${item.formattedDosage}',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -848,6 +883,12 @@ class TodayScreen extends StatelessWidget {
     final cs = theme.colorScheme;
     final textMuted = theme.textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
     final textSecondary = theme.textTheme.bodyMedium?.color ?? cs.onSurface.withValues(alpha: 0.75);
+    final cdsAlert = MedicationSafetyHelper.evaluateSafety(
+      log: item,
+      allLogs: state.intakes,
+      medicines: state.medicines,
+      profile: profile,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -858,6 +899,7 @@ class TodayScreen extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -927,7 +969,41 @@ class TodayScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+
+          // CDS Warning Badge (Микро-спринт 11)
+          if (cdsAlert != null) ...[
+            const SizedBox(height: 8),
+            CdsBadge(alert: cdsAlert),
+          ],
+          const SizedBox(height: 6),
+
+          // Course and formatted dosage row
+          InkWell(
+            borderRadius: BorderRadius.circular(4),
+            onTap: () => CourseManagementSheet.show(
+              context,
+              courseId: item.intakeCourseId ?? item.id,
+              courseTitle: item.course,
+              currentLog: item,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.tune_rounded, size: 11, color: cs.primary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      'Курс: ${item.course} • ${item.formattedDosage}',
+                      style: TextStyle(fontSize: 10, color: cs.primary, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // Action row: 🟢 Принять, 🟡 +15м, ⚪ Пропустить
           Row(
@@ -1076,20 +1152,26 @@ class TodayScreen extends StatelessWidget {
           }
         } catch (err) {
           if (context.mounted) {
+            final friendly = ApiErrorHandler.format(err, defaultMessage: 'Не удалось подтвердить списание остатка');
             ToastHelper.show(
               context,
-              message: 'Ошибка приёма: $err',
+              message: friendly,
               icon: '⚠️',
+              isError: true,
+              onRetry: () => _handleTakeIntake(context, state, item),
             );
           }
         }
       }
     } catch (e) {
       if (!context.mounted) return;
+      final friendly = ApiErrorHandler.format(e, defaultMessage: 'Не удалось зафиксировать приём: проверьте подключение к сети');
       ToastHelper.show(
         context,
-        message: 'Ошибка приёма: $e',
+        message: friendly,
         icon: '⚠️',
+        isError: true,
+        onRetry: () => _handleTakeIntake(context, state, item),
       );
     }
   }
@@ -1129,10 +1211,13 @@ class TodayScreen extends StatelessWidget {
         }
       } catch (e) {
         if (context.mounted) {
+          final friendly = ApiErrorHandler.format(e, defaultMessage: 'Не удалось отменить приём: проверьте подключение к сети');
           ToastHelper.show(
             context,
-            message: 'Ошибка отмены приёма: $e',
+            message: friendly,
             icon: '⚠️',
+            isError: true,
+            onRetry: () => _handleUndoIntake(context, state, item),
           );
         }
       }

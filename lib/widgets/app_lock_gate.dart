@@ -22,14 +22,46 @@ class AppLockGate extends StatefulWidget {
   State<AppLockGate> createState() => _AppLockGateState();
 }
 
-class _AppLockGateState extends State<AppLockGate> {
+class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   bool _isChecking = true;
   bool _isUnlocked = false;
+  DateTime? _pausedAt;
+  static const Duration _lockTimeout = Duration(minutes: 1);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkBiometricLock();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _pausedAt = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_pausedAt != null) {
+        final elapsed = DateTime.now().difference(_pausedAt!);
+        _pausedAt = null;
+        if (elapsed >= _lockTimeout) {
+          final apiService = context.read<ApiService>();
+          apiService.storageService.isBiometricEnabled().then((enabled) {
+            if (enabled && mounted) {
+              setState(() {
+                _isUnlocked = false;
+              });
+              _authenticate();
+            }
+          });
+        }
+      }
+    }
   }
 
   Future<void> _checkBiometricLock() async {

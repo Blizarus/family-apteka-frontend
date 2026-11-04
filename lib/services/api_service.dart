@@ -80,7 +80,7 @@ class ApiService {
     if (kReleaseMode) {
       isMockMode = false;
     }
-    biometricService =
+    this.biometricService =
         biometricService ?? BiometricService(storageService: storageService, isMockMode: isMockMode);
     _initCustomUrl();
     this.dio.interceptors.add(
@@ -1417,7 +1417,7 @@ class ApiService {
         headers['X-Idempotency-Key'] = idempotencyKey;
       }
       final response = await dio.post(
-        '/intake-logs//take',
+        '/intake-logs/$id/take',
         data: postData,
         options: Options(headers: headers),
       );
@@ -1500,6 +1500,16 @@ class ApiService {
     }
 
     final response = await dio.post('/intake-logs/$intakeId/snooze', data: {'minutes': minutes});
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  Future<bool> resetSnooze(int intakeId) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return true;
+    }
+
+    final response = await dio.post('/intake-logs/$intakeId/reset-snooze');
     return response.statusCode == 200 || response.statusCode == 201;
   }
 
@@ -1654,6 +1664,33 @@ class ApiService {
 
     final response = await dio.post('/intake-courses', data: data);
     return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateIntakeCourse(int id, Map<String, dynamic> data) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return {'message': 'Курс обновлен (мок)', 'data': data};
+    }
+    final response = await dio.put('/intake-courses/$id', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> extendIntakeCourse(int id, int days) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return {'message': 'Курс продлен (мок)', 'logs_created': days};
+    }
+    final response = await dio.post('/intake-courses/$id/extend', data: {'days': days});
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<bool> deleteIntakeCourse(int id) async {
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return true;
+    }
+    final response = await dio.delete('/intake-courses/$id');
+    return response.statusCode == 200 || response.statusCode == 204;
   }
 
   // ==========================================

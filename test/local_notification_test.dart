@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/app_state.dart';
 import 'package:frontend/services/api_service.dart';
 import 'package:frontend/services/local_notification_service.dart';
 import 'package:frontend/services/storage_service.dart';
+import 'package:frontend/widgets/notification_permission_dialog.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +14,7 @@ void main() {
     late LocalNotificationService service;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       LocalNotificationService.resetInstanceForTesting();
       service = LocalNotificationService(mock: true);
     });
@@ -56,6 +60,44 @@ void main() {
       final undoRes = await appState.undoIntake(firstId);
       expect(undoRes, isNotNull);
       expect(appState.intakes.firstWhere((i) => i.id == firstId).isTaken, isFalse);
+    });
+
+    testWidgets('5. NotificationPermissionDialog displays rationale and handles confirmation', (tester) async {
+      final storage = await StorageService.init();
+      await storage.setNotificationRationaleShown(false);
+
+      bool? granted;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () async {
+                  granted = await NotificationPermissionDialog.showIfNeeded(
+                    ctx,
+                    storageService: storage,
+                    notificationService: service,
+                  );
+                },
+                child: const Text('Ask Permission'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Ask Permission'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Напоминания о лекарствах'), findsOneWidget);
+      expect(find.text('Канал «Будильник»'), findsOneWidget);
+      expect(find.text('Действия в шторке'), findsOneWidget);
+
+      await tester.tap(find.text('Разрешить'));
+      await tester.pumpAndSettle();
+
+      expect(granted, isTrue);
+      expect(await storage.hasNotificationRationaleShown(), isTrue);
     });
   });
 }

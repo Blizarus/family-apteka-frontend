@@ -506,5 +506,36 @@ void main() {
       expect(find.text('Secured Content'), findsOneWidget);
       expect(find.byKey(const Key('app_lock_unlock_button')), findsNothing);
     });
+
+    testWidgets('AppLockGate re-locks when returning from background after timeout', (tester) async {
+      SharedPreferences.setMockInitialValues({'biometric_auth_enabled': true});
+      final storage = await StorageService.init();
+      final apiService = ApiService(isMockMode: true, storageService: storage);
+      final bioService = BiometricService(isMockMode: true, mockAuthResult: true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Provider<ApiService>.value(
+            value: apiService,
+            child: AppLockGate(
+              biometricService: bioService,
+              child: const Text('Secured Content'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Secured Content'), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Secured Content'), findsOneWidget);
+    });
   });
 }

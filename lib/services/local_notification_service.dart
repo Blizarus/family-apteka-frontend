@@ -65,10 +65,27 @@ class LocalNotificationService {
         settings: initSettings,
         onDidReceiveNotificationResponse: (details) {
           if (kDebugMode) {
-            debugPrint('Нажатие на уведомление: ${details.payload}');
+            debugPrint('Нажатие на уведомление: ${details.payload}, actionId: ${details.actionId}');
           }
         },
       );
+
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidImplementation != null) {
+        const alarmChannel = AndroidNotificationChannel(
+          'medication_alarm_channel',
+          'Будильник приёма лекарств',
+          description: 'Громкие напоминания о приёме жизненно важных медикаментов',
+          importance: Importance.max,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          enableVibration: true,
+          playSound: true,
+          showBadge: true,
+        );
+        await androidImplementation.createNotificationChannel(alarmChannel);
+      }
 
       isInitialized = success ?? false;
       return isInitialized;
@@ -91,6 +108,9 @@ class LocalNotificationService {
 
       if (androidImplementation != null) {
         final granted = await androidImplementation.requestNotificationsPermission();
+        try {
+          await androidImplementation.requestExactAlarmsPermission();
+        } catch (_) {}
         return granted ?? false;
       }
       return true;
@@ -120,13 +140,29 @@ class LocalNotificationService {
       }
 
       const androidDetails = AndroidNotificationDetails(
-        'intake_reminders_channel',
-        'Напоминания о приёме лекарств',
-        channelDescription: 'Своевременные оповещения о необходимости принять медикаменты',
+        'medication_alarm_channel',
+        'Будильник приёма лекарств',
+        channelDescription: 'Громкие напоминания о приёме жизненно важных медикаментов',
         importance: Importance.max,
-        priority: Priority.high,
+        priority: Priority.max,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        enableVibration: true,
         ticker: 'Пора принять лекарство',
         icon: '@mipmap/ic_launcher',
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction(
+            'take_action',
+            'Принял',
+            showsUserInterface: true,
+            cancelNotification: true,
+          ),
+          AndroidNotificationAction(
+            'snooze_action',
+            'Отложить на 15 мин',
+            showsUserInterface: true,
+            cancelNotification: true,
+          ),
+        ],
       );
 
       const iosDetails = DarwinNotificationDetails(

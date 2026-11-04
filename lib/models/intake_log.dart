@@ -1,4 +1,5 @@
 import '../utils/parse_helper.dart';
+import '../utils/dosage_formatter.dart';
 
 class IntakeLog {
   final int id;
@@ -14,6 +15,7 @@ class IntakeLog {
   final bool isCurrent;
   final double? remaining;
   final int? medicineId;
+  final int? intakeCourseId;
   final DateTime? scheduledTime;
   final double? quantityTaken;
   final double dosageQuantity;
@@ -32,6 +34,7 @@ class IntakeLog {
     this.isCurrent = false,
     this.remaining,
     this.medicineId,
+    this.intakeCourseId,
     this.scheduledTime,
     this.quantityTaken,
     this.dosageQuantity = 1.0,
@@ -63,6 +66,12 @@ class IntakeLog {
       return match.group(1)!;
     }
     return form.isNotEmpty ? form.toLowerCase() : 'табл.';
+  }
+
+  String get formattedDosage {
+    final qty = dosageQuantity > 0 ? dosageQuantity : 1.0;
+    final f = form.isNotEmpty ? form : (unit.isNotEmpty ? unit : 'таблетка');
+    return DosageFormatter.format(qty, f);
   }
 
   factory IntakeLog.fromJson(Map<String, dynamic> json, {DateTime? currentTime}) {
@@ -147,6 +156,10 @@ class IntakeLog {
       json['medicine_id'] ?? medicine?['id'] ?? intakeCourse?['medicine_id'],
     );
 
+    final intakeCourseId = ParseHelper.parseNullableInt(
+      json['intake_course_id'] ?? intakeCourse?['id'],
+    );
+
     final quantityTaken = ParseHelper.parseNullableDouble(
       json['quantity_taken'] ?? json['quantityTaken'],
     );
@@ -170,6 +183,7 @@ class IntakeLog {
       isCurrent: isCurrent,
       remaining: remaining,
       medicineId: medicineId,
+      intakeCourseId: intakeCourseId,
       scheduledTime: parsedDate,
       quantityTaken: quantityTaken,
       dosageQuantity: dosageQuantity,
@@ -192,6 +206,7 @@ class IntakeLog {
       'is_current': isCurrent,
       'remaining': remaining,
       'medicine_id': medicineId,
+      'intake_course_id': intakeCourseId,
       'scheduled_time': scheduledTime?.toIso8601String(),
       'quantity_taken': quantityTaken,
       'dosage_quantity': dosageQuantity,
@@ -212,6 +227,7 @@ class IntakeLog {
     bool? isCurrent,
     double? remaining,
     int? medicineId,
+    int? intakeCourseId,
     DateTime? scheduledTime,
     double? quantityTaken,
     double? dosageQuantity,
@@ -230,6 +246,7 @@ class IntakeLog {
       isCurrent: isCurrent ?? this.isCurrent,
       remaining: remaining ?? this.remaining,
       medicineId: medicineId ?? this.medicineId,
+      intakeCourseId: intakeCourseId ?? this.intakeCourseId,
       scheduledTime: scheduledTime ?? this.scheduledTime,
       quantityTaken: quantityTaken ?? this.quantityTaken,
       dosageQuantity: dosageQuantity ?? this.dosageQuantity,

@@ -38,6 +38,8 @@ class BiometricService {
     mockAvailable = available;
   }
 
+  Future<bool> get canCheckBiometrics => isBiometricAvailable();
+
   /// Checks whether biometric authentication is supported and enrolled on the device.
   /// Gracefully returns false if no biometric hardware or enrolled prints exist.
   Future<bool> isBiometricAvailable() async {

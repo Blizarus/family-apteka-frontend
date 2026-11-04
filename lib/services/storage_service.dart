@@ -13,6 +13,7 @@ class StorageService {
   static const String _keyOnboardingCompleted = 'onboarding_completed';
   static const String _keyBiometricEnabled = 'biometric_auth_enabled';
   static const String _keyPushEnabled = 'push_notifications_enabled';
+  static const String _keyNotificationRationaleShown = 'notification_rationale_shown';
 
 
   SharedPreferences? _prefs;
@@ -250,5 +251,23 @@ class StorageService {
       return prefs.getBool(_keyPushEnabled) ?? false;
     }
     return (_inMemoryFallback[_keyPushEnabled] as bool?) ?? false;
+  }
+
+  // Notification Permission Rationale
+  Future<void> setNotificationRationaleShown(bool shown) async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.setBool(_keyNotificationRationaleShown, shown);
+    } else {
+      _inMemoryFallback[_keyNotificationRationaleShown] = shown;
+    }
+  }
+
+  Future<bool> hasNotificationRationaleShown() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getBool(_keyNotificationRationaleShown) ?? false;
+    }
+    return (_inMemoryFallback[_keyNotificationRationaleShown] as bool?) ?? false;
   }
 }

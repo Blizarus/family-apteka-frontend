@@ -16,6 +16,7 @@ class ToastHelper {
     String icon = '✓',
     bool isError = false,
     Duration duration = const Duration(seconds: 3),
+    VoidCallback? onRetry,
   }) {
     ScaffoldMessenger.of(context).clearSnackBars();
 
@@ -70,6 +71,30 @@ class ToastHelper {
                   ),
                 ),
               ),
+              if (onRetry != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundColor: iconColor.withValues(alpha: 0.15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    onRetry();
+                  },
+                  child: Text(
+                    'Повторить',
+                    style: TextStyle(
+                      color: iconColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

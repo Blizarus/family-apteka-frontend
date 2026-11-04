@@ -628,6 +628,14 @@ class AppState extends ChangeNotifier {
     return success;
   }
 
+  Future<bool> resetSnoozeIntake(int intakeId) async {
+    final success = await apiService.resetSnooze(intakeId);
+    if (success) {
+      await refreshData();
+    }
+    return success;
+  }
+
   Future<bool> toggleIntake(int intakeId) async {
     final item = _intakes.firstWhere((i) => i.id == intakeId);
     final nextStatus = !item.isTaken;
@@ -644,6 +652,21 @@ class AppState extends ChangeNotifier {
 
   Future<void> createIntakeCourse(Map<String, dynamic> payload) async {
     await apiService.createIntakeCourse(payload);
+    await refreshData();
+  }
+
+  Future<void> updateIntakeCourse(int id, Map<String, dynamic> payload) async {
+    await apiService.updateIntakeCourse(id, payload);
+    await refreshData();
+  }
+
+  Future<void> extendIntakeCourse(int id, int days) async {
+    await apiService.extendIntakeCourse(id, days);
+    await refreshData();
+  }
+
+  Future<void> deleteIntakeCourse(int id) async {
+    await apiService.deleteIntakeCourse(id);
     await refreshData();
   }
 

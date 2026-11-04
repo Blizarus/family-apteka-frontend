@@ -12,10 +12,12 @@ import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool? showDemoCredentials;
+  final bool promptBiometricsInMock;
 
   const LoginScreen({
     super.key,
     this.showDemoCredentials,
+    this.promptBiometricsInMock = false,
   });
 
   @override
@@ -79,6 +81,60 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Reload app state with fresh data from backend
       await context.read<AppState>().loadInitialData();
+
+      if (!mounted) return;
+
+      // Предложение включить биометрию / PIN-код после успешного первого входа по паролю (Микро-спринт 11)
+      final canCheckBio = await apiService.biometricService.canCheckBiometrics;
+      final isBioEnabled = await apiService.storageService.isBiometricEnabled();
+      if ((!apiService.isMockMode || widget.promptBiometricsInMock) &&
+          canCheckBio &&
+          !isBioEnabled &&
+          mounted) {
+        final cs = Theme.of(context).colorScheme;
+        final enableBio = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: cs.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: cs.outlineVariant),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.fingerprint_rounded, size: 28, color: cs.primary),
+                const SizedBox(width: 10),
+                Text('Быстрый вход', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold, fontSize: 17)),
+              ],
+            ),
+            content: Text(
+              'Включить быстрый вход по отпечатку пальца, Face ID или системному PIN-коду? Это ускорит авторизацию и защитит персональные медицинские данные.',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text('Не сейчас', style: TextStyle(color: cs.onSurfaceVariant)),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: cs.primary, foregroundColor: cs.onPrimary),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Включить'),
+              ),
+            ],
+          ),
+        );
+
+        if (enableBio == true && mounted) {
+          final authOk = await apiService.biometricService.authenticate(
+            localizedReason: 'Подтвердите личность для включения быстрого входа',
+            biometricOnly: false,
+          );
+          if (authOk) {
+            await apiService.storageService.setBiometricEnabled(true);
+          }
+        }
+      }
 
       if (!mounted) return;
 
