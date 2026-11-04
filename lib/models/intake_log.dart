@@ -19,6 +19,8 @@ class IntakeLog {
   final DateTime? scheduledTime;
   final double? quantityTaken;
   final double dosageQuantity;
+  final String? safetyStatus;
+  final List<String> safetyWarnings;
 
   const IntakeLog({
     required this.id,
@@ -38,6 +40,8 @@ class IntakeLog {
     this.scheduledTime,
     this.quantityTaken,
     this.dosageQuantity = 1.0,
+    this.safetyStatus,
+    this.safetyWarnings = const [],
   });
 
   bool get isTaken => status == 'taken' || taken;
@@ -169,6 +173,18 @@ class IntakeLog {
       parseDosageFromRule(rule),
     );
 
+    final safetyStatus = json['safety_status'] as String? ??
+        json['safetyStatus'] as String? ??
+        intakeCourse?['safety_status'] as String?;
+
+    final rawWarnings = json['safety_warnings'] ??
+        json['safetyWarnings'] ??
+        json['warnings'] ??
+        intakeCourse?['safety_warnings'];
+    final safetyWarnings = rawWarnings is List
+        ? rawWarnings.map((e) => e.toString()).toList()
+        : const <String>[];
+
     return IntakeLog(
       id: ParseHelper.parseInt(json['id']),
       profileId: profileId,
@@ -187,6 +203,8 @@ class IntakeLog {
       scheduledTime: parsedDate,
       quantityTaken: quantityTaken,
       dosageQuantity: dosageQuantity,
+      safetyStatus: safetyStatus,
+      safetyWarnings: safetyWarnings,
     );
   }
 
@@ -210,6 +228,8 @@ class IntakeLog {
       'scheduled_time': scheduledTime?.toIso8601String(),
       'quantity_taken': quantityTaken,
       'dosage_quantity': dosageQuantity,
+      'safety_status': safetyStatus,
+      'safety_warnings': safetyWarnings,
     };
   }
 
@@ -231,6 +251,8 @@ class IntakeLog {
     DateTime? scheduledTime,
     double? quantityTaken,
     double? dosageQuantity,
+    String? safetyStatus,
+    List<String>? safetyWarnings,
   }) {
     return IntakeLog(
       id: id ?? this.id,
@@ -250,6 +272,8 @@ class IntakeLog {
       scheduledTime: scheduledTime ?? this.scheduledTime,
       quantityTaken: quantityTaken ?? this.quantityTaken,
       dosageQuantity: dosageQuantity ?? this.dosageQuantity,
+      safetyStatus: safetyStatus ?? this.safetyStatus,
+      safetyWarnings: safetyWarnings ?? this.safetyWarnings,
     );
   }
 }

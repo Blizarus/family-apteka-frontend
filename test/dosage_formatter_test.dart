@@ -5,6 +5,12 @@ void main() {
   group('DosageFormatter Russian pluralization tests', () {
     test('1 таблетка (именительный падеж, ед.ч.)', () {
       expect(DosageFormatter.format(1, 'таблетка'), '1 таблетка');
+      expect(DosageFormatter.format(1.0, 'таблетка'), '1 таблетка');
+      expect(DosageFormatter.format(1.0, 'таблетки'), '1 таблетка');
+      expect(DosageFormatter.format(1.0, 'pill'), '1 таблетка');
+      expect(DosageFormatter.format(1.0, 'капсула'), '1 капсула');
+      expect(DosageFormatter.format(1.0, 'капсулы'), '1 капсула');
+      expect(DosageFormatter.format(1.0, 'capsule'), '1 капсула');
       expect(DosageFormatter.format(21, 'таблетка'), '21 таблетка');
       expect(DosageFormatter.format(101, 'таблетка'), '101 таблетка');
     });

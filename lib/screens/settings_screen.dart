@@ -495,6 +495,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: state.repeatOnMissed,
                 onChanged: (val) => state.setRepeatOnMissed(val),
               ),
+              Divider(height: 1, indent: 16, color: cs.outlineVariant),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Режим сигнала напоминаний',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Громкость и приоритет оповещения на смартфоне (DEF-30)',
+                      style: TextStyle(fontSize: 11, color: textMuted),
+                    ),
+                    const SizedBox(height: 10),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'silent', label: Text('Тихий')),
+                        ButtonSegment(value: 'normal', label: Text('Обычный')),
+                        ButtonSegment(value: 'alarm', label: Text('Будильник')),
+                      ],
+                      selected: {state.notificationSoundMode},
+                      onSelectionChanged: (newSet) {
+                        if (newSet.isNotEmpty) {
+                          state.setNotificationSoundMode(newSet.first);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ]),
 
             const SizedBox(height: 20),

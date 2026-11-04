@@ -183,6 +183,29 @@ void main() {
       expect(log.dosageQuantity, 1.5);
       expect(log.unit, contains('таб'));
     });
+
+    test('IntakeLog.fromJson parses safety_status and safety_warnings (DEF-33)', () {
+      final json = {
+        'id': 105,
+        'profile_id': 1,
+        'medicine_id': 4,
+        'medicineName': 'Варфарин',
+        'form': 'таблетки',
+        'time': '18:00',
+        'rule': '1 таб.',
+        'course': 'Курс антикоагулянта',
+        'safety_status': 'conflict',
+        'safety_warnings': [
+          'Критический конфликт DDI: совместный приём с НПВП повышает риск кровотечений',
+        ],
+      };
+
+      final log = IntakeLog.fromJson(json);
+
+      expect(log.safetyStatus, 'conflict');
+      expect(log.safetyWarnings.length, 1);
+      expect(log.safetyWarnings.first, contains('Критический конфликт DDI'));
+    });
   });
 
   group('ShoppingItem & AdherenceReport Robust Parsing Tests', () {

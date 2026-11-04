@@ -1513,6 +1513,9 @@ class ApiService {
     return response.statusCode == 200 || response.statusCode == 201;
   }
 
+  /// Алиас для отмены переноса приёма (DEF-32)
+  Future<bool> resetSnoozeIntakeLog(int id) => resetSnooze(id);
+
   Future<Map<String, dynamic>> undoIntakeLog(int id) async {
     if (isMockMode) {
       await Future.delayed(const Duration(milliseconds: 100));

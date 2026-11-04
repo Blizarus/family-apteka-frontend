@@ -14,6 +14,7 @@ class StorageService {
   static const String _keyBiometricEnabled = 'biometric_auth_enabled';
   static const String _keyPushEnabled = 'push_notifications_enabled';
   static const String _keyNotificationRationaleShown = 'notification_rationale_shown';
+  static const String _keyNotificationSoundMode = 'notification_sound_mode';
 
 
   SharedPreferences? _prefs;
@@ -269,5 +270,23 @@ class StorageService {
       return prefs.getBool(_keyNotificationRationaleShown) ?? false;
     }
     return (_inMemoryFallback[_keyNotificationRationaleShown] as bool?) ?? false;
+  }
+
+  // Notification Sound Mode (silent / normal / alarm) (DEF-30)
+  Future<void> setNotificationSoundMode(String mode) async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.setString(_keyNotificationSoundMode, mode);
+    } else {
+      _inMemoryFallback[_keyNotificationSoundMode] = mode;
+    }
+  }
+
+  Future<String> getNotificationSoundMode() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getString(_keyNotificationSoundMode) ?? 'alarm';
+    }
+    return (_inMemoryFallback[_keyNotificationSoundMode] as String?) ?? 'alarm';
   }
 }

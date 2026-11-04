@@ -22,16 +22,16 @@ class DosageFormatter {
   /// Нормализует исходную строку формы/единицы измерения
   static String _canonicalForm(String rawForm) {
     final lower = rawForm.trim().toLowerCase().replaceAll('.', '');
-    if (lower.startsWith('табл') || lower.startsWith('таб')) return 'таблетка';
-    if (lower.startsWith('капс')) return 'капсула';
-    if (lower.startsWith('доз')) return 'доза';
-    if (lower.startsWith('кап')) return 'капля';
-    if (lower.startsWith('амп')) return 'ампула';
+    if (lower == 'pill' || lower == 'pills' || lower.startsWith('табл') || lower.startsWith('таб')) return 'таблетка';
+    if (lower == 'capsule' || lower == 'capsules' || lower.startsWith('капс')) return 'капсула';
+    if (lower == 'spray' || lower == 'sprays' || lower.startsWith('доз')) return 'доза';
+    if (lower == 'drop' || lower == 'drops' || lower.startsWith('кап')) return 'капля';
+    if (lower == 'ampoule' || lower == 'ampoules' || lower.startsWith('амп')) return 'ампула';
     if (lower.startsWith('пакет')) return 'пакетик';
     if (lower.startsWith('саше')) return 'саше';
-    if (lower == 'мл') return 'мл';
-    if (lower == 'мг') return 'мг';
-    if (lower.startsWith('шт')) return 'шт';
+    if (lower == 'мл' || lower == 'ml') return 'мл';
+    if (lower == 'мг' || lower == 'mg') return 'мг';
+    if (lower == 'unit' || lower == 'units' || lower.startsWith('шт')) return 'шт';
     return lower;
   }
 

@@ -41,6 +41,47 @@ class MedicationSafetyHelper {
     required List<Medicine> medicines,
     Profile? profile,
   }) {
+    // 0. Серверные результаты клинического аудита CDS (DEF-33)
+    if (log.safetyStatus != null || log.safetyWarnings.isNotEmpty) {
+      final s = (log.safetyStatus ?? '').toLowerCase();
+      if (s == 'conflict' || s == 'critical' || s == 'contraindicated') {
+        return CdsAlert(
+          level: CdsAlertLevel.critical,
+          title: 'Критическое предостережение (CDS)',
+          message: log.safetyWarnings.isNotEmpty
+              ? log.safetyWarnings.first
+              : 'Обнаружен клинический конфликт безопасности приёма',
+          recommendation: 'Немедленно проконсультируйтесь с лечащим врачом для коррекции схемы лечения.',
+          details: log.safetyWarnings,
+        );
+      }
+      if (s == 'warning') {
+        return CdsAlert(
+          level: CdsAlertLevel.warning,
+          title: 'Клиническое предостережение (CDS)',
+          message: log.safetyWarnings.isNotEmpty
+              ? log.safetyWarnings.first
+              : 'Умеренное межлекарственное взаимодействие',
+          recommendation: 'Контролируйте самочувствие и соблюдайте интервал между приёмами.',
+          details: log.safetyWarnings,
+        );
+      }
+      if (s == 'unverifiable') {
+        return CdsAlert(
+          level: CdsAlertLevel.unverified,
+          title: 'Безопасность не подтверждена',
+          message: log.safetyWarnings.isNotEmpty
+              ? log.safetyWarnings.first
+              : 'Препарат не верифицирован по эталонному справочнику ГРЛС/МНН.',
+          recommendation: 'Рекомендуется привязать препарат к эталонному справочнику в карточке аптечки.',
+          details: log.safetyWarnings,
+        );
+      }
+      if (s == 'safe') {
+        return null;
+      }
+    }
+
     final medNameLower = log.medicineName.toLowerCase();
 
     // 1. Проверка на препарат ручного ввода (без привязки к справочнику ГРЛС / МНН)

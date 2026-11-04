@@ -1,13 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../services/api_service.dart';
+import '../widgets/notification_permission_dialog.dart';
 import 'today_screen.dart';
 import 'medicine_box_screen.dart';
 import 'notes_screen.dart';
 import 'family_screen.dart';
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final apiService = context.read<ApiService>();
+        if (!apiService.isMockMode) {
+          NotificationPermissionDialog.showIfNeeded(
+            context,
+            storageService: apiService.storageService,
+          );
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

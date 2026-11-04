@@ -73,6 +73,7 @@ class AppState extends ChangeNotifier {
   bool _remindersEnabled = true;
   int _reminderOffsetMinutes = 15;
   bool _repeatOnMissed = true;
+  String _notificationSoundMode = 'alarm'; // 'silent', 'normal', 'alarm' (DEF-30)
 
   AppState({required this.apiService}) {
     loadInitialData();
@@ -120,6 +121,7 @@ class AppState extends ChangeNotifier {
   bool get remindersEnabled => _remindersEnabled;
   int get reminderOffsetMinutes => _reminderOffsetMinutes;
   bool get repeatOnMissed => _repeatOnMissed;
+  String get notificationSoundMode => _notificationSoundMode;
 
   void updateDefaultTime(String type, TimeOfDay time) {
     switch (type) {
@@ -151,6 +153,12 @@ class AppState extends ChangeNotifier {
 
   void setRepeatOnMissed(bool value) {
     _repeatOnMissed = value;
+    notifyListeners();
+  }
+
+  void setNotificationSoundMode(String mode) {
+    _notificationSoundMode = mode;
+    apiService.storageService.setNotificationSoundMode(mode);
     notifyListeners();
   }
 
@@ -335,6 +343,7 @@ class AppState extends ChangeNotifier {
           _themeMode = ThemeMode.system;
         }
       }
+      _notificationSoundMode = await apiService.storageService.getNotificationSoundMode();
 
       if (_notes.isEmpty) {
         _notes = [
@@ -614,23 +623,29 @@ class AppState extends ChangeNotifier {
             title: 'Время принять лекарство',
             body: '${log.medicineName} • ${log.rule}',
             scheduledDate: scheduledTime,
+            soundMode: _notificationSoundMode,
           );
         }
       }
     }
   }
 
+  final Set<int> _snoozedIntakeIds = {};
+  bool isSnoozed(int intakeId) => _snoozedIntakeIds.contains(intakeId);
+
   Future<bool> snoozeIntake(int intakeId, {int minutes = 15}) async {
     final success = await apiService.snoozeIntake(intakeId, minutes: minutes);
     if (success) {
+      _snoozedIntakeIds.add(intakeId);
       await refreshData();
     }
     return success;
   }
 
   Future<bool> resetSnoozeIntake(int intakeId) async {
-    final success = await apiService.resetSnooze(intakeId);
+    final success = await apiService.resetSnoozeIntakeLog(intakeId);
     if (success) {
+      _snoozedIntakeIds.remove(intakeId);
       await refreshData();
     }
     return success;

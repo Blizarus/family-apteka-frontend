@@ -85,6 +85,29 @@ class LocalNotificationService {
           showBadge: true,
         );
         await androidImplementation.createNotificationChannel(alarmChannel);
+
+        const normalChannel = AndroidNotificationChannel(
+          'medication_normal_channel',
+          'Обычные напоминания',
+          description: 'Стандартные уведомления о приёме лекарств',
+          importance: Importance.high,
+          audioAttributesUsage: AudioAttributesUsage.notification,
+          enableVibration: true,
+          playSound: true,
+          showBadge: true,
+        );
+        await androidImplementation.createNotificationChannel(normalChannel);
+
+        const silentChannel = AndroidNotificationChannel(
+          'medication_silent_channel',
+          'Тихие напоминания',
+          description: 'Беззвучные уведомления о приёме лекарств',
+          importance: Importance.low,
+          enableVibration: false,
+          playSound: false,
+          showBadge: true,
+        );
+        await androidImplementation.createNotificationChannel(silentChannel);
       }
 
       isInitialized = success ?? false;
@@ -126,6 +149,7 @@ class LocalNotificationService {
     required String body,
     required DateTime scheduledDate,
     String? payload,
+    String soundMode = 'alarm',
   }) async {
     if (isMockMode) return;
 
@@ -139,17 +163,61 @@ class LocalNotificationService {
         return; // Прошедшие даты не планируем
       }
 
-      const androidDetails = AndroidNotificationDetails(
-        'medication_alarm_channel',
-        'Будильник приёма лекарств',
-        channelDescription: 'Громкие напоминания о приёме жизненно важных медикаментов',
-        importance: Importance.max,
-        priority: Priority.max,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
-        enableVibration: true,
+      String channelId;
+      String channelName;
+      String channelDesc;
+      Importance importance;
+      Priority priority;
+      AudioAttributesUsage audioUsage;
+      bool playSound;
+      bool enableVibration;
+
+      switch (soundMode) {
+        case 'silent':
+          channelId = 'medication_silent_channel';
+          channelName = 'Тихие напоминания';
+          channelDesc = 'Беззвучные уведомления о приёме лекарств';
+          importance = Importance.low;
+          priority = Priority.low;
+          audioUsage = AudioAttributesUsage.notification;
+          playSound = false;
+          enableVibration = false;
+          break;
+        case 'normal':
+          channelId = 'medication_normal_channel';
+          channelName = 'Обычные напоминания';
+          channelDesc = 'Стандартные уведомления о приёме лекарств';
+          importance = Importance.high;
+          priority = Priority.high;
+          audioUsage = AudioAttributesUsage.notification;
+          playSound = true;
+          enableVibration = true;
+          break;
+        case 'alarm':
+        default:
+          channelId = 'medication_alarm_channel';
+          channelName = 'Будильник приёма лекарств';
+          channelDesc = 'Громкие напоминания о приёме жизненно важных медикаментов';
+          importance = Importance.max;
+          priority = Priority.max;
+          audioUsage = AudioAttributesUsage.alarm;
+          playSound = true;
+          enableVibration = true;
+          break;
+      }
+
+      final androidDetails = AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: channelDesc,
+        importance: importance,
+        priority: priority,
+        audioAttributesUsage: audioUsage,
+        enableVibration: enableVibration,
+        playSound: playSound,
         ticker: 'Пора принять лекарство',
         icon: '@mipmap/ic_launcher',
-        actions: <AndroidNotificationAction>[
+        actions: const <AndroidNotificationAction>[
           AndroidNotificationAction(
             'take_action',
             'Принял',
@@ -171,7 +239,7 @@ class LocalNotificationService {
         presentSound: true,
       );
 
-      const details = NotificationDetails(
+      final details = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );

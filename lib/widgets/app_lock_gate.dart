@@ -43,8 +43,10 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
-      _pausedAt = DateTime.now();
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.inactive) {
+      _pausedAt ??= DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
       if (_pausedAt != null) {
         final elapsed = DateTime.now().difference(_pausedAt!);
@@ -80,6 +82,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
     if (mounted) {
       setState(() {
+        _isUnlocked = false;
         _isChecking = false;
       });
       _authenticate();

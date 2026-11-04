@@ -738,6 +738,8 @@ class TodayScreen extends StatelessWidget {
                       courseId: item.intakeCourseId ?? item.id,
                       courseTitle: item.course,
                       currentLog: item,
+                      initialDosage: item.dosageQuantity,
+                      initialInstruction: item.rule,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -771,6 +773,64 @@ class TodayScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+
+          // Snoozed status indicator with Reset action (DEF-32)
+          if (state.isSnoozed(item.id)) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: cs.secondaryContainer,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: cs.outlineVariant),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule_rounded, size: 14, color: cs.onSecondaryContainer),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Отложено на +15 мин',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSecondaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () async {
+                      await state.resetSnoozeIntake(item.id);
+                      if (context.mounted) {
+                        ToastHelper.show(
+                          context,
+                          message: 'Возвращено исходное время приёма',
+                          icon: '⏱️',
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      child: Text(
+                        'Вернуть исходное время',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cs.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // Action Buttons: Take, Snooze, Skip
           Row(
@@ -985,6 +1045,8 @@ class TodayScreen extends StatelessWidget {
               courseId: item.intakeCourseId ?? item.id,
               courseTitle: item.course,
               currentLog: item,
+              initialDosage: item.dosageQuantity,
+              initialInstruction: item.rule,
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1004,6 +1066,64 @@ class TodayScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+
+          // Snoozed status indicator with Reset action (DEF-32)
+          if (state.isSnoozed(item.id)) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: cs.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: cs.outlineVariant),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule_rounded, size: 13, color: cs.onSecondaryContainer),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Отложено на +15 мин',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSecondaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () async {
+                      await state.resetSnoozeIntake(item.id);
+                      if (context.mounted) {
+                        ToastHelper.show(
+                          context,
+                          message: 'Возвращено исходное время приёма',
+                          icon: '⏱️',
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Text(
+                        'Вернуть исходное время',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: cs.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // Action row: 🟢 Принять, 🟡 +15м, ⚪ Пропустить
           Row(
