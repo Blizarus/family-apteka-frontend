@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Базовая конфигурация для релизной сборки: открытый трафик HTTP (cleartext) строго запрещён -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Разрешение HTTP исключительно для локальных отладочных адресов разработки -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android Emulator host loopback -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Локальный loopback -->
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- IP-адрес компьютера разработчика в локальной Wi-Fi сети для физического смартфона -->
+        <domain includeSubdomains="false">192.168.1.105</domain>
+    </domain-config>
+</network-security-config>

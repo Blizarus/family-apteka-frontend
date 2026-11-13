@@ -213,12 +213,12 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                 runSpacing: 6,
                 children: [
                   ActionChip(
-                    label: const Text('☁️ Production (SpaceWeb)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    label: const Text('☁️ Production (blizaus.online)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: cs.primaryContainer,
                     side: BorderSide(color: cs.outline),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     onPressed: () {
-                      _urlController.text = 'https://e340043kek.temp.swtest.ru/api';
+                      _urlController.text = 'https://blizaus.online/api';
                     },
                   ),
                   ActionChip(

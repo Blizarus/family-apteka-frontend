@@ -160,12 +160,12 @@ void main() {
     expect(find.text('КОНФИДЕНЦИАЛЬНОСТЬ И БЕЗОПАСНОСТЬ (152-ФЗ)'), findsOneWidget);
 
     // Test server preset switch (in Sync block)
-    final mirrorChipFinder = find.text('🌐 bluzaus.swtest.ru зеркало');
-    await tester.ensureVisible(mirrorChipFinder);
+    final prodChipFinder = find.text('☁️ blizaus.online боевой');
+    await tester.ensureVisible(prodChipFinder);
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(mirrorChipFinder);
+    await tester.tap(prodChipFinder);
     await tester.pump();
-    expect(find.text('https://bluzaus.ru.swtest.ru/api'), findsOneWidget);
+    expect(find.text('https://blizaus.online/api'), findsOneWidget);
 
     // Test connection check
     final checkButtonFinder = find.text('Проверить связь с сервером');

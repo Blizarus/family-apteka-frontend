@@ -664,23 +664,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       runSpacing: 6,
                       children: [
                         ActionChip(
-                          label: const Text('☁️ swtest.ru основной', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                          label: const Text('☁️ blizaus.online боевой', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
                           backgroundColor: cs.primaryContainer,
                           side: BorderSide(color: cs.outlineVariant),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           onPressed: () {
-                            _serverUrlController.text = 'https://e340043kek.temp.swtest.ru/api';
-                            apiService.updateBaseUrl('https://e340043kek.temp.swtest.ru/api');
+                            _serverUrlController.text = 'https://blizaus.online/api';
+                            apiService.updateBaseUrl('https://blizaus.online/api');
                           },
                         ),
                         ActionChip(
-                          label: const Text('🌐 bluzaus.swtest.ru зеркало', style: TextStyle(fontSize: 10)),
+                          label: const Text('💻 Локальный (Wi-Fi 192.168.1.105)', style: TextStyle(fontSize: 10)),
                           backgroundColor: cs.surfaceContainerHighest,
                           side: BorderSide(color: cs.outlineVariant),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           onPressed: () {
-                            _serverUrlController.text = 'https://bluzaus.ru.swtest.ru/api';
-                            apiService.updateBaseUrl('https://bluzaus.ru.swtest.ru/api');
+                            _serverUrlController.text = 'http://192.168.1.105:8000/api';
+                            apiService.updateBaseUrl('http://192.168.1.105:8000/api');
                           },
                         ),
                       ],
