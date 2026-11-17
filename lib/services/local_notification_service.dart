@@ -265,7 +265,11 @@ class LocalNotificationService {
     if (isMockMode) return;
     try {
       await _notificationsPlugin.cancel(id: id);
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LocalNotificationService] Ошибка отмены уведомления #$id: $e');
+      }
+    }
   }
 
   /// Отмена всех запланированных уведомлений
@@ -273,6 +277,10 @@ class LocalNotificationService {
     if (isMockMode) return;
     try {
       await _notificationsPlugin.cancelAll();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LocalNotificationService] Ошибка отмены всех уведомлений: $e');
+      }
+    }
   }
 }

@@ -147,10 +147,18 @@ class MedicalNote {
 
   /// Парсит свободный текст протокола/заметки, выявляет упоминания лекарств
   /// и сопоставляет их с реальным инвентарем домашней аптечки
+  /// Эвристический регулярный парсер первой линии для распознавания медицинских назначений врача
+  /// с возможностью последующей ручной верификации и корректировки дозировки пациентом (DEF-50).
+  ///
+  /// Сопоставляет текст назначения со:
+  /// 1. Предустановленным словарем частых назначений и действующих веществ;
+  /// 2. Пользовательским инвентарем лекарств в аптечке;
+  /// 3. Опциональным внешним каталогом известных препаратов (справочник ГРЛС / ReferenceMedicines).
   static List<PrescribedMedicineItem> parseAndMatch(
     String text,
-    List<Medicine> inventory,
-  ) {
+    List<Medicine> inventory, {
+    Iterable<String>? externalCatalog,
+  }) {
     final List<PrescribedMedicineItem> items = [];
     final lowerText = text.toLowerCase();
 
@@ -333,6 +341,54 @@ class MedicalNote {
               neededCount: 1,
             ),
           );
+        }
+      }
+    }
+
+    // 3. Дополнительно сопоставляем по переданному каталогу (справочник ГРЛС / известные препараты)
+    if (externalCatalog != null) {
+      for (final rawName in externalCatalog) {
+        final nameTrimmed = rawName.trim();
+        final nameLower = nameTrimmed.toLowerCase();
+        if (nameLower.length >= 4 && lowerText.contains(nameLower)) {
+          if (matchedKeys.contains(nameLower)) continue;
+          matchedKeys.add(nameLower);
+
+          final inventoryMatch = inventory.cast<Medicine?>().firstWhere(
+                (m) =>
+                    m != null &&
+                    (m.name.toLowerCase().contains(nameLower) ||
+                        m.substance.toLowerCase().contains(nameLower)),
+                orElse: () => null,
+              );
+
+          if (inventoryMatch != null) {
+            final remaining = inventoryMatch.remaining;
+            final remainingDisp = inventoryMatch.remainingDisplay;
+            final boxName = inventoryMatch.boxId == 1 ? 'Домашняя аптечка' : 'Автомобильная';
+
+            items.add(
+              PrescribedMedicineItem(
+                name: inventoryMatch.name,
+                dosage: 'По назначению врача',
+                status: remaining > 0 ? MedicineStockStatus.inStock : MedicineStockStatus.missing,
+                locationInfo: remaining > 0 ? '$boxName, $remainingDisp шт.' : 'Закончился в аптечке',
+                remainingCount: remaining,
+                neededCount: 1,
+              ),
+            );
+          } else {
+            items.add(
+              PrescribedMedicineItem(
+                name: nameTrimmed,
+                dosage: 'По назначению врача',
+                status: MedicineStockStatus.missing,
+                locationInfo: 'Отсутствует в аптечке (найдено в ГРЛС)',
+                remainingCount: 0,
+                neededCount: 1,
+              ),
+            );
+          }
         }
       }
     }

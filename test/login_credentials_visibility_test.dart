@@ -67,6 +67,10 @@ void main() {
       expect(find.text('ЭЛЕКТРОННАЯ ПОЧТА'), findsOneWidget);
       expect(find.text('ПАРОЛЬ'), findsOneWidget);
       expect(find.text('Войти в аккаунт'), findsOneWidget);
+
+      // DEF-39: Text controllers must be empty by default in release mode
+      expect(find.text('anna@family.test'), findsNothing);
+      expect(find.text('password'), findsNothing);
     });
   });
 }

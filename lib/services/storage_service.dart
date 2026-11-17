@@ -289,4 +289,23 @@ class StorageService {
     }
     return (_inMemoryFallback[_keyNotificationSoundMode] as String?) ?? 'alarm';
   }
+
+  static const String _keyCachedActiveCourses = 'cached_active_courses';
+
+  Future<void> saveCachedActiveCourses(String jsonString) async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      await prefs.setString(_keyCachedActiveCourses, jsonString);
+    } else {
+      _inMemoryFallback[_keyCachedActiveCourses] = jsonString;
+    }
+  }
+
+  Future<String?> getCachedActiveCourses() async {
+    final prefs = await _getSafePrefs();
+    if (prefs != null) {
+      return prefs.getString(_keyCachedActiveCourses);
+    }
+    return _inMemoryFallback[_keyCachedActiveCourses] as String?;
+  }
 }

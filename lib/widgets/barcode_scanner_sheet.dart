@@ -206,6 +206,7 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet>
   Future<void> _toggleTorch() async {
     try {
       await _controller.toggleTorch();
+      if (!mounted) return;
       setState(() => _isTorchOn = !_isTorchOn);
     } catch (_) {}
   }

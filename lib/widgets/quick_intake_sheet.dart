@@ -5,6 +5,7 @@ import '../models/medicine.dart';
 import '../providers/app_state.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/error_helper.dart';
 import '../utils/parse_helper.dart';
 import 'out_of_stock_dialog.dart';
 
@@ -218,11 +219,12 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
           } catch (err) {
             if (mounted) {
               setState(() => _isSubmitting = false);
+              final msg = ErrorHelper.getMessage(err);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   behavior: SnackBarBehavior.floating,
                   backgroundColor: cs.error,
-                  content: Text('Ошибка записи приёма: $err', style: TextStyle(color: cs.onError)),
+                  content: Text('Ошибка записи приёма: $msg', style: TextStyle(color: cs.onError)),
                 ),
               );
             }
@@ -232,11 +234,12 @@ class _QuickIntakeSheetState extends State<QuickIntakeSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
+        final msg = ErrorHelper.getMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: cs.error,
-            content: Text('Ошибка записи приёма: $e', style: TextStyle(color: cs.onError)),
+            content: Text('Ошибка записи приёма: $msg', style: TextStyle(color: cs.onError)),
           ),
         );
       }

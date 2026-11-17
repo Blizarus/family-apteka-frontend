@@ -47,6 +47,15 @@ Future<void> loginTestUser(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1));
   await tester.pump();
 
+  final textFields = find.byType(TextField);
+  if (textFields.evaluate().isNotEmpty) {
+    await tester.enterText(textFields.first, 'anna@family.test');
+    if (textFields.evaluate().length > 1) {
+      await tester.enterText(textFields.at(1), 'password');
+    }
+    await tester.pump();
+  }
+
   await tester.tap(find.text('Войти в аккаунт'));
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -92,8 +93,38 @@ class ApiService {
           }
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
+        onError: (DioException error, handler) async {
           if (kDebugMode) debugPrint('API Error [${error.response?.statusCode}]: ${error.requestOptions.path}');
+          final response = error.response;
+          if (response?.statusCode == 409) {
+            final retryAfterHeader = response?.headers.value('retry-after');
+            final alreadyRetried = error.requestOptions.extra['retried_409'] == true;
+            if (retryAfterHeader != null && !alreadyRetried) {
+              final seconds = int.tryParse(retryAfterHeader) ?? 1;
+              if (seconds > 0) {
+                await Future.delayed(Duration(seconds: seconds));
+              }
+              try {
+                final options = Options(
+                  method: error.requestOptions.method,
+                  headers: error.requestOptions.headers,
+                  extra: Map<String, dynamic>.from(error.requestOptions.extra)..['retried_409'] = true,
+                );
+                final retryRes = await this.dio.request(
+                  error.requestOptions.path,
+                  data: error.requestOptions.data,
+                  queryParameters: error.requestOptions.queryParameters,
+                  options: options,
+                );
+                return handler.resolve(retryRes);
+              } catch (e, st) {
+                if (kDebugMode) debugPrint('Retry 409 failed: $e\n$st');
+                if (e is DioException) {
+                  return handler.next(e);
+                }
+              }
+            }
+          }
           return handler.next(error);
         },
       ),
@@ -1584,8 +1615,30 @@ class ApiService {
   }
 
   Future<bool> syncOfflineDatabase() async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    return true;
+    if (isMockMode) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return true;
+    }
+
+    try {
+      // 1. Честный пинг доступности API сервера
+      final pingResponse = await dio.get('/reference-medicines', queryParameters: {'limit': 1});
+      if (pingResponse.statusCode != 200) {
+        return false;
+      }
+
+      // 2. Выгрузка активных курсов и кэширование в локальное хранилище
+      final coursesResponse = await dio.get('/intake-courses');
+      if (coursesResponse.statusCode == 200 && coursesResponse.data is Map) {
+        final data = coursesResponse.data['data'];
+        if (data is List) {
+          await storageService.saveCachedActiveCourses(jsonEncode(data));
+        }
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ==========================================
@@ -1815,9 +1868,6 @@ class ApiService {
             medicineId: medicineId,
           );
         }
-      }
-      if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
-        return {'success': true, 'fallback': true};
       }
       rethrow;
     }

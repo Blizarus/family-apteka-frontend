@@ -30,14 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isRegisterMode = false;
 
-  final TextEditingController _nameController =
-      TextEditingController(text: 'Иван Марков');
-  final TextEditingController _emailController =
-      TextEditingController(text: 'anna@family.test');
-  final TextEditingController _passwordController =
-      TextEditingController(text: 'password');
-  final TextEditingController _passwordConfirmController =
-      TextEditingController(text: 'password');
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _passwordConfirmController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;

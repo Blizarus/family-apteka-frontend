@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/profile.dart';
 import '../models/medicine_box.dart';
@@ -229,8 +230,8 @@ class AppState extends ChangeNotifier {
     if (apiService.isMockMode) return;
     final hasForDate = _intakes.any((i) => i.matchesDate(date));
     if (!hasForDate) {
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       try {
-        final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
         final newLogs = await apiService.getIntakes(date: dateStr);
         if (newLogs.isNotEmpty) {
           final existingIds = _intakes.map((i) => i.id).toSet();
@@ -241,7 +242,11 @@ class AppState extends ChangeNotifier {
           }
           notifyListeners();
         }
-      } catch (_) {}
+      } catch (e, stack) {
+        if (kDebugMode) {
+          debugPrint('[AppState] Failed to load intakes for date $dateStr: $e\n$stack');
+        }
+      }
     }
   }
 

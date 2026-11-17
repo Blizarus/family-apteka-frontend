@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/models/intake_log.dart';
@@ -166,5 +167,65 @@ void main() {
       expect((capturedOptions!.data as Map)['idempotency_key'], testKey);
       expect((capturedOptions!.data as Map)['quantity'], 2.0);
     });
+
+    test('5. DEF-43: ApiService retries on HTTP 409 Conflict with Retry-After header', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.family-apteka.ru/api'));
+      int callCount = 0;
+
+      dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+        callCount++;
+        if (callCount == 1) {
+          // Первый вызов: сервер вернул 409 с Retry-After: 0
+          return ResponseBody.fromString(
+            '{"message":"Запрос с данным ключом идемпотентности уже обрабатывается."}',
+            409,
+            headers: {
+              'content-type': ['application/json'],
+              'retry-after': ['0'],
+            },
+          );
+        } else {
+          // Повторный вызов: сервер завершил транзакцию и вернул 201
+          return ResponseBody.fromString(
+            '{"success":true,"intake_log_id":999,"message":"Приём успешно сохранён после повторной попытки."}',
+            201,
+            headers: {
+              'content-type': ['application/json'],
+            },
+          );
+        }
+      });
+
+      final apiService = ApiService(dio: dio, isMockMode: false);
+      await apiService.setToken('test-token-no-hardware-keystore');
+
+      final result = await apiService.recordQuickIntake(
+        medicineId: 10,
+        profileId: 1,
+        quantity: 1.0,
+        idempotencyKey: 'retry-after-test-key',
+      );
+
+      expect(callCount, 2);
+      expect(result['success'], isTrue);
+      expect(result['intake_log_id'], 999);
+    });
   });
+}
+
+class _MockHttpClientAdapter implements HttpClientAdapter {
+  final Future<ResponseBody> Function(RequestOptions options) _handler;
+  _MockHttpClientAdapter(this._handler);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    return _handler(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

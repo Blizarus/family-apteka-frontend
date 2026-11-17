@@ -318,87 +318,17 @@ class CourseManagementSheet extends StatelessWidget {
   }
 
   Future<void> _showEditDosageDialog(BuildContext context, AppState state) async {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final dosageCtrl = TextEditingController(
-      text: initialDosage?.toString() ?? currentLog?.dosageQuantity.toString() ?? '1.0',
-    );
-    final instructionCtrl = TextEditingController(
-      text: initialInstruction ?? currentLog?.rule ?? '',
-    );
+    final double initDosage = initialDosage ?? (currentLog != null ? currentLog!.dosageQuantity : 1.0);
+    final String? initInstruction = initialInstruction ?? currentLog?.rule;
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cs.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: cs.outlineVariant),
-        ),
-        title: Text(
-          'Изменение дозировки',
-          style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Разовая доза (количество):', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: dosageCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text('Инструкция по приёму:', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: instructionCtrl,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Отмена', style: TextStyle(color: cs.onSurfaceVariant)),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final newQty = double.tryParse(dosageCtrl.text.replaceAll(',', '.')) ?? 1.0;
-              final newInst = instructionCtrl.text.trim();
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-              try {
-                await state.updateIntakeCourse(courseId, {
-                  'dosage_quantity': newQty,
-                  if (newInst.isNotEmpty) 'dosage_instruction': newInst,
-                });
-                if (context.mounted) {
-                  ToastHelper.show(
-                    context,
-                    message: 'Дозировка курса успешно обновлена.',
-                    icon: '💊',
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ErrorHelper.showError(context, e, prefix: 'Ошибка обновления дозировки');
-                }
-              }
-            },
-            child: const Text('Сохранить'),
-          ),
-        ],
+      builder: (ctx) => _EditDosageDialog(
+        initialDosage: initDosage,
+        initialInstruction: initInstruction,
+        courseId: courseId,
+        state: state,
+        parentContext: context,
       ),
     );
   }
@@ -589,5 +519,125 @@ class CourseManagementSheet extends StatelessWidget {
         }
       }
     }
+  }
+}
+
+class _EditDosageDialog extends StatefulWidget {
+  final double initialDosage;
+  final String? initialInstruction;
+  final int courseId;
+  final AppState state;
+  final BuildContext parentContext;
+
+  const _EditDosageDialog({
+    required this.initialDosage,
+    required this.initialInstruction,
+    required this.courseId,
+    required this.state,
+    required this.parentContext,
+  });
+
+  @override
+  State<_EditDosageDialog> createState() => _EditDosageDialogState();
+}
+
+class _EditDosageDialogState extends State<_EditDosageDialog> {
+  late final TextEditingController _dosageCtrl;
+  late final TextEditingController _instructionCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _dosageCtrl = TextEditingController(
+      text: widget.initialDosage.toString(),
+    );
+    _instructionCtrl = TextEditingController(
+      text: widget.initialInstruction ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _dosageCtrl.dispose();
+    _instructionCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return AlertDialog(
+      backgroundColor: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
+      title: Text(
+        'Изменение дозировки',
+        style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold, fontSize: 17),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Разовая доза (количество):', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _dosageCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Инструкция по приёму:', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _instructionCtrl,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Отмена', style: TextStyle(color: cs.onSurfaceVariant)),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final newQty = double.tryParse(_dosageCtrl.text.replaceAll(',', '.')) ?? 1.0;
+            final newInst = _instructionCtrl.text.trim();
+            Navigator.of(context).pop();
+            Navigator.of(widget.parentContext).pop();
+            try {
+              await widget.state.updateIntakeCourse(widget.courseId, {
+                'dosage_quantity': newQty,
+                if (newInst.isNotEmpty) 'dosage_instruction': newInst,
+              });
+              if (widget.parentContext.mounted) {
+                ToastHelper.show(
+                  widget.parentContext,
+                  message: 'Дозировка курса успешно обновлена.',
+                  icon: '💊',
+                );
+              }
+            } catch (e) {
+              if (widget.parentContext.mounted) {
+                ErrorHelper.showError(widget.parentContext, e, prefix: 'Ошибка обновления дозировки');
+              }
+            }
+          },
+          child: const Text('Сохранить'),
+        ),
+      ],
+    );
   }
 }

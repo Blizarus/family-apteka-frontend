@@ -189,6 +189,8 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
       initialTime: initialTime,
     );
 
+    if (!mounted) return;
+
     if (picked != null) {
       final formatted =
           '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
