@@ -26,6 +26,11 @@ Future<void> loadAppFonts() async {
     final loaderBold = FontLoader('Roboto');
     loaderBold.addFont(Future.value(ByteData.view(bold.buffer)));
     await loaderBold.load();
+
+    final icons = File('assets/fonts/MaterialIcons-Regular.otf').readAsBytesSync();
+    final loaderIcons = FontLoader('MaterialIcons');
+    loaderIcons.addFont(Future.value(ByteData.view(icons.buffer)));
+    await loaderIcons.load();
   } catch (_) {}
 }
 

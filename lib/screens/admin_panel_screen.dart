@@ -245,16 +245,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             Text(
               'Панель администратора',
               style: TextStyle(
+                fontFamily: 'Roboto',
                 fontSize: 17,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.bold,
                 color: cs.onSurface,
               ),
             ),
             Text(
               'Безопасность ИБ • RBAC • ЛР 2',
               style: TextStyle(
+                fontFamily: 'Roboto',
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.normal,
                 color: cs.primary,
               ),
             ),
@@ -381,10 +383,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Всего: ${_users.length}   •   🟢 Активных: ${_users.where((u) => u['is_blocked'] != true).length}   •   🔴 Заблокировано: ${_users.where((u) => u['is_blocked'] == true).length}',
+                    'Всего: ${_users.length}   •   Активных: ${_users.where((u) => u['is_blocked'] != true).length}   •   Заблокировано: ${_users.where((u) => u['is_blocked'] == true).length}',
                     style: TextStyle(
+                      fontFamily: 'Roboto',
                       fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.bold,
                       color: textSecondary,
                     ),
                   ),
