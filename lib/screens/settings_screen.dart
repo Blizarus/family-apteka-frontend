@@ -353,6 +353,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showBatteryOptimizationDialog(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textMuted = Theme.of(context).textTheme.bodySmall?.color ?? cs.onSurface.withValues(alpha: 0.6);
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.battery_alert_rounded, color: cs.primary),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Спящий режим и батарея',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Для точного и непрерывного звонка будильника приёма лекарств в глубоком сне (Doze Mode):',
+              style: TextStyle(fontSize: 13, color: cs.onSurface),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '1. Отключите оптимизацию батареи для приложения «Семейная аптечка» в настройках Android (раздел «Батарея» -> «Без ограничений»).',
+              style: TextStyle(fontSize: 12, color: textMuted),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '2. На смартфонах Xiaomi (MIUI/HyperOS), Huawei и Samsung разрешите автозапуск и работу в фоновом режиме.',
+              style: TextStyle(fontSize: 12, color: textMuted),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '3. Разрешите показ поверх экрана блокировки и вывод полноэкранных уведомлений (Full-Screen Intent).',
+              style: TextStyle(fontSize: 12, color: textMuted),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Понятно'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -525,6 +583,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ],
+                ),
+              ),
+              Divider(height: 1, indent: 16, color: cs.outlineVariant),
+              InkWell(
+                onTap: () => _showBatteryOptimizationDialog(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.battery_saver_rounded, size: 18, color: cs.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Работа будильника в спящем режиме',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Для гарантированного срабатывания на смартфонах Xiaomi, Samsung и Huawei рекомендуется отключить оптимизацию батареи',
+                              style: TextStyle(fontSize: 11, color: textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.info_outline_rounded, size: 18, color: cs.primary),
+                    ],
+                  ),
                 ),
               ),
             ]),

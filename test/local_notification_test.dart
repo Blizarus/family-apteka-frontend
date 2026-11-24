@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/app_state.dart';
+import 'package:frontend/screens/settings_screen.dart';
 import 'package:frontend/services/api_service.dart';
 import 'package:frontend/services/local_notification_service.dart';
 import 'package:frontend/services/storage_service.dart';
@@ -101,14 +103,57 @@ void main() {
       expect(await storage.hasNotificationRationaleShown(), isTrue);
     });
 
-    test('6. DEF-53: buildAndroidNotificationDetails for alarm channel has Heads-Up fullScreenIntent and alarm category', () {
+    test('6. DEF-57: buildAndroidNotificationDetails for alarm channel has persistent ringing flags (FLAG_INSISTENT, ongoing, autoCancel=false)', () {
       final details = service.buildAndroidNotificationDetails('alarm');
       expect(details.fullScreenIntent, isTrue);
       expect(details.category, equals(AndroidNotificationCategory.alarm));
       expect(details.visibility, equals(NotificationVisibility.public));
       expect(details.importance, equals(Importance.max));
-      expect(details.autoCancel, isTrue);
-      expect(details.ongoing, isFalse);
+      expect(details.autoCancel, isFalse);
+      expect(details.ongoing, isTrue);
+      expect(details.additionalFlags, isNotNull);
+      expect(details.additionalFlags!.contains(4), isTrue); // FLAG_INSISTENT = 4
+
+      final normalDetails = service.buildAndroidNotificationDetails('normal');
+      expect(normalDetails.autoCancel, isTrue);
+      expect(normalDetails.ongoing, isFalse);
+      expect(normalDetails.additionalFlags, isNull);
+    });
+
+    testWidgets('7. DEF-57.5: SettingsScreen displays Battery Optimization tile and opens dialog', (tester) async {
+      final storage = await StorageService.init();
+      final apiService = ApiService(isMockMode: true, storageService: storage);
+      final appState = AppState(apiService: apiService);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AppState>.value(value: appState),
+            Provider<ApiService>.value(value: apiService),
+          ],
+          child: const MaterialApp(
+            home: SettingsScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final tile = find.text('Работа будильника в спящем режиме');
+      expect(tile, findsOneWidget);
+
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Спящий режим и батарея'), findsOneWidget);
+      expect(find.textContaining('Doze Mode'), findsOneWidget);
+
+      await tester.tap(find.text('Понятно'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Спящий режим и батарея'), findsNothing);
     });
   });
 }

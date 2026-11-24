@@ -182,7 +182,9 @@ class LocalNotificationService {
         body: body,
         scheduledDate: tzScheduled,
         notificationDetails: details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: soundMode == 'alarm'
+            ? AndroidScheduleMode.alarmClock
+            : AndroidScheduleMode.exactAllowWhileIdle,
         payload: payload,
       );
     } catch (e) {
@@ -192,7 +194,7 @@ class LocalNotificationService {
     }
   }
 
-  /// Создаёт конфигурацию AndroidNotificationDetails с учётом режима будильника (DEF-53)
+  /// Создаёт конфигурацию AndroidNotificationDetails с учётом режима будильника (DEF-53, DEF-57)
   AndroidNotificationDetails buildAndroidNotificationDetails(String soundMode) {
     String channelId;
     String channelName;
@@ -205,6 +207,9 @@ class LocalNotificationService {
     bool fullScreenIntent = false;
     AndroidNotificationCategory? category;
     NotificationVisibility? visibility;
+    bool ongoing = false;
+    bool autoCancel = true;
+    Int32List? additionalFlags;
 
     switch (soundMode) {
       case 'silent':
@@ -216,6 +221,9 @@ class LocalNotificationService {
         audioUsage = AudioAttributesUsage.notification;
         playSound = false;
         enableVibration = false;
+        ongoing = false;
+        autoCancel = true;
+        additionalFlags = null;
         break;
       case 'normal':
         channelId = 'medication_normal_channel';
@@ -226,6 +234,9 @@ class LocalNotificationService {
         audioUsage = AudioAttributesUsage.notification;
         playSound = true;
         enableVibration = true;
+        ongoing = false;
+        autoCancel = true;
+        additionalFlags = null;
         break;
       case 'alarm':
       default:
@@ -240,6 +251,10 @@ class LocalNotificationService {
         fullScreenIntent = true;
         category = AndroidNotificationCategory.alarm;
         visibility = NotificationVisibility.public;
+        ongoing = true;
+        autoCancel = false;
+        // Android Notification.FLAG_INSISTENT = 0x00000004 (беспрерывный звон до отмены)
+        additionalFlags = Int32List.fromList([4]);
         break;
     }
 
@@ -255,8 +270,9 @@ class LocalNotificationService {
       fullScreenIntent: fullScreenIntent,
       category: category,
       visibility: visibility,
-      ongoing: false,
-      autoCancel: true,
+      ongoing: ongoing,
+      autoCancel: autoCancel,
+      additionalFlags: additionalFlags,
       ticker: 'Пора принять лекарство',
       icon: '@mipmap/ic_launcher',
       actions: const <AndroidNotificationAction>[
