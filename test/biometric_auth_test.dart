@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:local_auth_android/local_auth_android.dart';
+import 'package:local_auth_darwin/local_auth_darwin.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/app_state.dart';
@@ -536,6 +538,21 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('Secured Content'), findsOneWidget);
+    });
+
+    test('DEF-52: BiometricService provides Russian localized authMessages for Android and iOS', () {
+      final messages = BiometricService.defaultAuthMessages;
+      expect(messages, isNotEmpty);
+      final androidMsg = messages.whereType<AndroidAuthMessages>().firstOrNull;
+      expect(androidMsg, isNotNull);
+      expect(androidMsg!.signInTitle, equals('Вход в «Семейную аптечку»'));
+      expect(androidMsg.signInHint, equals('Прикоснитесь к сканеру отпечатка пальца'));
+      expect(androidMsg.cancelButton, equals('Отмена'));
+
+      final iosMsg = messages.whereType<IOSAuthMessages>().firstOrNull;
+      expect(iosMsg, isNotNull);
+      expect(iosMsg!.cancelButton, equals('Отмена'));
+      expect(iosMsg.localizedFallbackTitle, equals('Ввести код-пароль'));
     });
   });
 }

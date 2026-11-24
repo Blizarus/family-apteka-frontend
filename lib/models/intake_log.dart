@@ -78,6 +78,14 @@ class IntakeLog {
     return DosageFormatter.format(qty, f);
   }
 
+  String get courseDisplay {
+    final trimmed = course.trim();
+    if (trimmed.startsWith('Курс:') || trimmed.startsWith('Курс :')) {
+      return trimmed;
+    }
+    return 'Курс: $trimmed';
+  }
+
   factory IntakeLog.fromJson(Map<String, dynamic> json, {DateTime? currentTime}) {
     final intakeCourse = json['intake_course'] as Map<String, dynamic>?;
     final medicine = json['medicine'] as Map<String, dynamic>?;
@@ -87,10 +95,17 @@ class IntakeLog {
       1,
     );
 
+    final refMed = (medicine?['reference_medicine'] ??
+        intakeCourse?['medicine']?['reference_medicine']) as Map<String, dynamic>?;
+
     final medicineName = json['medicineName'] as String? ??
         medicine?['custom_trade_name'] as String? ??
         intakeCourse?['medicine']?['custom_trade_name'] as String? ??
-        'Лекарство';
+        refMed?['trade_name'] as String? ??
+        refMed?['name'] as String? ??
+        medicine?['name'] as String? ??
+        intakeCourse?['medicine']?['name'] as String? ??
+        'Лекарственный препарат';
 
     final form = json['form'] as String? ??
         medicine?['quantity_unit'] as String? ??

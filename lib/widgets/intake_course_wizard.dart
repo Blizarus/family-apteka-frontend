@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/medicine.dart';
+import '../models/profile.dart';
 import '../models/reference_medicine.dart';
 import '../providers/app_state.dart';
+import '../services/medication_safety_service.dart';
 import '../theme/app_theme.dart';
 import 'safety_alert_banner.dart';
 import 'toast_helper.dart';
@@ -118,9 +120,30 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
 
   Future<void> _checkSafety() async {
     if (_selectedMedicine == null || _selectedProfileId == null) return;
+
+    final state = context.read<AppState>();
+    final profile = state.profiles.cast<Profile?>().firstWhere(
+          (p) => p?.id == _selectedProfileId,
+          orElse: () => null,
+        );
+
+    // On-Device CDS (Offline-First): мгновенная проверка риска аллергии
+    Map<String, dynamic>? localAllergyReport;
+    if (profile != null && _selectedMedicine != null) {
+      localAllergyReport = MedicationSafetyService.checkLocalAllergy(
+        profile: profile,
+        medicine: _selectedMedicine!,
+      );
+    }
+
+    if (localAllergyReport != null) {
+      setState(() {
+        _safetyReport = localAllergyReport;
+      });
+    }
+
     setState(() => _isCheckingSafety = true);
     try {
-      final state = context.read<AppState>();
       final report = await state.checkSafety(
         profileId: _selectedProfileId!,
         medicineId: _selectedMedicine!.id > 0 ? _selectedMedicine!.id : null,
@@ -128,12 +151,34 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
       );
       if (mounted) {
         setState(() {
-          _safetyReport = report;
+          if (localAllergyReport != null && localAllergyReport['has_critical'] == true) {
+            // Сохраняем критические локальные предупреждения об аллергии
+            final combinedWarnings = <String>[
+              ...localAllergyReport['warnings'] as List,
+              ...((report['warnings'] as List?)?.where((w) => !(localAllergyReport!['warnings'] as List).contains(w)) ?? const []),
+            ];
+            _safetyReport = {
+              ...report,
+              'status': 'conflict',
+              'is_safe': false,
+              'has_critical': true,
+              'warnings': combinedWarnings,
+            };
+          } else {
+            _safetyReport = report;
+          }
           _isCheckingSafety = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _isCheckingSafety = false);
+      if (mounted) {
+        setState(() {
+          if (localAllergyReport != null) {
+            _safetyReport = localAllergyReport;
+          }
+          _isCheckingSafety = false;
+        });
+      }
     }
   }
 
@@ -754,6 +799,14 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
             }).toList(),
           ),
         ),
+        if (_selectedMedicine != null && _safetyReport != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 4),
+            child: SafetyAlertBanner(
+              safetyData: _safetyReport,
+              isLoading: _isCheckingSafety,
+            ),
+          ),
         const SizedBox(height: 20),
 
         // Dosage Stepper
@@ -1247,6 +1300,14 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
           ),
         ),
         const SizedBox(height: 8),
+        if (_safetyReport != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SafetyAlertBanner(
+              safetyData: _safetyReport,
+              isLoading: _isCheckingSafety,
+            ),
+          ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1318,6 +1379,40 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
     );
   }
 
+  Future<void> _showCriticalSafetyConfirmation() async {
+    final cs = Theme.of(context).colorScheme;
+    final warningsList = (_safetyReport?['warnings'] as List?)?.join('\n\n') ?? '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Критический риск для пациента'),
+        content: Text(
+          'Внимание! Обнаружен критический риск аллергической реакции или несовместимости:\n\n'
+          '$warningsList\n\n'
+          'Вы действительно уверены, что хотите назначить данный курс?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: cs.error,
+              foregroundColor: cs.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Подтвердить назначение'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _submitCourse();
+    }
+  }
+
   // -------------------------------------------------------------
   // Bottom Action Bar
   // -------------------------------------------------------------
@@ -1368,7 +1463,11 @@ class _IntakeCourseWizardState extends State<IntakeCourseWizard> {
                       if (_currentStep < 5) {
                         setState(() => _currentStep++);
                       } else {
-                        _submitCourse();
+                        if (_safetyReport?['has_critical'] == true) {
+                          _showCriticalSafetyConfirmation();
+                        } else {
+                          _submitCourse();
+                        }
                       }
                     },
               child: _isSubmitting

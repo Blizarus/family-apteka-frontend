@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/providers/app_state.dart';
@@ -98,6 +99,16 @@ void main() {
 
       expect(granted, isTrue);
       expect(await storage.hasNotificationRationaleShown(), isTrue);
+    });
+
+    test('6. DEF-53: buildAndroidNotificationDetails for alarm channel has Heads-Up fullScreenIntent and alarm category', () {
+      final details = service.buildAndroidNotificationDetails('alarm');
+      expect(details.fullScreenIntent, isTrue);
+      expect(details.category, equals(AndroidNotificationCategory.alarm));
+      expect(details.visibility, equals(NotificationVisibility.public));
+      expect(details.importance, equals(Importance.max));
+      expect(details.autoCancel, isTrue);
+      expect(details.ongoing, isFalse);
     });
   });
 }

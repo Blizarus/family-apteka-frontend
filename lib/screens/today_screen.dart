@@ -748,7 +748,7 @@ class TodayScreen extends StatelessWidget {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Курс: ${item.course}',
+                            item.courseDisplay,
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,

@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
+import 'package:local_auth_darwin/local_auth_darwin.dart';
 import 'storage_service.dart';
 
 /// Service providing biometric authentication (Touch ID, Face ID, fingerprint).
@@ -10,6 +12,19 @@ class BiometricService {
   bool isMockMode;
   bool mockAuthResult;
   bool mockAvailable;
+
+  /// Русифицированные системные сообщения диалога биометрии (DEF-52)
+  static const List<AuthMessages> defaultAuthMessages = [
+    AndroidAuthMessages(
+      signInTitle: 'Вход в «Семейную аптечку»',
+      signInHint: 'Прикоснитесь к сканеру отпечатка пальца',
+      cancelButton: 'Отмена',
+    ),
+    IOSAuthMessages(
+      cancelButton: 'Отмена',
+      localizedFallbackTitle: 'Ввести код-пароль',
+    ),
+  ];
 
   BiometricService({
     LocalAuthentication? localAuth,
@@ -83,6 +98,7 @@ class BiometricService {
         localizedReason: localizedReason,
         biometricOnly: biometricOnly,
         persistAcrossBackgrounding: true,
+        authMessages: defaultAuthMessages,
       );
     } on PlatformException {
       return false;

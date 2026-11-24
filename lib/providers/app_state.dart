@@ -571,16 +571,57 @@ class AppState extends ChangeNotifier {
       return null;
     }
     _processingIntakeIds.add(intakeId);
+
+    // 1. Оптимистичное обновление состояния (0 мс задержки)
+    final intakeIdx = _intakes.indexWhere((i) => i.id == intakeId);
+    final originalLog = intakeIdx != -1 ? _intakes[intakeIdx] : null;
+
+    int medIdx = -1;
+    Medicine? originalMed;
+    if (originalLog != null && originalLog.medicineId != null) {
+      medIdx = _medicines.indexWhere((m) => m.id == originalLog.medicineId);
+      if (medIdx != -1) {
+        originalMed = _medicines[medIdx];
+      }
+    }
+
+    if (originalLog != null) {
+      final newRemainingLog = originalLog.remaining != null
+          ? (originalLog.remaining! - originalLog.dosageQuantity).clamp(0.0, double.infinity)
+          : null;
+      _intakes[intakeIdx] = originalLog.copyWith(
+        status: 'taken',
+        taken: true,
+        remaining: newRemainingLog,
+      );
+    }
+
+    if (originalMed != null && originalLog != null) {
+      final newRemaining = (originalMed.remaining - originalLog.dosageQuantity).clamp(0.0, double.infinity);
+      _medicines[medIdx] = originalMed.copyWith(remaining: newRemaining);
+    }
+
+    // Мгновенное обновление UI до вызова сети
     notifyListeners();
+    LocalNotificationService.instance.cancelReminder(intakeId);
 
     try {
       final res = await apiService.takeIntakeLog(
         intakeId,
         confirmWithoutStock: confirmWithoutStock,
       );
-      await LocalNotificationService.instance.cancelReminder(intakeId);
       await refreshData();
       return res;
+    } catch (e) {
+      // Откат оптимистичного состояния при сбое сети
+      if (intakeIdx != -1 && originalLog != null) {
+        _intakes[intakeIdx] = originalLog;
+      }
+      if (medIdx != -1 && originalMed != null) {
+        _medicines[medIdx] = originalMed;
+      }
+      notifyListeners();
+      rethrow;
     } finally {
       _processingIntakeIds.remove(intakeId);
       notifyListeners();
@@ -606,12 +647,51 @@ class AppState extends ChangeNotifier {
       return null;
     }
     _processingIntakeIds.add(intakeId);
+
+    // 1. Оптимистичное обновление состояния (0 мс задержки)
+    final intakeIdx = _intakes.indexWhere((i) => i.id == intakeId);
+    final originalLog = intakeIdx != -1 ? _intakes[intakeIdx] : null;
+
+    int medIdx = -1;
+    Medicine? originalMed;
+    if (originalLog != null && originalLog.medicineId != null) {
+      medIdx = _medicines.indexWhere((m) => m.id == originalLog.medicineId);
+      if (medIdx != -1) {
+        originalMed = _medicines[medIdx];
+      }
+    }
+
+    if (originalLog != null) {
+      final newRemainingLog = originalLog.remaining != null
+          ? originalLog.remaining! + originalLog.dosageQuantity
+          : null;
+      _intakes[intakeIdx] = originalLog.copyWith(
+        status: 'scheduled',
+        taken: false,
+        remaining: newRemainingLog,
+      );
+    }
+
+    if (originalMed != null && originalLog != null) {
+      final newRemaining = originalMed.remaining + originalLog.dosageQuantity;
+      _medicines[medIdx] = originalMed.copyWith(remaining: newRemaining);
+    }
+
     notifyListeners();
 
     try {
       final res = await apiService.undoIntakeLog(intakeId);
       await refreshData();
       return res;
+    } catch (e) {
+      if (intakeIdx != -1 && originalLog != null) {
+        _intakes[intakeIdx] = originalLog;
+      }
+      if (medIdx != -1 && originalMed != null) {
+        _medicines[medIdx] = originalMed;
+      }
+      notifyListeners();
+      rethrow;
     } finally {
       _processingIntakeIds.remove(intakeId);
       notifyListeners();
@@ -623,10 +703,11 @@ class AppState extends ChangeNotifier {
       if (!log.isTaken && log.status != 'skipped') {
         final scheduledTime = log.scheduledTime;
         if (scheduledTime != null && scheduledTime.isAfter(DateTime.now())) {
+          final timeStr = log.time.isNotEmpty ? ' • ${log.time}' : '';
           await LocalNotificationService.instance.scheduleIntakeReminder(
             id: log.id,
-            title: 'Время принять лекарство',
-            body: '${log.medicineName} • ${log.rule}',
+            title: 'Время принять лекарство$timeStr',
+            body: '${log.medicineName} • ${log.formattedDosage} (${log.rule})',
             scheduledDate: scheduledTime,
             soundMode: _notificationSoundMode,
           );
@@ -639,12 +720,24 @@ class AppState extends ChangeNotifier {
   bool isSnoozed(int intakeId) => _snoozedIntakeIds.contains(intakeId);
 
   Future<bool> snoozeIntake(int intakeId, {int minutes = 15}) async {
-    final success = await apiService.snoozeIntake(intakeId, minutes: minutes);
-    if (success) {
-      _snoozedIntakeIds.add(intakeId);
-      await refreshData();
+    _snoozedIntakeIds.add(intakeId);
+    notifyListeners();
+
+    try {
+      final success = await apiService.snoozeIntake(intakeId, minutes: minutes);
+      if (success) {
+        await refreshData();
+        return true;
+      } else {
+        _snoozedIntakeIds.remove(intakeId);
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _snoozedIntakeIds.remove(intakeId);
+      notifyListeners();
+      rethrow;
     }
-    return success;
   }
 
   Future<bool> resetSnoozeIntake(int intakeId) async {

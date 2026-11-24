@@ -163,75 +163,7 @@ class LocalNotificationService {
         return; // Прошедшие даты не планируем
       }
 
-      String channelId;
-      String channelName;
-      String channelDesc;
-      Importance importance;
-      Priority priority;
-      AudioAttributesUsage audioUsage;
-      bool playSound;
-      bool enableVibration;
-
-      switch (soundMode) {
-        case 'silent':
-          channelId = 'medication_silent_channel';
-          channelName = 'Тихие напоминания';
-          channelDesc = 'Беззвучные уведомления о приёме лекарств';
-          importance = Importance.low;
-          priority = Priority.low;
-          audioUsage = AudioAttributesUsage.notification;
-          playSound = false;
-          enableVibration = false;
-          break;
-        case 'normal':
-          channelId = 'medication_normal_channel';
-          channelName = 'Обычные напоминания';
-          channelDesc = 'Стандартные уведомления о приёме лекарств';
-          importance = Importance.high;
-          priority = Priority.high;
-          audioUsage = AudioAttributesUsage.notification;
-          playSound = true;
-          enableVibration = true;
-          break;
-        case 'alarm':
-        default:
-          channelId = 'medication_alarm_channel';
-          channelName = 'Будильник приёма лекарств';
-          channelDesc = 'Громкие напоминания о приёме жизненно важных медикаментов';
-          importance = Importance.max;
-          priority = Priority.max;
-          audioUsage = AudioAttributesUsage.alarm;
-          playSound = true;
-          enableVibration = true;
-          break;
-      }
-
-      final androidDetails = AndroidNotificationDetails(
-        channelId,
-        channelName,
-        channelDescription: channelDesc,
-        importance: importance,
-        priority: priority,
-        audioAttributesUsage: audioUsage,
-        enableVibration: enableVibration,
-        playSound: playSound,
-        ticker: 'Пора принять лекарство',
-        icon: '@mipmap/ic_launcher',
-        actions: const <AndroidNotificationAction>[
-          AndroidNotificationAction(
-            'take_action',
-            'Принял',
-            showsUserInterface: true,
-            cancelNotification: true,
-          ),
-          AndroidNotificationAction(
-            'snooze_action',
-            'Отложить на 15 мин',
-            showsUserInterface: true,
-            cancelNotification: true,
-          ),
-        ],
-      );
+      final androidDetails = buildAndroidNotificationDetails(soundMode);
 
       const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
@@ -258,6 +190,90 @@ class LocalNotificationService {
         debugPrint('Ошибка планирования уведомления #$id: $e');
       }
     }
+  }
+
+  /// Создаёт конфигурацию AndroidNotificationDetails с учётом режима будильника (DEF-53)
+  AndroidNotificationDetails buildAndroidNotificationDetails(String soundMode) {
+    String channelId;
+    String channelName;
+    String channelDesc;
+    Importance importance;
+    Priority priority;
+    AudioAttributesUsage audioUsage;
+    bool playSound;
+    bool enableVibration;
+    bool fullScreenIntent = false;
+    AndroidNotificationCategory? category;
+    NotificationVisibility? visibility;
+
+    switch (soundMode) {
+      case 'silent':
+        channelId = 'medication_silent_channel';
+        channelName = 'Тихие напоминания';
+        channelDesc = 'Беззвучные уведомления о приёме лекарств';
+        importance = Importance.low;
+        priority = Priority.low;
+        audioUsage = AudioAttributesUsage.notification;
+        playSound = false;
+        enableVibration = false;
+        break;
+      case 'normal':
+        channelId = 'medication_normal_channel';
+        channelName = 'Обычные напоминания';
+        channelDesc = 'Стандартные уведомления о приёме лекарств';
+        importance = Importance.high;
+        priority = Priority.high;
+        audioUsage = AudioAttributesUsage.notification;
+        playSound = true;
+        enableVibration = true;
+        break;
+      case 'alarm':
+      default:
+        channelId = 'medication_alarm_channel';
+        channelName = 'Будильник приёма лекарств';
+        channelDesc = 'Громкие напоминания о приёме жизненно важных медикаментов';
+        importance = Importance.max;
+        priority = Priority.high;
+        audioUsage = AudioAttributesUsage.alarm;
+        playSound = true;
+        enableVibration = true;
+        fullScreenIntent = true;
+        category = AndroidNotificationCategory.alarm;
+        visibility = NotificationVisibility.public;
+        break;
+    }
+
+    return AndroidNotificationDetails(
+      channelId,
+      channelName,
+      channelDescription: channelDesc,
+      importance: importance,
+      priority: priority,
+      audioAttributesUsage: audioUsage,
+      enableVibration: enableVibration,
+      playSound: playSound,
+      fullScreenIntent: fullScreenIntent,
+      category: category,
+      visibility: visibility,
+      ongoing: false,
+      autoCancel: true,
+      ticker: 'Пора принять лекарство',
+      icon: '@mipmap/ic_launcher',
+      actions: const <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'take_action',
+          'Принял',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          'snooze_action',
+          'Отложить на 15 мин',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+      ],
+    );
   }
 
   /// Отмена запланированного уведомления
